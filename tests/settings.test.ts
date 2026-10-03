@@ -59,3 +59,15 @@ test('deduplicates stored favorite IDs and bounds menu depth', () => {
   const nested = '<root><menu>' + '<item><menu>'.repeat(34) + '</menu></item>'.repeat(34) + '</menu></root>';
   assert.throws(() => parseConfiguration(nested, defaultSettings('darwin'), 'darwin'), /deeply/);
 });
+
+test('hand tracking is off by default, recovers from corrupt values, and survives a save round trip', () => {
+  assert.equal(defaultSettings('darwin').handTracking, false);
+  assert.equal(normalizeSettings({ handTracking: 'yes' }, 'darwin').handTracking, false);
+  assert.equal(normalizeSettings({ handTracking: true }, 'darwin').handTracking, true);
+});
+
+test('importing a configuration keeps the local camera choice', () => {
+  const current = { ...defaultSettings('darwin'), handTracking: true };
+  const result = parseConfiguration(JSON.stringify({ ...defaultSettings('win32'), handTracking: false }), current, 'darwin');
+  assert.equal(result.settings.handTracking, true);
+});

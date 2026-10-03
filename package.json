@@ -6,9 +6,9 @@
   "type": "module",
   "main": "dist-desktop/main.cjs",
   "scripts": {
-    "dev": "node scripts/check-original-assets.mjs && node scripts/dev.mjs",
-    "dev:web": "node scripts/check-original-assets.mjs && vite --host 127.0.0.1",
-    "build": "node scripts/check-original-assets.mjs && tsc --noEmit && vite build && node scripts/build-desktop.mjs",
+    "dev": "node scripts/check-original-assets.mjs && node scripts/prepare-hand-model.mjs && node scripts/dev.mjs",
+    "dev:web": "node scripts/check-original-assets.mjs && node scripts/prepare-hand-model.mjs && vite --host 127.0.0.1",
+    "build": "node scripts/check-original-assets.mjs && node scripts/prepare-hand-model.mjs && tsc --noEmit && vite build && node scripts/build-desktop.mjs",
     "start": "electron .",
     "test": "node --import tsx --test tests/*.test.ts",
     "test:desktop": "npm run build && node scripts/smoke-desktop.mjs",
@@ -22,7 +22,8 @@
     "build:service": "node scripts/build-service.mjs",
     "start:service": "npm run build:service && node dist-service/server.cjs",
     "test:hover": "npm run build && node scripts/smoke-hover.mjs",
-    "test:social": "npm run build && node --import tsx scripts/smoke-social.mjs"
+    "test:social": "npm run build && node --import tsx scripts/smoke-social.mjs",
+    "test:hand": "npm run build && node scripts/smoke-hand.mjs"
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "^1.0.1",
@@ -70,7 +71,12 @@
         "dir",
         "dmg"
       ],
-      "hardenedRuntime": true
+      "hardenedRuntime": true,
+      "entitlements": "resources/entitlements.mac.plist",
+      "entitlementsInherit": "resources/entitlements.mac.plist",
+      "extendInfo": {
+        "NSCameraUsageDescription": "SAO Utils 2 uses the camera only when you turn on hand gestures, to recognise your hand on this Mac. Video is never recorded or sent anywhere."
+      }
     },
     "win": {
       "target": [

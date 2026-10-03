@@ -19,3 +19,30 @@ Outside pointer-down events are compared with current control bounds, including 
 The global mouse gesture currently requires macOS. Windows and Linux use the configurable shortcut and tray. The web preview recognizes the same chord only within its tab. The original touch-tablet gesture has no macOS trackpad equivalent in this implementation; ordinary two-finger scrolling is preserved.
 
 `src/desktop/gesture-build.mjs` compiles a universal arm64/x86_64 helper using the installed Xcode command-line tools. It is packaged outside Electron's `asar` as `Resources/gesture-helper`. Run `dist-desktop/gesture-helper --self-test` to verify gesture recognition without requesting permission or observing live input.
+
+# Camera hand gestures
+
+Turn on **Camera hand gestures** in Preferences → Options to control the launcher with the built-in webcam. It is off by default. Turning it on asks macOS for camera access once, and the camera indicator stays lit while it is on.
+
+| Gesture | Effect |
+| --- | --- |
+| Index and middle fingers straight, ring and pinky curled; swipe **down** | Open the launcher near where the fingers end |
+| Point with the index finger | Move the orange reticle; menu items highlight under it |
+| Push the pointing hand **forward** toward the screen | Select the item under the reticle |
+| Open hand (four fingers straight); swipe **left or right** | Close the launcher |
+
+A hidden, sandboxed tracker window runs MediaPipe Hand Landmarker (`@mediapipe/tasks-vision`, float16 model v1) at about 10 fps while the launcher is closed and 30 fps while it is open. The WASM runtime and model ship inside the app (`scripts/prepare-hand-model.mjs` verifies the model's SHA-256), so tracking works offline. Only that window may open the camera, and only for video. The launcher renderer and every other page remain denied. Frames and landmarks never leave the tracker. The main process receives only validated gesture events, and nothing is recorded or stored.
+
+A single webcam cannot measure absolute depth, so "push forward" is recognized as the palm growing at least 12% larger within 300 ms while the fingertip stays put. The selection uses the reticle position from just before the push, so the push cannot drag it onto a neighbouring item. All thresholds are named constants in `src/shared/hand/recognizer.ts` and `src/shared/hand/pose.ts`.
+
+For tuning, run `SAO_HAND_DEBUG=1 npm run dev`. The tracker window becomes visible, showing the mirrored camera, landmarks, the current pose, the palm scale and the last gesture. `npm run test:hand` runs an end-to-end check against Chromium's synthetic camera. It verifies the camera → MediaPipe → IPC pipeline, that the launcher renderer cannot open the camera, and that the reticle hovers and clicks.
+
+## Manual checklist (real webcam)
+
+- [ ] Enabling the toggle shows the macOS camera prompt once, and the status reads "Camera tracking active".
+- [ ] With the launcher closed, a two-finger swipe down opens it. A one-finger or open-hand swipe down does not.
+- [ ] Pointing moves the reticle smoothly across the full launcher, and items highlight under it.
+- [ ] A forward push selects the highlighted item without jumping to a neighbour. Resting the hand does not click.
+- [ ] An open-hand swipe left and right each close the launcher. Slow sideways drift does not.
+- [ ] Moving the real mouse takes over hover immediately, and the mouse chord and shortcut still work.
+- [ ] Turning the toggle off turns the camera indicator off.

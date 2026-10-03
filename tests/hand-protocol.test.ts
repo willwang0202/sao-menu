@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseTrackerConfig, parseTrackerEvent } from '../src/shared/hand/protocol';
+import { allowsCameraRequest, parseTrackerConfig, parseTrackerEvent } from '../src/shared/hand/protocol';
 
 test('accepts each well-formed tracker event', () => {
   assert.deepEqual(parseTrackerEvent({ kind: 'status', state: 'running' }), { kind: 'status', state: 'running' });
@@ -27,4 +27,14 @@ test('validates tracker configuration', () => {
   assert.deepEqual(parseTrackerConfig({ fps: 30, menuOpen: true }), { fps: 30, menuOpen: true });
   assert.equal(parseTrackerConfig({ fps: 60, menuOpen: true }), null);
   assert.equal(parseTrackerConfig({ fps: 10 }), null);
+});
+
+test('grants camera access only for video requests from the tracker', () => {
+  assert.equal(allowsCameraRequest({ isTracker: true, permission: 'media', mediaTypes: ['video'] }), true);
+  assert.equal(allowsCameraRequest({ isTracker: true, permission: 'media', mediaType: 'video' }), true);
+  assert.equal(allowsCameraRequest({ isTracker: false, permission: 'media', mediaTypes: ['video'] }), false);
+  assert.equal(allowsCameraRequest({ isTracker: true, permission: 'media', mediaTypes: ['video', 'audio'] }), false);
+  assert.equal(allowsCameraRequest({ isTracker: true, permission: 'media', mediaTypes: [] }), false);
+  assert.equal(allowsCameraRequest({ isTracker: true, permission: 'media', mediaType: 'audio' }), false);
+  assert.equal(allowsCameraRequest({ isTracker: true, permission: 'geolocation' }), false);
 });

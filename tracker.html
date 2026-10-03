@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob: mediastream:; connect-src 'self' ws://127.0.0.1:5173; worker-src 'self' blob:; object-src 'none'; base-uri 'self'" />
+    <title>SAO Hand Tracker</title>
+    <style>
+      html, body { margin: 0; background: #111; color: #eee; font: 13px -apple-system, sans-serif; overflow: hidden }
+      .stage { position: relative; width: 640px; height: 480px }
+      video, canvas { position: absolute; inset: 0; width: 640px; height: 480px; transform: scaleX(-1) }
+      canvas { transform: none }
+      #readout { position: absolute; left: 8px; top: 8px; background: rgba(0,0,0,.6); padding: 4px 8px; white-space: pre }
+    </style>
+  </head>
+  <body>
+    <div class="stage">
+      <video id="camera" playsinline muted></video>
+      <canvas id="overlay" width="640" height="480"></canvas>
+      <div id="readout"></div>
+    </div>
+    <script type="module" src="/src/tracker/main.ts"></script>
+  </body>
+</html>

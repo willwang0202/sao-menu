@@ -48,3 +48,19 @@ export function parseTrackerConfig(value: unknown): TrackerConfig | null {
   if (value.fps !== TRACKER_FPS.idle && value.fps !== TRACKER_FPS.active) return null;
   return { fps: value.fps, menuOpen: value.menuOpen };
 }
+
+export interface CameraRequest { isTracker: boolean; permission: string; mediaTypes?: readonly string[]; mediaType?: string }
+
+/** Only the tracker page may open the camera, and never the microphone. */
+export function allowsCameraRequest({ isTracker, permission, mediaTypes, mediaType }: CameraRequest): boolean {
+  if (!isTracker || permission !== 'media') return false;
+  if (mediaTypes) return mediaTypes.length > 0 && mediaTypes.every(type => type === 'video');
+  return mediaType === 'video';
+}
+
+/** Bridge exposed to the tracker page by its preload. */
+export interface TrackerAPI {
+  emit(event: TrackerEvent): void;
+  onConfig(callback: (config: TrackerConfig) => void): () => void;
+}
+declare global { interface Window { saoTracker?: TrackerAPI } }

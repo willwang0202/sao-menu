@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer, webUtils } from 'electron';
-import type { DesktopAPI, Position } from '../shared/contracts';
+import type { DesktopAPI, HandCursor, Position } from '../shared/contracts';
 import type { SocialAPI } from '../shared/social';
 
 // Every operation has its own channel. The renderer never receives ipcRenderer,
@@ -39,6 +39,17 @@ const api: DesktopAPI = {
     const listener = (_event: Electron.IpcRendererEvent, point: Position) => callback(point);
     ipcRenderer.on('sao:pointer:move', listener);
     return () => ipcRenderer.removeListener('sao:pointer:move', listener);
+  },
+  getHandTrackingStatus: () => ipcRenderer.invoke('sao:hand:status'),
+  onHandCursor: callback => {
+    const listener = (_event: Electron.IpcRendererEvent, cursor: HandCursor) => callback(cursor);
+    ipcRenderer.on('sao:hand:cursor', listener);
+    return () => ipcRenderer.removeListener('sao:hand:cursor', listener);
+  },
+  onHandClick: callback => {
+    const listener = (_event: Electron.IpcRendererEvent, point: Position) => callback(point);
+    ipcRenderer.on('sao:hand:click', listener);
+    return () => ipcRenderer.removeListener('sao:hand:click', listener);
   },
   onToggleMenu: callback => {
     const listener = (_event: Electron.IpcRendererEvent, open?: boolean, anchor?: Position) => callback(open, anchor);
