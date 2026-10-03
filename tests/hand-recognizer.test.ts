@@ -65,6 +65,15 @@ test('dismisses on an open-hand swipe in either direction while open', () => {
   assert.deepEqual(run(motion(SHAPES.open, [0.7, 0.5], [0.35, 0.52], 300, true)).kinds, ['dismiss']);
 });
 
+test('dismisses across a blurred open-hand swipe whose middle frame loses the hand', () => {
+  const at = (t: number, x: number | null): Step => ({ t, menuOpen: true, hand: x === null ? null : makeHand(SHAPES.open, x, 0.5) });
+  assert.deepEqual(run([at(0, 0.30), at(33, 0.31), at(66, null), at(99, null), at(132, 0.52)]).kinds, ['dismiss']);
+});
+
+test('dismisses on a modest 20% sideways swipe within 500ms', () => {
+  assert.deepEqual(run(motion(SHAPES.open, [0.45, 0.5], [0.25, 0.5], 500, true)).kinds, ['dismiss']);
+});
+
 test('does not dismiss when closed, too short, too vertical or pointing', () => {
   assert.deepEqual(run(motion(SHAPES.open, [0.3, 0.5], [0.65, 0.5], 300, false)).kinds, []);
   assert.deepEqual(run(motion(SHAPES.open, [0.4, 0.5], [0.55, 0.5], 300, true)).kinds, []);
@@ -133,10 +142,36 @@ test('holds the cursor at the click point, then honours the click cooldown', () 
   assert.equal(repeat.kinds.filter(kind => kind === 'click').length, 1);
 });
 
-test('losing the hand clears partial gestures', () => {
-  const half = motion(SHAPES.summon, [0.5, 0.3], [0.5, 0.4], 200, false);
-  const rest = motion(SHAPES.summon, [0.5, 0.4], [0.5, 0.5], 200, false, 300);
-  assert.deepEqual(run([...half, { t: 250, hand: null, menuOpen: false }, ...rest]).kinds, []);
+/** A frame whose index/middle fingertip midpoint sits at `tipY` (makeHand puts it 0.23 above the palm). */
+const atTip = (t: number, shape: Parameters<typeof makeHand>[0] | null, tipY: number): Step =>
+  ({ t, menuOpen: false, hand: shape ? makeHand(shape, 0.5, tipY + 0.23) : null });
+
+test('summons across a fast swipe whose middle frames lose the hand (recorded webcam trace)', () => {
+  // Frames from a real 10 fps capture: the blurred mid-swipe frame has no hand.
+  const trace = [
+    atTip(44862, SHAPES.summon, 0.339), atTip(44984, SHAPES.summon, 0.262), atTip(45105, SHAPES.summon, 0.196),
+    atTip(45224, SHAPES.summon, 0.144), atTip(45343, SHAPES.summon, 0.171), atTip(45460, null, 0),
+    atTip(45588, SHAPES.point, 0.972), atTip(45706, SHAPES.summon, 0.996),
+  ];
+  assert.deepEqual(run(trace).kinds, ['summon']);
+});
+
+test('summons when only the start and end of a blurred swipe show the pose (recorded webcam trace)', () => {
+  const trace = [
+    atTip(47131, SHAPES.summon, 0.177), atTip(47248, SHAPES.summon, 0.142), atTip(47364, null, 0),
+    atTip(47614, SHAPES.open, 0.957), atTip(47738, SHAPES.summon, 0.896),
+  ];
+  assert.deepEqual(run(trace).kinds, ['summon']);
+});
+
+test('does not summon when the two-finger pose reappears lower after the window has passed', () => {
+  const trace = [atTip(0, SHAPES.summon, 0.2), atTip(100, null, 0), atTip(1000, SHAPES.summon, 0.8)];
+  assert.deepEqual(run(trace).kinds, []);
+});
+
+test('does not summon when the swipe ends in a different pose', () => {
+  const trace = [atTip(0, SHAPES.summon, 0.2), atTip(120, null, 0), atTip(240, SHAPES.open, 0.8), atTip(360, SHAPES.point, 0.85)];
+  assert.deepEqual(run(trace).kinds, []);
 });
 
 test('never mutates the previous state', () => {

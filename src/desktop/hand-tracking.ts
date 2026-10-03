@@ -105,7 +105,7 @@ export class HandTrackingController {
     window.webContents.on('will-navigate', event => event.preventDefault());
     window.webContents.on('will-attach-webview', event => event.preventDefault());
     window.webContents.on('render-process-gone', (_event, details) => this.crashed(details.reason));
-    window.webContents.once('did-finish-load', () => this.sendConfig());
+    window.webContents.on('did-finish-load', () => this.sendConfig());
     await window.loadURL(url.href);
   }
 

@@ -3,12 +3,19 @@ import { filterPoint, type OneEuroParams, type OneEuroState } from './one-euro';
 import { classifyPose, type Pose } from './pose';
 
 /* Thresholds are fractions of the camera frame unless named otherwise. */
-const SUMMON_WINDOW_MS = 600;
-const SUMMON_MIN_SAMPLES = 3;
+/*
+ * A real swipe crosses the frame in ~250 ms, so at the 10 fps idle rate the
+ * blurred middle frames often lose the hand or misread the pose. Summon
+ * samples therefore survive dropouts and only age out of the window; a start
+ * and an end frame in the two-finger pose are enough.
+ */
+const SUMMON_WINDOW_MS = 800;
+const SUMMON_MIN_SAMPLES = 2;
 const SUMMON_MIN_TRAVEL = 0.15;
-const SWIPE_WINDOW_MS = 400;
+// Dismiss samples also survive blurred dropout frames (see the summon note above).
+const SWIPE_WINDOW_MS = 600;
 const SWIPE_MIN_SAMPLES = 2;
-const SWIPE_MIN_TRAVEL = 0.25;
+const SWIPE_MIN_TRAVEL = 0.18;
 /** Cross-axis travel allowed per unit of travel along the swipe axis. */
 const MAX_CROSS_RATIO = 0.75;
 const GESTURE_COOLDOWN_MS = 800;
@@ -69,9 +76,11 @@ function travelled(samples: readonly TimedPoint[], current: Point, axis: 'x' | '
 interface Step { state: RecognizerState; events: RecognizerEvent[] }
 
 function stepSummon({ state, events }: Step, input: RecognizerInput, hand: HandFrame, pose: Pose): Step {
-  if (input.menuOpen || pose !== 'summon') return { state: { ...state, summon: [] }, events };
+  if (input.menuOpen) return { state: { ...state, summon: [] }, events };
+  const recent = within(state.summon, input.t, SUMMON_WINDOW_MS);
+  if (pose !== 'summon') return { state: { ...state, summon: recent }, events };
   const point = midpoint(hand, [LANDMARK.INDEX_TIP, LANDMARK.MIDDLE_TIP]);
-  const summon = [...within(state.summon, input.t, SUMMON_WINDOW_MS), { t: input.t, point }];
+  const summon = [...recent, { t: input.t, point }];
   const ready = input.t >= state.gestureReadyAt && summon.length >= SUMMON_MIN_SAMPLES;
   if (!ready || !travelled(summon, point, 'y', SUMMON_MIN_TRAVEL, true)) return { state: { ...state, summon }, events };
   return {
@@ -81,9 +90,11 @@ function stepSummon({ state, events }: Step, input: RecognizerInput, hand: HandF
 }
 
 function stepSwipe({ state, events }: Step, input: RecognizerInput, hand: HandFrame, pose: Pose): Step {
-  if (!input.menuOpen || pose !== 'open') return { state: { ...state, swipe: [] }, events };
+  if (!input.menuOpen) return { state: { ...state, swipe: [] }, events };
+  const recent = within(state.swipe, input.t, SWIPE_WINDOW_MS);
+  if (pose !== 'open') return { state: { ...state, swipe: recent }, events };
   const point = midpoint(hand, PALM_CENTRE);
-  const swipe = [...within(state.swipe, input.t, SWIPE_WINDOW_MS), { t: input.t, point }];
+  const swipe = [...recent, { t: input.t, point }];
   const ready = input.t >= state.gestureReadyAt && swipe.length >= SWIPE_MIN_SAMPLES;
   if (!ready || !travelled(swipe, point, 'x', SWIPE_MIN_TRAVEL, false)) return { state: { ...state, swipe }, events };
   return { state: { ...state, swipe: [], gestureReadyAt: input.t + GESTURE_COOLDOWN_MS }, events: [...events, { kind: 'dismiss' }] };
@@ -127,7 +138,9 @@ function stepCursor(step: Step, input: RecognizerInput, hand: HandFrame, pose: P
 /** Pure reducer: one camera frame in, the next state and any gesture events out. */
 export function recognize(state: RecognizerState, input: RecognizerInput): { state: RecognizerState; events: RecognizerEvent[] } {
   if (!input.hand) {
-    const cleared = hideCursor({ state: { ...state, summon: [], swipe: [] }, events: [] });
+    const summon = input.menuOpen ? [] : within(state.summon, input.t, SUMMON_WINDOW_MS);
+    const swipe = input.menuOpen ? within(state.swipe, input.t, SWIPE_WINDOW_MS) : [];
+    const cleared = hideCursor({ state: { ...state, summon, swipe }, events: [] });
     return { state: { ...cleared.state, hold: null }, events: cleared.events };
   }
   const pose = classifyPose(input.hand);

@@ -84,12 +84,14 @@ be tuned against the debug view.
 - `other`: anything else, or no hand.
 
 **Summon swipe** — tracked point: midpoint of index and middle tips. Keep summon-pose samples from the last
-`SUMMON_WINDOW_MS = 600`. Fire when at least `SUMMON_MIN_SAMPLES = 3` exist and, against some earlier sample,
+`SUMMON_WINDOW_MS = 800`. Samples survive frames with no hand or another pose and only age out: a real swipe crosses
+the frame in ~250 ms, so at 10 fps the blurred middle frames usually lose the hand (observed on the target webcam).
+Fire on a summon-pose frame when at least `SUMMON_MIN_SAMPLES = 2` exist and, against some earlier sample,
 `dy ≥ 0.15` (down) and `|dx| ≤ 0.75 · dy`. The event carries the current mirrored point. Then
 `GESTURE_COOLDOWN_MS = 800`.
 
 **Dismiss swipe** — tracked point: palm centre (mean of wrist and the four MCPs). Open-pose samples from the last
-`SWIPE_WINDOW_MS = 400`; fire when `|dx| ≥ 0.25` and `|dy| ≤ 0.75 · |dx|` against some earlier sample (at least 2
+`SWIPE_WINDOW_MS = 600`, surviving dropout frames like summon samples; fire on an open-pose frame when `|dx| ≥ 0.18` and `|dy| ≤ 0.75 · |dx|` against some earlier sample (at least 2
 samples). Either direction. Then cooldown.
 
 **Cursor** — index tip, mirrored, mapped from the active region `x ∈ [0.15, 0.85], y ∈ [0.10, 0.75]` to `[0, 1]`,
@@ -107,7 +109,8 @@ Monocular webcams have no absolute depth, so palm-scale growth (≈ a 5–6 cm p
 "forward". This is the main tuning risk; the debug view prints the live scale ratio.
 
 **Context**: `menuOpen` comes from the main process (launcher window visible). Summon is ignored while open; cursor,
-click and dismiss are ignored while closed. Losing the hand clears all sample windows.
+click and dismiss are ignored while closed. Losing the hand hides the cursor and clears push samples; summon and
+dismiss samples only age out.
 
 ## IPC protocol (all messages validated, bounded, finite numbers only)
 
