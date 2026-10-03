@@ -16,6 +16,9 @@ const required = [
   'Images/etc/indicator-upper.png', 'Images/etc/indicator-lower.png',
   'Sounds/Feedback.SAO.Click.wav', 'Sounds/Popup.SAO.Launcher.wav', 'Sounds/Popup.SAO.Menu.wav',
   'Sounds/Popup.SAO.Panel.wav', 'Sounds/Dismiss.SAO.Launcher.wav',
+  'Sounds/LinkStart.SAO.Kirito.wav', 'Sounds/Startup.SAO.NerveGear.wav', 'Sounds/Ready.SAO.Welcome.wav',
+  'WidgetIcons/SAO.png', 'Images/etc/hp-main.png', 'Images/etc/hp-extra.png', 'Images/etc/hp-bar-mask.png',
+  'Images/etc/hp-bar-green.png', 'Images/etc/hp-extra-bar-green.png',
   'notices/LICENSE.GPGPL', 'notices/README.EN.txt',
   'System/web-frame.png', 'System/web-close.png', 'System/web-reload.png', 'System/web-stop.png',
   'Media/image-widget.png', 'Media/video-widget.png',
@@ -31,4 +34,9 @@ await Promise.all(required.map(async name => {
 const icon = await readFile('resources/icon.png');
 if (!manifest.icon?.sha256 || createHash('sha256').update(icon).digest('hex') !== manifest.icon.sha256) {
   throw new Error('The original executable icon is missing or changed. Reimport the Steam resources.');
+}
+const startup = JSON.parse(await readFile('public/startup/manifest.json', 'utf8'));
+for (const entry of [startup.video, startup.login]) {
+  const bytes = await readFile(path.join('public/startup', entry.file));
+  if (createHash('sha256').update(bytes).digest('hex') !== entry.sha256) throw new Error('The exact startup reference asset has changed.');
 }

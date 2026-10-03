@@ -7,8 +7,9 @@ import path from 'node:path';
 import { browserURL, mediaKind, type SurfaceState, type SurfaceInput, type BrowserFrame } from '../shared/surfaces';
 import { defaultPresentation, normalizeGallery, normalizePresentation, type SurfaceLayout } from '../shared/surface-layout';
 import { SurfaceLayoutStore } from './surface-store';
+import { displayFrameRate, pointerInterval } from '../shared/refresh';
 
-interface Surface { view: BrowserWindow; remote?: BrowserWindow; state: SurfaceState; token?: string; galleryTokens: string[]; source: string; frame?: BrowserFrame; url: string }
+interface Surface { view: BrowserWindow; remote?: BrowserWindow; state: SurfaceState; token?: string; galleryTokens: string[]; source: string; frame?: BrowserFrame; framePending?: boolean; frameInFlight?: boolean; url: string }
 const contentWidth = 1000;
 const contentHeight = 640;
 const mime: Record<string, string> = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', webp: 'image/webp', avif: 'image/avif', bmp: 'image/bmp', mp4: 'video/mp4', m4v: 'video/mp4', mov: 'video/quicktime', webm: 'video/webm', ogv: 'video/ogg' };
@@ -18,21 +19,25 @@ export class SurfaceManager {
   private surfaces = new Map<number, Surface>();
   private files = new Map<string, string>();
   private pointer: ReturnType<typeof setInterval> | null = null;
+  private pointerDelay = 0;
   private saveTimer: ReturnType<typeof setTimeout> | null = null;
   private restoring = false;
   private stopping = false;
   constructor(private readonly rendererURL: string, private readonly preload: string, private readonly reducedMotion: () => boolean, private readonly store: SurfaceLayoutStore) {}
 
   install(): void {
-    const owner = (event: IpcMainInvokeEvent) => {
+    const owner = (event: Pick<IpcMainInvokeEvent, 'sender' | 'senderFrame'>) => {
       const surface = this.surfaces.get(event.sender.id);
       if (!surface || event.senderFrame !== event.sender.mainFrame || event.senderFrame?.url !== surface.url) throw new Error('Untrusted surface sender.');
       return surface;
     };
     ipcMain.handle('sao:surface:state', event => {
       const surface = owner(event);
-      if (surface.frame) surface.view.webContents.send('sao:surface:frame', surface.frame);
+      if (surface.frame) { surface.framePending = true; this.sendFrame(surface); }
       return { ...surface.state };
+    });
+    ipcMain.on('sao:surface:frame:ack', event => {
+      try { const surface = owner(event); surface.frameInFlight = false; this.sendFrame(surface); } catch { /* Untrusted or already closed renderer. */ }
     });
     ipcMain.handle('sao:surface:navigate', (event, url) => this.navigate(owner(event), browserURL(url)));
     ipcMain.handle('sao:surface:command', async (event, command) => {
@@ -103,19 +108,40 @@ export class SurfaceManager {
         return new Response(Readable.toWeb(createReadStream(file, { start, end })) as ReadableStream<Uint8Array>, { status: range ? 206 : 200, headers });
       } catch { return new Response('Preview unavailable', { status: 404 }); }
     });
+    screen.on('display-metrics-changed', this.refreshRates);
+    screen.on('display-added', this.refreshRates); screen.on('display-removed', this.refreshRates);
+    this.refreshRates();
+  }
+
+  private sendFrame(surface: Surface): void {
+    // One frame in flight, one latest frame retained: slow renderers never
+    // accumulate image IPC messages or decode work from older page frames.
+    if (!surface.frame || !surface.framePending || surface.frameInFlight || surface.view.isDestroyed() || !surface.view.isVisible()) return;
+    surface.frameInFlight = true; surface.framePending = false;
+    surface.view.webContents.send('sao:surface:frame', surface.frame);
+  }
+  private refreshRates = () => {
+    let frequency = displayFrameRate(screen.getPrimaryDisplay().displayFrequency);
+    for (const surface of this.surfaces.values()) {
+      if (surface.view.isDestroyed()) continue;
+      const target = displayFrameRate(screen.getDisplayMatching(surface.view.getBounds()).displayFrequency);
+      if (surface.view.isVisible()) frequency = Math.max(frequency, target);
+      if (surface.remote && !surface.remote.isDestroyed()) surface.remote.webContents.setFrameRate(target);
+    }
+    const delay = pointerInterval(frequency);
+    if (this.pointer && this.pointerDelay === delay) return;
+    if (this.pointer) clearInterval(this.pointer); this.pointerDelay = delay;
     this.pointer = setInterval(() => {
-      const point = screen.getCursorScreenPoint();
-      const reducedMotion = this.reducedMotion();
+      const point = screen.getCursorScreenPoint(), reducedMotion = this.reducedMotion();
       for (const surface of this.surfaces.values()) {
+        if (surface.view.isDestroyed()) continue;
         if (surface.state.reducedMotion !== reducedMotion) { surface.state.reducedMotion = reducedMotion; this.publish(surface); }
-        if (reducedMotion) continue;
-        if (!surface.view.isVisible()) continue;
+        if (reducedMotion || !surface.view.isVisible()) continue;
         const bounds = surface.view.getBounds();
         surface.view.webContents.send('sao:surface:pointer', { x: point.x - bounds.x, y: point.y - bounds.y });
       }
-    }, 32);
-    this.pointer.unref();
-  }
+    }, delay); this.pointer.unref();
+  };
 
   async openBrowser(url = 'about:blank'): Promise<void> {
     return this.createBrowser(url);
@@ -128,7 +154,7 @@ export class SurfaceManager {
     const remote = new BrowserWindow({ width: contentWidth, height: contentHeight, show: false, frame: false,
       webPreferences: { offscreen: true, nodeIntegration: false, contextIsolation: true, sandbox: true, webSecurity: true, backgroundThrottling: false, session: browserSession } });
     surface.remote = remote;
-    remote.webContents.setFrameRate(24);
+    this.refreshRates();
     remote.webContents.setWindowOpenHandler(({ url }) => {
       try { void this.openBrowser(browserURL(url)).catch(() => {}); } catch { /* Non-web popups are rejected. */ }
       return { action: 'deny' };
@@ -140,8 +166,8 @@ export class SurfaceManager {
       if (surface.view.isDestroyed()) return;
       // Native bitmap may be Retina-sized. Normalize to page coordinates.
       const normalized = image.resize({ width: contentWidth, height: contentHeight });
-      surface.frame = { url: normalized.toDataURL(), width: contentWidth, height: contentHeight };
-      surface.view.webContents.send('sao:surface:frame', surface.frame);
+      surface.frame = { pixels: normalized.toBitmap(), width: contentWidth, height: contentHeight };
+      surface.framePending = true; this.sendFrame(surface);
     });
     const update = () => {
       surface.state.url = remote.webContents.getURL() || 'about:blank';
@@ -240,6 +266,7 @@ export class SurfaceManager {
   stop(): void {
     this.stopping = true;
     if (this.pointer) clearInterval(this.pointer);
+    screen.removeListener('display-metrics-changed', this.refreshRates); screen.removeListener('display-added', this.refreshRates); screen.removeListener('display-removed', this.refreshRates);
     if (this.saveTimer) clearTimeout(this.saveTimer);
     for (const surface of [...this.surfaces.values()]) surface.view.destroy();
     this.files.clear();
@@ -298,18 +325,21 @@ export class SurfaceManager {
     const view = new BrowserWindow({ width, height, minWidth: 180, minHeight: 120,
       x: Math.round(layout ? Math.max(area.x, Math.min(area.x + area.width - width, layout.bounds.x)) : area.x + (area.width - width) / 2 + Math.min(offset, (area.width - width) / 2)),
       y: Math.round(layout ? Math.max(area.y, Math.min(area.y + area.height - height, layout.bounds.y)) : area.y + (area.height - height) / 2 + Math.min(offset, (area.height - height) / 2)),
-      show: false, frame: false, transparent: true, backgroundColor: '#00000000', resizable: true,
+      show: false, frame: false, transparent: true, backgroundColor: '#00000000', hasShadow: false, resizable: true,
       title, autoHideMenuBar: true, alwaysOnTop: true,
       webPreferences: { preload: this.preload, nodeIntegration: false, sandbox: true, contextIsolation: true, webSecurity: true, autoplayPolicy: 'no-user-gesture-required' } });
     const surface: Surface = { view, token, galleryTokens: [], source: layout?.source ?? '', url: location.href, state: { id, kind, title, url: source, loading: false, error: '', canGoBack: false, canGoForward: false, reducedMotion: this.reducedMotion(), restored: !!layout, presentation: layout?.presentation ?? { ...defaultPresentation } } };
     const senderId = view.webContents.id;
     this.surfaces.set(senderId, surface);
-    view.webContents.on('page-title-updated', event => event.preventDefault());
+    view.on('page-title-updated', event => event.preventDefault());
     view.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
     view.webContents.on('will-navigate', (event, address) => { if (address !== surface.url) event.preventDefault(); });
     view.webContents.on('will-attach-webview', event => event.preventDefault());
-    view.on('move', () => this.scheduleSave()); view.on('resize', () => this.scheduleSave());
-    view.on('closed', () => { this.surfaces.delete(senderId); if (surface.token) this.files.delete(surface.token); for (const token of surface.galleryTokens) this.files.delete(token); if (surface.remote && !surface.remote.isDestroyed()) surface.remote.destroy(); this.scheduleSave(); });
+    view.on('move', () => { this.refreshRates(); this.scheduleSave(); }); view.on('resize', () => this.scheduleSave());
+    view.on('show', () => { this.refreshRates(); this.sendFrame(surface); });
+    view.on('hide', this.refreshRates);
+    view.webContents.on('did-start-loading', () => { surface.frameInFlight = false; });
+    view.on('closed', () => { this.surfaces.delete(senderId); if (!this.stopping) this.refreshRates(); if (surface.token) this.files.delete(surface.token); for (const token of surface.galleryTokens) this.files.delete(token); if (surface.remote && !surface.remote.isDestroyed()) surface.remote.destroy(); this.scheduleSave(); });
     view.once('ready-to-show', () => view.show());
     try { await view.loadURL(surface.url); return surface; } catch (error) { view.destroy(); throw error; }
   }

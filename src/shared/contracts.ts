@@ -19,7 +19,7 @@ export interface SystemStats {
   memoryUsed: number | null; memoryTotal: number | null;
   uptime: number | null; batteryPercent: number | null;
 }
-export interface RuntimeInfo { platform: Platform; version: string; desktop: boolean; shortcutRegistered: boolean }
+export interface RuntimeInfo { platform: Platform; version: string; desktop: boolean; shortcutRegistered: boolean; startup: boolean }
 export interface ImportResult { imported: number; warnings: string[]; settings: Settings }
 export interface DesktopAPI {
   getRuntime(): Promise<RuntimeInfo>;
@@ -38,6 +38,8 @@ export interface DesktopAPI {
   exportConfiguration(): Promise<boolean>;
   hide(): Promise<void>;
   quit(): Promise<void>;
+  completeStartup(): Promise<void>;
+  onStartupComplete(callback: () => void): () => void;
   onToggleMenu(callback: (open?: boolean, anchor?: Position) => void): () => void;
   onDismissMenu(callback: () => void): () => void;
   onGlobalPointerDown(callback: (point: Position) => void): () => void;

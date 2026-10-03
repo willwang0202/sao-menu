@@ -14,6 +14,8 @@ import { SurfaceManager } from './surfaces';
 import { mediaKind } from '../shared/surfaces';
 import { SurfaceLayoutStore } from './surface-store';
 import { SocialClient } from './social';
+import { HpDisplay } from './hud';
+import { pointerInterval } from '../shared/refresh';
 
 protocol.registerSchemesAsPrivileged([{ scheme: 'sao-media', privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true, corsEnabled: true } }]);
 
@@ -31,7 +33,23 @@ let menuAnchor: Position = { x: 400, y: 350 };
 let applicationCatalogue: LauncherItem[] | null = null;
 let surfaces: SurfaceManager;
 let social: SocialClient;
+let hpDisplay: HpDisplay;
+let startup = true;
 let pointerTimer: ReturnType<typeof setInterval> | null = null;
+let pointerDelay = 0;
+function refreshPointerRate(): void {
+  if (!window || window.isDestroyed()) return;
+  const delay = pointerInterval(screen.getDisplayMatching(window.getBounds()).displayFrequency);
+  if (pointerTimer && pointerDelay === delay) return;
+  if (pointerTimer) clearInterval(pointerTimer);
+  pointerDelay = delay;
+  pointerTimer = setInterval(() => {
+    if (!window?.isVisible()) return;
+    const point = screen.getCursorScreenPoint(), bounds = window.getBounds();
+    window.webContents.send('sao:pointer:move', { x: point.x - bounds.x, y: point.y - bounds.y });
+  }, delay);
+  pointerTimer.unref();
+}
 let catalogueOperation: Promise<LauncherItem[]> | null = null;
 const gesture = new GestureController(
   app.isPackaged ? path.join(process.resourcesPath, 'gesture-helper') : path.join(__dirname, 'gesture-helper'),
@@ -160,6 +178,7 @@ function summonAt(point: Position): void {
   const y = workArea.y;
   window.setMinimumSize(Math.min(720, width), Math.min(540, height));
   window.setBounds({ x, y, width, height });
+  refreshPointerRate();
   const minimumX = Math.min(300, width / 2);
   const minimumY = Math.min(200, height / 2);
   menuAnchor = {
@@ -328,7 +347,11 @@ function installHandlers(): void {
   handler('sao:media:drop', paths => surfaces.dropFiles(paths));
   handler('sao:browser:open', () => surfaces.openBrowser());
   handler('sao:media:open', () => window ? surfaces.pickMedia(window) : undefined);
-  handler('sao:runtime', () => ({ platform, version: app.getVersion(), desktop: true, shortcutRegistered }));
+  handler('sao:runtime', () => ({ platform, version: app.getVersion(), desktop: true, shortcutRegistered, startup }));
+  handler('sao:startup:complete', () => {
+    startup = false; if (social?.getState().snapshot) hpDisplay?.show();
+    window?.webContents.send('sao:startup:done');
+  });
   handler('sao:gesture:status', () => gesture.getStatus());
   handler('sao:gesture:request', async () => {
     const status = await gesture.requestPermission();
@@ -400,7 +423,7 @@ async function createWindow(): Promise<void> {
     width: workArea.width, height: workArea.height,
     minWidth: Math.min(720, workArea.width), minHeight: Math.min(540, workArea.height),
     x: workArea.x, y: workArea.y,
-    show: false, frame: false, transparent: true, backgroundColor: '#00000000',
+    show: false, frame: false, transparent: true, backgroundColor: '#00000000', hasShadow: false,
     resizable: false, maximizable: false, fullscreenable: false,
     alwaysOnTop: settings.alwaysOnTop, title: 'SAO Utils 2',
     webPreferences: {
@@ -411,6 +434,7 @@ async function createWindow(): Promise<void> {
     },
   });
   window.on('close', event => { if (!quitting) { event.preventDefault(); window?.hide(); } });
+  startup = !openedAtLogin;
   if (platform === 'darwin') window.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   window.webContents.on('will-navigate', (event, url) => { if (url !== rendererURL) event.preventDefault(); });
@@ -430,12 +454,12 @@ else {
     event.preventDefault();
     void surfaces.flush().catch(error => console.warn('Preview layout could not be saved.', error)).finally(() => { quitFlushed = true; app.quit(); });
   });
-  app.on('will-quit', () => { gesture.stop(); surfaces?.stop(); social?.stop(); if (pointerTimer) clearInterval(pointerTimer); globalShortcut.unregisterAll(); tray?.destroy(); });
+  app.on('will-quit', () => { gesture.stop(); surfaces?.stop(); social?.stop(); hpDisplay?.stop(); if (pointerTimer) clearInterval(pointerTimer); globalShortcut.unregisterAll(); tray?.destroy(); });
   app.on('window-all-closed', () => { if (quitting) app.quit(); });
   app.whenReady().then(async () => {
     await loadConfiguration();
     surfaces = new SurfaceManager(rendererURL, path.join(__dirname, 'surface-preload.cjs'), () => settings.reducedMotion, new SurfaceLayoutStore(path.join(app.getPath('userData'), 'surface-layout.json')));
-    social = new SocialClient(path.join(app.getPath('userData'), 'social-account.json'), state => { if (window && !window.isDestroyed()) window.webContents.send('sao:social:state', state); });
+    social = new SocialClient(path.join(app.getPath('userData'), 'social-account.json'), state => { if (!startup && state.snapshot) hpDisplay?.show(); else hpDisplay?.hide(); if (window && !window.isDestroyed()) window.webContents.send('sao:social:state', state); });
     surfaces.install();
     session.defaultSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
     session.defaultSession.setPermissionCheckHandler(() => false);
@@ -444,15 +468,15 @@ else {
     shortcutRegistered = registerShortcut(settings.shortcut);
     activeShortcut = shortcutRegistered ? settings.shortcut : null;
     await createWindow();
+    hpDisplay = new HpDisplay(rendererURL, () => settings);
+    await hpDisplay.create();
+    if (!startup && social.getState().snapshot) hpDisplay.show();
     await surfaces.restore();
     await social.start();
     gesture.start();
-    pointerTimer = setInterval(() => {
-      if (!window?.isVisible()) return;
-      const point = screen.getCursorScreenPoint(); const bounds = window.getBounds();
-      window.webContents.send('sao:pointer:move', { x: point.x - bounds.x, y: point.y - bounds.y });
-    }, 32);
-    pointerTimer.unref();
+    refreshPointerRate();
+    screen.on('display-metrics-changed', refreshPointerRate);
+    screen.on('display-added', refreshPointerRate); screen.on('display-removed', refreshPointerRate);
     tray = new Tray(createTrayIcon());
     tray.setToolTip('SAO Utils 2');
     tray.on('click', reveal);

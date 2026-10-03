@@ -15,7 +15,7 @@ const server = createServer((request, response) => {
   response.writeHead(200, { 'Content-Type': 'text/html' });
   if (request.url === '/redirect') { response.end('<script>location.replace("/second")</script>'); return; }
   if (request.url === '/frame') { response.end('<title>Page with failed frame</title><iframe src="http://127.0.0.1:1/"></iframe>'); return; }
-  response.end(request.url === '/second' ? '<title>Second page</title><h1>Second page</h1>' : `<!doctype html><title>Browser verification</title><style>body{margin:32px;background:#fafafa;color:#555;font:20px sans-serif}button,input,a{display:block;margin:16px 0;padding:10px}h1{font-weight:400;color:#c88a24}</style><h1>Browser verification</h1><button id="click" onclick="document.title='Clicked in curved browser';this.textContent='Click received'">Click through the curve</button><input id="text" placeholder="Type here"><a id="next" href="/second">Second page</a>`);
+  response.end(request.url === '/second' ? '<title>Second page</title><h1>Second page</h1>' : `<!doctype html><title>Browser verification</title><style>body{margin:32px;background:#fafafa;color:#555;font:20px sans-serif}button,input,a{display:block;margin:16px 0;padding:10px}h1{font-weight:400;color:#c88a24}</style><div style="position:absolute;left:700px;top:100px;width:100px;height:60px;background:rgb(230,40,70)"></div><h1>Browser verification</h1><button id="click" onclick="document.title='Clicked in curved browser';this.textContent='Click received'">Click through the curve</button><input id="text" placeholder="Type here"><a id="next" href="/second">Second page</a>`);
 });
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 const address = `http://127.0.0.1:${server.address().port}/`;
@@ -24,6 +24,7 @@ const instance = await electron.launch({ executablePath: electronPath, args: ['.
 const errors = [];
 try {
   const main = await instance.firstWindow();
+    await main.waitForFunction(() => !!window.sao); await main.evaluate(() => window.sao.completeStartup());
   main.on('pageerror', error => errors.push(error.message));
   await main.getByRole('menuitem', { name: 'Kirito', exact: true }).waitFor();
   // Browser appearance retains cursor motion; freeze it only for coordinate tests.
@@ -31,10 +32,36 @@ try {
   const browser = instance.windows().find(page => page.url().includes('surface='));
   assert.ok(browser); browser.on('pageerror', error => errors.push(error.message));
   await browser.getByRole('region', { name: 'Built-in web browser' }).waitFor();
+  await browser.evaluate(() => {
+    window.testPagePixel = null;
+    window.saoSurface.onFrame(frame => { const at=(130*frame.width+750)*4; window.testPagePixel=Array.from(frame.pixels.slice(at,at+4)); });
+  });
   await browser.evaluate(url => window.saoSurface.navigate(url), address);
-  await browser.waitForFunction(async () => (await window.saoSurface.getState()).title === 'Browser verification');
+  await browser.waitForFunction(() => document.querySelector('.browser-title span')?.textContent === 'Browser verification');
   assert.equal(await instance.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find(window => window.webContents.getURL().includes('surface=')).getTitle()), 'Browser verification');
-  await browser.waitForFunction(() => document.querySelector('canvas').getContext('2d').getImageData(500, 320, 1, 1).data[3] === 255);
+  await browser.waitForFunction(() => Number(document.querySelector('canvas')?.dataset.frames) > 1);
+  await browser.waitForFunction(() => window.testPagePixel?.[0] === 70 && window.testPagePixel?.[1] === 40 && window.testPagePixel?.[2] === 230);
+  await browser.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  assert.equal(await browser.locator('canvas').evaluate(canvas => !!canvas.getContext('webgl2')), true, 'curved browser uses GPU rendering');
+  await browser.addStyleTag({ content: '.floating-surface{transform:none!important}' });
+  const bounds=await browser.locator('canvas').boundingBox(),inset=curveInset(750,1000,700);
+  const pixel=await instance.evaluate(async ({BrowserWindow},point)=>{
+    const view=BrowserWindow.getAllWindows().find(w=>w.webContents.getURL().includes('surface='));
+    const capture=await view.webContents.capturePage({x:Math.round(point.x),y:Math.round(point.y),width:1,height:1});
+    return Array.from(capture.toBitmap().subarray(0,4));
+  },{x:bounds.x+750/1000*bounds.width,y:bounds.y+(inset+168/700*(700-inset*2))/700*bounds.height});
+  assert.ok(Math.abs(pixel[0]-70)<10 && Math.abs(pixel[1]-40)<10 && Math.abs(pixel[2]-230)<10 && pixel[3]===255,`actual curved-page pixel preserves BGRA channel order: ${JSON.stringify(pixel)}`);
+  const rates = await instance.evaluate(({screen,webContents}) => {
+    const original = screen.getDisplayMatching.bind(screen); screen.testOriginalMatching = original;
+    screen.getDisplayMatching = bounds => ({...original(bounds),displayFrequency:120});
+    screen.emit('display-metrics-changed', {}, screen.getPrimaryDisplay(), ['displayFrequency']);
+    return webContents.getAllWebContents().filter(c => c.getType()==='offscreen').map(c => c.getFrameRate());
+  });
+  assert.deepEqual(rates,[120],'browser target updates to matching 120Hz display');
+  await browser.evaluate(() => {window.testPointerFrames=0;window.saoSurface.onPointer(()=>window.testPointerFrames++);});
+  await browser.waitForTimeout(1000);
+  assert.ok(await browser.evaluate(()=>window.testPointerFrames)>=90,'native motion sampling follows 120Hz target');
+  await instance.evaluate(({screen}) => {screen.getDisplayMatching=screen.testOriginalMatching;screen.emit('display-metrics-changed',{},screen.getPrimaryDisplay(),['displayFrequency']);});
   const motion = await browser.locator('.floating-surface').evaluate(element => element.style.transform);
   assert.ok(motion.includes('perspective'), 'native cursor updates reach the surface');
   await browser.addStyleTag({ content: '.floating-surface{transform:none!important}' });
@@ -53,7 +80,7 @@ try {
     await browser.mouse.click(box.x + native.x / 1000 * box.width, box.y + (inset + (native.y + 38) / 700 * (700 - inset * 2)) / 700 * box.height);
   };
   await hit('#click');
-  await browser.waitForFunction(async () => (await window.saoSurface.getState()).title === 'Clicked in curved browser');
+  await browser.waitForFunction(() => document.querySelector('.browser-title span')?.textContent === 'Clicked in curved browser');
   await hit('#text'); await browser.keyboard.type('SAO browser');
   let typed = '';
   for (let attempt = 0; attempt < 30 && typed !== 'SAO browser'; attempt++) {
@@ -65,15 +92,15 @@ try {
   await browser.waitForTimeout(150);
   await browser.screenshot({ path: path.join(output, 'current-browser.png') });
   await hit('#next');
-  await browser.waitForFunction(async () => (await window.saoSurface.getState()).title === 'Second page');
+  await browser.waitForFunction(() => document.querySelector('.browser-title span')?.textContent === 'Second page');
   assert.equal((await browser.evaluate(() => window.saoSurface.getState())).canGoBack, true);
   await browser.evaluate(() => window.saoSurface.command('back'));
-  await browser.waitForFunction(async () => (await window.saoSurface.getState()).url.endsWith('/'));
+  await browser.waitForFunction(() => document.querySelector('.browser-address-display')?.textContent?.endsWith('/'));
   await browser.evaluate(url => window.saoSurface.navigate(url), `${address}redirect`);
-  await browser.waitForFunction(async () => (await window.saoSurface.getState()).title === 'Second page');
+  await browser.waitForFunction(() => document.querySelector('.browser-title span')?.textContent === 'Second page');
   assert.equal(await browser.locator('.surface-error').count(), 0, 'superseded redirect loads do not cover a successful page with an error');
   await browser.evaluate(url => window.saoSurface.navigate(url), `${address}frame`);
-  await browser.waitForFunction(async () => { const state = await window.saoSurface.getState(); return state.title === 'Page with failed frame' && !state.loading; });
+  await browser.waitForFunction(() => document.querySelector('.browser-title span')?.textContent === 'Page with failed frame' && !!document.querySelector('[aria-label="Reload page"]'));
   assert.equal(await browser.locator('.surface-error').count(), 0, 'a failed subframe does not cover the main page');
   for (const unsafe of ['file:///etc/passwd', 'javascript:alert(1)', 'https://me:secret@example.com']) {
     assert.equal(await browser.evaluate(async address => { try { await window.saoSurface.navigate(address); return false; } catch { return true; } }, unsafe), true);
@@ -148,12 +175,12 @@ try {
   // Outside native clicks and upward dismiss gestures reach the original exit transition.
   await instance.evaluate(({ app }) => app.emit('activate'));
   await main.locator('.original-menu').waitFor();
-  await instance.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].webContents.send('sao:pointer:down', { x: -30, y: -30 }));
+  await instance.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find(window => window.webContents.getLastWebPreferences().preload?.endsWith('/preload.cjs')).webContents.send('sao:pointer:down', { x: -30, y: -30 }));
   await main.waitForFunction(() => !document.querySelector('.original-menu'));
-  assert.equal(await instance.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].isVisible()), false);
+  assert.equal(await instance.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find(window => window.webContents.getLastWebPreferences().preload?.endsWith('/preload.cjs')).isVisible()), false);
   await instance.evaluate(({ app }) => app.emit('activate'));
   await main.locator('.original-menu').waitFor();
-  await instance.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].webContents.send('sao:menu:dismiss'));
+  await instance.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find(window => window.webContents.getLastWebPreferences().preload?.endsWith('/preload.cjs')).webContents.send('sao:menu:dismiss'));
   await main.waitForFunction(() => !document.querySelector('.original-menu'));
   assert.deepEqual(errors, []);
   console.log(JSON.stringify({ browser: 'native page painting, inverse curved click mapping, typed input, links/history, isolation and URL checks', media: 'simultaneous PNG, original GIF and looping WebM; pause/resume; replacement, token revocation and range streaming; previews survive menu dismissal', motion, dismissal: 'outside pointer and swipe channels animate and hide the native menu', screenshots: output }, null, 2));

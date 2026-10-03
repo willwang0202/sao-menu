@@ -17,6 +17,7 @@ let instance = await launch();
 const errors = [];
 try {
   let main = await instance.firstWindow();
+  await main.waitForFunction(() => !!window.sao); await main.evaluate(() => window.sao.completeStartup());
   await main.getByRole('menuitem', { name: 'Kirito', exact: true }).waitFor();
   await instance.evaluate(({ dialog }, folder) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [folder] }); }, folder);
   await main.evaluate(() => window.sao.openGallery());
@@ -68,6 +69,7 @@ try {
   const saved = JSON.parse(await readFile(path.join(temporary, 'surface-layout.json'), 'utf8'));
   const savedImage = saved.find(entry => entry.kind === 'image'); assert.ok(savedImage);
   await instance.close(); instance = await launch(); main = await instance.firstWindow();
+  await main.waitForFunction(() => !!window.sao); await main.evaluate(() => window.sao.completeStartup());
   await main.getByRole('menuitem', { name: 'Kirito', exact: true }).waitFor();
   await main.waitForTimeout(500);
   const restored = instance.windows().filter(page => page.url().includes('surface='));

@@ -8,7 +8,7 @@ export interface SurfaceState {
   restored: boolean; presentation: MediaPresentation;
   gallery?: { images: GalleryImage[]; settings: GallerySettings; revision: number };
 }
-export interface BrowserFrame { url: string; width: number; height: number }
+export interface BrowserFrame { pixels: Uint8Array; width: number; height: number }
 export interface SurfaceInput {
   type: 'mouseMove' | 'mouseDown' | 'mouseUp' | 'mouseWheel' | 'keyDown' | 'keyUp' | 'char';
   x?: number; y?: number; button?: 'left' | 'right' | 'middle';
@@ -16,6 +16,7 @@ export interface SurfaceInput {
 }
 export interface SurfaceAPI {
   getState(): Promise<SurfaceState>;
+  acknowledgeFrame(): void;
   navigate(url: string): Promise<void>;
   command(command: 'back' | 'forward' | 'reload' | 'stop' | 'close' | 'external' | 'change' | 'refresh'): Promise<void>;
   dropFiles(files: File[]): Promise<void>;

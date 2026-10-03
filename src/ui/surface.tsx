@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { curveInset, pagePoint, type BrowserFrame, type SurfaceInput, type SurfaceState } from '../shared/surfaces';
+import { pagePoint, type BrowserFrame, type SurfaceInput, type SurfaceState } from '../shared/surfaces';
+import { CurvedBrowser } from './browser-gl';
 import './surface.css';
 import { GallerySurface } from './gallery';
 
@@ -14,9 +15,11 @@ export function SurfaceApp() {
   const [dragging, setDragging] = useState(false);
   useEffect(() => {
     const detachState = api.onState(setState);
-    const detachPointer = api.onPointer(setPointer);
+    let frame = 0;
+    let pending = pointer;
+    const detachPointer = api.onPointer(next => { pending = next; if (!frame) frame = requestAnimationFrame(() => { frame = 0; setPointer(pending); }); });
     void api.getState().then(setState).catch(error => setError(String(error)));
-    return () => { detachState(); detachPointer(); };
+    return () => { cancelAnimationFrame(frame); detachState(); detachPointer(); };
   }, []);
   if (!state) return <div className="surface-loading" role="status">{error || 'Loading…'}</div>;
   const motion = !state.reducedMotion && !matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -42,32 +45,29 @@ function BrowserSurface({ state }: { state: SurfaceState }) {
   const [addressOpen, setAddressOpen] = useState(state.url === '' || state.url === 'about:blank');
   const [error, setError] = useState('');
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
-  const frame = useRef<HTMLImageElement | null>(null);
+
   const stateRef = useRef(state);
   stateRef.current = state;
-  const redraw = useRef<(image: HTMLImageElement) => void>(() => {});
+  const redraw = useRef<() => void>(() => {});
   const chromeHover = useRef<'close' | 'reload' | null>(null);
-  const hoverChrome = (control: 'close' | 'reload', hovered: boolean) => { chromeHover.current = hovered ? control : null; if (frame.current) redraw.current(frame.current); };
+  const hoverChrome = (control: 'close' | 'reload', hovered: boolean) => { chromeHover.current = hovered ? control : null; redraw.current(); };
   const inputQueue = useRef(Promise.resolve());
   const call = (command: 'back' | 'forward' | 'reload' | 'stop' | 'close' | 'external') => { setError(''); void api.command(command).catch(e => setError(String(e))); };
   useEffect(() => { setAddress(state.url === 'about:blank' ? '' : state.url); if (state.url && state.url !== 'about:blank') setAddressOpen(false); }, [state.url]);
   useEffect(() => {
-    let active = true;
-    let pending: BrowserFrame | null = null;
-    let decoding = false;
-    const composed = document.createElement('canvas');
-    composed.width = 1000; composed.height = 700;
+    let active = true, pending: BrowserFrame | null = null, animation = 0, dirty = true, count = 0;
+    const element = canvas.current!;
+    let renderer: CurvedBrowser;
+    try { renderer = new CurvedBrowser(element); } catch(error) { setError(String(error)); return; }
+    const composed = document.createElement('canvas'); composed.width = 1000; composed.height = 700;
+    const source = composed.getContext('2d')!;
     const chrome: Record<string, HTMLImageElement> = {};
     for (const name of ['web-frame', 'web-close', 'web-close-hovered', 'web-reload', 'web-reload-hovered', 'web-stop', 'web-stop-hovered']) {
       const image = new Image(); image.src = `${SYSTEM}${name}.png`; chrome[name] = image;
-      image.onload = () => { if (active && frame.current) draw(frame.current); };
+      image.onload = () => { if (active) dirty = true; };
     }
-    const draw = (image: HTMLImageElement) => {
-      const element = canvas.current; const context = element?.getContext('2d');
-      const source = composed.getContext('2d');
-      if (!element || !context || !source) return;
-      source.fillStyle = '#f7f7f7'; source.fillRect(0, 0, 1000, 700);
-      source.drawImage(image, 0, 38, 1000, 640);
+    const drawChrome = () => {
+      source.clearRect(0, 0, 1000, 700); source.fillStyle = '#f7f7f7'; source.fillRect(0, 0, 1000, 38); source.fillRect(0, 678, 1000, 22);
       if (chrome['web-frame'].complete && chrome['web-frame'].naturalWidth) source.drawImage(chrome['web-frame'], 0, 0, 220, 56, 0, 0, 220, 38);
       source.font = '500 13px "Source Han Sans", sans-serif'; source.fillStyle = '#666'; source.textAlign = 'left';
       source.fillText(stateRef.current.title.slice(0, 60), 60, 25, 810);
@@ -76,34 +76,29 @@ function BrowserSurface({ state }: { state: SurfaceState }) {
       if (reload.complete && reload.naturalWidth) source.drawImage(reload, 6, 682, 14, 16);
       source.font = '12px "SAO UI", sans-serif'; source.fillStyle = '#999'; source.textAlign = 'right';
       source.fillText(stateRef.current.url === 'about:blank' ? 'Enter web address' : stateRef.current.url, 992, 695, 850);
-      context.clearRect(0, 0, element.width, element.height);
-      context.save(); context.scale(element.width / 1000, element.height / 700);
-      const step = .5;
-      for (let x = 0; x < 1000; x += step) {
-        const inset = curveInset(x + step / 2, 1000, 700);
-        context.drawImage(composed, x, 0, step, composed.height, x, inset, step + .15, 700 - 2 * inset);
-      }
-      context.beginPath();
-      for (let x = 0; x <= 1000; x += 2) context.lineTo(x, curveInset(x, 1000, 700));
-      for (let x = 1000; x >= 0; x -= 2) context.lineTo(x, 700 - curveInset(x, 1000, 700));
-      context.closePath(); context.strokeStyle = '#e5a235'; context.lineWidth = 1.5; context.stroke();
-      context.restore();
+      renderer.updateChrome(composed);
     };
-    redraw.current = draw;
-    const decode = () => {
-      if (decoding || !pending) return;
-      const next = pending; pending = null; decoding = true;
-      const image = new Image();
-      image.onload = () => { decoding = false; if (!active) return; frame.current = image; draw(image); decode(); };
-      image.onerror = () => { decoding = false; decode(); };
-      image.src = next.url;
+    redraw.current = () => { dirty = true; };
+    void document.fonts.ready.then(() => { if (active) dirty = true; });
+    const detach = api.onFrame(next => { pending = next; });
+    // Recover the cached frame if it arrived before this component subscribed.
+    void api.getState(); api.acknowledgeFrame();
+    const resize = new ResizeObserver(() => { dirty = true; }); resize.observe(element);
+    const tick = () => {
+      const next = pending; pending = null;
+      try {
+        if (next) renderer.updatePage(next);
+        if (dirty) drawChrome();
+        if (next || dirty) { renderer.draw(); element.dataset.frames = String(++count); }
+        dirty = false;
+      } catch(error) { setError(String(error)); }
+      finally { if (next) api.acknowledgeFrame(); }
+      if (active) animation = requestAnimationFrame(tick);
     };
-    const detach = api.onFrame(next => { pending = next; decode(); });
-    // The latest native frame is replayed after subscriptions attach.
-    void api.getState();
-    return () => { active = false; detach(); };
+    animation = requestAnimationFrame(tick);
+    return () => { active = false; cancelAnimationFrame(animation); resize.disconnect(); detach(); renderer.dispose(); redraw.current = () => {}; };
   }, []);
-  useEffect(() => { if (frame.current) redraw.current(frame.current); }, [state.title, state.url, state.loading]);
+  useEffect(() => { redraw.current(); }, [state.title, state.url, state.loading]);
   const send = (input: SurfaceInput) => {
     inputQueue.current = inputQueue.current.catch(() => {}).then(() => api.input(input)).catch(e => setError(String(e)));
   };

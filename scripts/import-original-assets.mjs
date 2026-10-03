@@ -13,6 +13,8 @@ const destination = path.resolve('public/sao-original');
 await mkdir(destination, { recursive: true });
 await cp(path.join(theme, 'Images'), path.join(destination, 'Images'), { recursive: true });
 await cp(path.join(theme, 'Sounds'), path.join(destination, 'Sounds'), { recursive: true });
+await mkdir(path.join(destination, 'WidgetIcons'), { recursive: true });
+await cp(path.join(source, 'Packages/com.gpbeta.widget.hp-bar/Images/icon/SAO.png'), path.join(destination, 'WidgetIcons/SAO.png'));
 await cp(path.join(source, 'Packages/system/Images'), path.join(destination, 'System'), { recursive: true });
 await cp(path.join(source, 'Packages/com.gpbeta.media/Images'), path.join(destination, 'Media'), { recursive: true });
 await cp(path.join(source, 'Packages/com.gpbeta.media/Shaders/gl-transitions'), path.join(destination, 'MediaShaders'), { recursive: true });

@@ -6,6 +6,7 @@ const observe = (channel: string, callback: (value: any) => void) => {
   return () => ipcRenderer.removeListener(channel, listener);
 };
 const api: SurfaceAPI = {
+  acknowledgeFrame: () => ipcRenderer.send('sao:surface:frame:ack'),
   getState: () => ipcRenderer.invoke('sao:surface:state'),
   navigate: url => ipcRenderer.invoke('sao:surface:navigate', url),
   command: command => ipcRenderer.invoke('sao:surface:command', command),

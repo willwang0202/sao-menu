@@ -1,0 +1,23 @@
+{
+  "source": "https://www.youtube.com/watch?v=1hXfFHmWm7g",
+  "title": "Link Start! | Sword Art Online (SFX Only, No Voices)",
+  "purpose": "User-authorized exact local startup playback",
+  "downloadedAt": "2026-10-03T19:34:19.257Z",
+  "video": {
+    "file": "link-start.webm",
+    "width": 3832,
+    "height": 2160,
+    "fps": 60,
+    "duration": 7.621,
+    "codec": "VP9",
+    "audio": "Opus",
+    "sha256": "c7df004976e90239ccb4eb572b1f8b8b8119509dc3399507276974c1db75b462"
+  },
+  "login": {
+    "file": "login-reference.png",
+    "source": "User-supplied login UI reference",
+    "width": 500,
+    "height": 396,
+    "sha256": "4d06bdfe9db74a7e133429c10582f2f6739502c55fd88d79899885b3117cf17a"
+  }
+}

@@ -2,6 +2,7 @@ import type { DesktopAPI, LauncherItem, Settings, SystemStats } from './contract
 import { defaultSettings, normalizeSettings, validateLauncher, parseConfiguration } from './settings';
 
 const KEY = 'sao-desktop.settings.v1';
+let startup = true;
 function read(): Settings {
   const stored = localStorage.getItem(KEY);
   if (!stored) return defaultSettings('web');
@@ -10,7 +11,7 @@ function read(): Settings {
 const unavailable = async (): Promise<never> => { throw new Error('Open SAO Utils 2 to use this native desktop feature.'); };
 const previewStats: SystemStats = { platform: 'web', hostname: 'Browser preview', cpuPercent: null, memoryUsed: null, memoryTotal: null, uptime: null, batteryPercent: null };
 const browserAPI: DesktopAPI = {
-  getRuntime: async () => ({ platform: 'web', version: '0.1.1', desktop: false, shortcutRegistered: false }),
+  getRuntime: async () => ({ platform: 'web', version: '0.1.2', desktop: false, shortcutRegistered: false, startup }),
   getGestureStatus: async () => ({ supported: false, permission: 'unknown', running: false, message: 'Global mouse gestures require the macOS desktop app.' }),
   requestGesturePermission: unavailable,
   getMenuAnchor: async () => ({ x: Math.max(330, window.innerWidth / 2), y: window.innerHeight / 2 }),
@@ -36,7 +37,7 @@ const browserAPI: DesktopAPI = {
     opened.opener = null;
   },
   pickLauncher: unavailable, importConfiguration: unavailable, exportConfiguration: unavailable,
-  hide: unavailable, quit: unavailable, onToggleMenu: () => () => {},
+  hide: unavailable, quit: unavailable, completeStartup: async () => { startup = false; }, onStartupComplete: () => () => {}, onToggleMenu: () => () => {},
   onDismissMenu: () => () => {}, onGlobalPointerDown: () => () => {},
   onPointerMove: () => () => {},
   openBrowser: unavailable, openMedia: unavailable, openGallery: unavailable, dropFiles: unavailable,

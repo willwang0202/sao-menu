@@ -21,6 +21,11 @@ const api: DesktopAPI = {
   exportConfiguration: () => ipcRenderer.invoke('sao:configuration:export'),
   hide: () => ipcRenderer.invoke('sao:hide'),
   quit: () => ipcRenderer.invoke('sao:quit'),
+  completeStartup: () => ipcRenderer.invoke('sao:startup:complete'),
+  onStartupComplete: callback => {
+    const listener = () => callback(); ipcRenderer.on('sao:startup:done', listener);
+    return () => ipcRenderer.removeListener('sao:startup:done', listener);
+  },
   openBrowser: () => ipcRenderer.invoke('sao:browser:open'),
   openMedia: () => ipcRenderer.invoke('sao:media:open'),
   openGallery: () => ipcRenderer.invoke('sao:gallery:open'),

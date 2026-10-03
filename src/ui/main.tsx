@@ -7,6 +7,8 @@ import type { GestureStatus, LauncherItem, MenuEntry, Position, RuntimeInfo, Set
 import './styles.css';
 import { SurfaceApp } from './surface';
 import { SocialPanel } from './social';
+import { HpHudWindow } from './hud';
+import { LinkStart } from './startup';
 
 const IMAGE = './sao-original/Images/';
 const SOUND = './sao-original/Sounds/';
@@ -30,6 +32,8 @@ type Tab = 'options' | 'launcher' | 'about';
 function App() {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [runtime, setRuntime] = useState<RuntimeInfo | null>(null);
+  const [starting, setStarting] = useState(true);
+  const startupCompleted = useRef(false);
   const [gesture, setGesture] = useState<GestureStatus | null>(null);
   const [apps, setApps] = useState<LauncherItem[]>([]);
   const [rootIndex, setRootIndex] = useState(0);
@@ -104,6 +108,7 @@ function App() {
     }, settingsRef.current?.reducedMotion || matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 400);
   }, [runtime, sound, notice]);
   toggleEvent.current = (open, point) => {
+    if (starting) return;
     const show = open ?? (!menuVisibleRef.current || !!dismissTimer.current);
     if (!show) { dismiss(); return; }
     if (dismissTimer.current) { clearTimeout(dismissTimer.current); dismissTimer.current = null; }
@@ -114,7 +119,7 @@ function App() {
   };
 
   outsideEvent.current = point => {
-    if (!menuVisibleRef.current || preferences) return;
+    if (starting || !menuVisibleRef.current || preferences) return;
     if (point && [...document.querySelectorAll<HTMLElement>('.root-path,.submenu-column,.info-panel,.social-panel,.sao-notification')].some(element => {
       const box = element.getBoundingClientRect();
       return point.x >= box.left && point.x <= box.right && point.y >= box.top && point.y <= box.bottom;
@@ -126,22 +131,28 @@ function App() {
     let active = true;
     Promise.all([api.getSettings(), api.getRuntime(), api.getMenuAnchor(), api.getGestureStatus()]).then(([configuration, information, point, gestureStatus]) => {
       if (!active) return;
-      settingsRef.current = configuration; persistedRef.current = configuration; setSettings(configuration); setRuntime(information); setAnchor(point); lastPointer.current = point; setGesture(gestureStatus);
+      settingsRef.current = configuration; persistedRef.current = configuration; setSettings(configuration); setRuntime(information); setStarting(information.startup && !startupCompleted.current); setAnchor(point); lastPointer.current = point; setGesture(gestureStatus);
     }).catch(e => active && setBootError(message(e)));
     void api.listApplications().then(result => active && setApps(result)).catch(e => active && setApplicationError(message(e)));
     const resize = () => setViewport({ width: innerWidth, height: innerHeight });
     addEventListener('resize', resize);
     const detach = api.onToggleMenu((open, point) => toggleEvent.current(open, point));
+    const detachStartup = api.onStartupComplete(() => { startupCompleted.current = true; setStarting(false); });
     const detachDismiss = api.onDismissMenu(() => outsideEvent.current());
     const detachPointer = api.onGlobalPointerDown(point => outsideEvent.current(point));
-    const detachMotion = api.onPointerMove(point => {
+    let motionFrame = 0;
+    const queueMotion = (point: Position) => {
       lastPointer.current = point;
-      setCursor(previous => previous?.x === point.x && previous.y === point.y ? previous : point);
-      evaluatePointer.current();
-    });
-    const localMotion = (event: MouseEvent) => { if (!window.sao) setCursor({ x: event.clientX, y: event.clientY }); };
+      if (!motionFrame) motionFrame = requestAnimationFrame(() => {
+        motionFrame = 0; const latest = lastPointer.current!;
+        setCursor(previous => previous?.x === latest.x && previous.y === latest.y ? previous : latest);
+        evaluatePointer.current();
+      });
+    };
+    const detachMotion = api.onPointerMove(queueMotion);
+    const localMotion = (event: MouseEvent) => { if (!window.sao) queueMotion({ x: event.clientX, y: event.clientY }); };
     addEventListener('mousemove', localMotion);
-    return () => { active = false; removeEventListener('resize', resize); removeEventListener('mousemove', localMotion); detach(); detachDismiss(); detachPointer(); detachMotion(); if (dismissTimer.current) clearTimeout(dismissTimer.current); };
+    return () => { active = false; cancelAnimationFrame(motionFrame); removeEventListener('resize', resize); removeEventListener('mousemove', localMotion); detach(); detachStartup(); detachDismiss(); detachPointer(); detachMotion(); if (dismissTimer.current) clearTimeout(dismissTimer.current); };
   }, []);
   useEffect(() => {
     if (!runtime?.desktop || !preferences) return;
@@ -184,7 +195,7 @@ function App() {
       const element = point ? document.elementFromPoint(point.x, point.y) : null;
       const hovered = element?.closest<HTMLElement>('[data-hover-id]');
       setHoveredButton(hovered && !hovered.closest('.dismissing') ? hovered.dataset.hoverId ?? null : null);
-      if (held || document.querySelector('.dialog-scrim')) { passthrough(false); return; }
+      if (held || document.querySelector('.dialog-scrim,.link-start')) { passthrough(false); return; }
       if (!point) { passthrough(true); return; }
       const selector = '.root-path,.submenu-column,.info-panel,.social-panel,.sao-dialog,.sao-notification';
       const hit = element?.closest(selector);
@@ -212,11 +223,13 @@ function App() {
     addEventListener('pointerup', up, true);
     addEventListener('pointercancel', up, true);
     document.documentElement.addEventListener('mouseleave', leave);
-    const timer = setInterval(evaluate, 80);
+    let frame = 0;
+    const tick = () => { evaluate(); frame = requestAnimationFrame(tick); };
+    frame = requestAnimationFrame(tick);
     evaluatePointer.current = evaluate;
     evaluate();
     return () => {
-      clearInterval(timer);
+      cancelAnimationFrame(frame);
       evaluatePointer.current = () => {};
       removeEventListener('mousemove', move);
       removeEventListener('pointerdown', down, true);
@@ -228,11 +241,11 @@ function App() {
   }, [runtime?.desktop, runtime?.platform]);
   useEffect(() => { if (!toast) return; const timer = setTimeout(() => setToast(null), 6500); return () => clearTimeout(timer); }, [toast]);
   useEffect(() => {
-    if (!menuVisible || !settings) return;
+    if (starting || !menuVisible || !settings) return;
     sound('Popup.SAO.Launcher.wav');
     const timer = setTimeout(() => { setRootOpened(true); }, settings.reducedMotion || matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 700);
     return () => clearTimeout(timer);
-  }, [menuVisible, !!settings, entrance, sound]);
+  }, [starting, menuVisible, !!settings, entrance, sound]);
 
   const populateDirectory = (entry: MenuEntry): MenuEntry => entry.directory ? { ...entry, children: directories[entry.directory] ?? entry.children } : entry;
   const roots = resolveNativeMenu(settings?.menu?.length ? settings.menu : fallbackMenu(runtime?.platform ?? 'web', apps, settings?.favorites ?? []), runtime?.platform ?? 'web', apps).map(populateDirectory);
@@ -297,7 +310,7 @@ function App() {
   };
   useEffect(() => {
     const key = (event: KeyboardEvent) => {
-      if (event.defaultPrevented) return;
+      if (starting || event.defaultPrevented) return;
       const target = event.target as HTMLElement;
       if (event.key === 'Escape') { event.preventDefault(); if (preferences) setPreferences(null); else if (target.matches('input,textarea')) target.blur(); else if (path.length) setPath(current => current.slice(0, -1)); else dismiss(); return; }
       if (target.matches('input,textarea,select') || target.isContentEditable || preferences || !menuVisible) return;
@@ -306,7 +319,7 @@ function App() {
       if (event.key === 'ArrowRight' && target.closest('.root-button')) { event.preventDefault(); document.querySelector<HTMLButtonElement>('.submenu-column button')?.focus(); }
     };
     addEventListener('keydown', key); return () => removeEventListener('keydown', key);
-  }, [preferences, path.length, dismiss, menuVisible]);
+  }, [starting, preferences, path.length, dismiss, menuVisible]);
 
   const addFavorite = (item: LauncherItem) => {
     if (settingsRef.current?.favorites.some(existing => existing.target === item.target)) { notice(`${item.name} is already in Quick access.`); return; }
@@ -327,8 +340,9 @@ function App() {
   };
 
   if (!settings || !runtime) return <div className="initializing" role="status"><div className="initializing-circle"><img src={IMAGE + 'symbol/setting.png'} alt="" /></div>{bootError ? <><p>{bootError}</p><button onClick={() => location.reload()}>Try again</button></> : <><LoaderCircle className="spin" size={16} /><span>Initializing SAO menu…</span></>}</div>;
-  return <div className={`sao-desktop ${runtime.desktop ? 'native-desktop' : 'browser-preview'} ${settings.reducedMotion ? 'reduce-motion' : ''}`} onDragOver={event => { if (event.dataTransfer.types.includes('Files')) { event.preventDefault(); event.dataTransfer.dropEffect = 'link'; } }} onDrop={event => { event.preventDefault(); void api.dropFiles([...event.dataTransfer.files]).catch(error => notice(message(error), true)); }} onPointerDown={e => { if (!e.target || !(e.target as HTMLElement).closest('.root-path,.submenu-column,.info-panel,.social-panel,.sao-dialog,.sao-notification') && menuVisible && !preferences) dismiss(); }}>
-    {menuVisible && <main key={entrance} className={`original-menu ${leaving ? 'dismissing' : ''}`} aria-label="SAO menu" style={{ left: groupLeft, top: groupTop, width: groupWidth, height: groupHeight, transform: `scale(${scale})`, '--menu-scale': scale } as React.CSSProperties}>
+  return <div className={`sao-desktop ${runtime.desktop ? 'native-desktop' : 'browser-preview'} ${settings.reducedMotion ? 'reduce-motion' : ''}`} onDragOver={event => { if (event.dataTransfer.types.includes('Files')) { event.preventDefault(); event.dataTransfer.dropEffect = 'link'; } }} onDrop={event => { event.preventDefault(); void api.dropFiles([...event.dataTransfer.files]).catch(error => notice(message(error), true)); }} onPointerDown={e => { if (!starting && (!e.target || !(e.target as HTMLElement).closest('.root-path,.submenu-column,.info-panel,.social-panel,.sao-dialog,.sao-notification')) && menuVisible && !preferences) dismiss(); }}>
+    {starting && <LinkStart settings={settings} onComplete={() => { void api.completeStartup().then(() => { sound('Ready.SAO.Welcome.wav'); setStarting(false); }).catch(error => notice(message(error), true)); }} />}
+    {!starting && menuVisible && <main key={entrance} className={`original-menu ${leaving ? 'dismissing' : ''}`} aria-label="SAO menu" style={{ left: groupLeft, top: groupTop, width: groupWidth, height: groupHeight, transform: `scale(${scale})`, '--menu-scale': scale } as React.CSSProperties}>
       <div className="hologram-content" style={{ transform: motion ? `perspective(1800px) rotateX(${tiltY}deg) rotateY(${tiltX}deg)` : undefined }}>
       {rootOpened && panelEntry?.infoPanel === true && <InfoPanel entry={panelEntry} playerName={settings.playerName} y={selectedRootOffset} onPopup={() => sound('Popup.SAO.Panel.wav')} />}
       <div className={`root-path ${rootOpened ? '' : 'unselected'}`} role="menu" aria-label="Categories" style={{ left: 271, top: 215 - paddingTop - 32 }} onWheel={e => { if (Math.abs(e.deltaY) > 1 && roots.length) { setRootStart((rootStart + (e.deltaY > 0 ? 1 : roots.length - 1)) % roots.length); setRootOpened(false); setPath([]); } }} onPointerDown={event => { if (event.button === 0) rootDrag.current = { y: event.clientY, index: rootStart, steps: 0 }; }} onPointerMove={event => { const drag = rootDrag.current; if (!drag) return; const steps = Math.trunc((event.clientY - drag.y) / (70 * scale)); if (steps !== drag.steps) { drag.steps = steps; event.currentTarget.setPointerCapture(event.pointerId); suppressRootClick.current = performance.now() + 300; setRootStart((drag.index - steps % roots.length + roots.length) % roots.length); setRootOpened(false); setPath([]); } }} onPointerUp={() => { rootDrag.current = null; }} onPointerCancel={() => { rootDrag.current = null; }}>
@@ -430,4 +444,4 @@ function LinkDialog({ onClose, onAdd }: { onClose: () => void; onAdd: (item: Lau
   return <div className="link-scrim"><div className="link-dialog" ref={element} role="dialog" aria-modal="true" aria-labelledby="link-title" onKeyDown={e => { e.stopPropagation(); if (e.key === 'Escape') onClose(); else trapFocus(e, element.current); }}><h3 id="link-title">Add a web link</h3><form onSubmit={e => { e.preventDefault(); try { const address = new URL(url); if (!['http:', 'https:'].includes(address.protocol) || address.username || address.password) throw new Error('Use an HTTP or HTTPS address without credentials.'); if (!name.trim()) throw new Error('Enter a shortcut name.'); onAdd({ id: crypto.randomUUID(), name: name.trim(), kind: 'url', target: address.href }); } catch (error) { setError(error instanceof TypeError ? 'Enter a full address, such as https://example.com.' : message(error)); } }}><label>Name<input value={name} maxLength={80} required onChange={e => setName(e.target.value)} placeholder="Shortcut name" /></label><label>Web address<input type="url" value={url} required onChange={e => setURL(e.target.value)} placeholder="https://example.com" /></label>{error && <p role="alert" className="form-error">{error}</p>}<div className="dialog-actions-inline"><button type="button" className="dialog-button" onClick={onClose}>Cancel</button><button type="submit" className="dialog-button orange">Add shortcut <Plus size={14} /></button></div></form></div></div>;
 }
 
-createRoot(document.getElementById('root')!).render(window.saoSurface ? <SurfaceApp /> : <App />);
+createRoot(document.getElementById('root')!).render(window.saoHP ? <HpHudWindow /> : window.saoSurface ? <SurfaceApp /> : <App />);
