@@ -14,6 +14,8 @@ export interface Settings {
   launchAtLogin: boolean;
   /** Opt-in webcam hand gestures. */
   handTracking: boolean;
+  /** Shows the tracker's camera view with landmarks, for tuning. */
+  handDebugView: boolean;
   shortcut: string;
   favorites: LauncherItem[];
   menu?: MenuEntry[];

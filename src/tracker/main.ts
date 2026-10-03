@@ -2,21 +2,21 @@ import { FilesetResolver, HandLandmarker } from '@mediapipe/tasks-vision';
 import { fromMediaPipe } from '../shared/hand/landmarks';
 import { initialRecognizerState, recognize, type RecognizerState } from '../shared/hand/recognizer';
 import { parseTrackerConfig, TRACKER_FPS, type TrackerAPI, type TrackerConfig, type TrackerEvent } from '../shared/hand/protocol';
-import { drawDebug } from './debug';
+import { drawDebug, logDiagnostics } from './debug';
 
 const CAMERA = { width: 640, height: 480 } as const;
 const MS_PER_SECOND = 1000;
-const DETECTION = { minHandDetectionConfidence: 0.6, minHandPresenceConfidence: 0.6, minTrackingConfidence: 0.5 } as const;
+// MediaPipe's defaults; stricter values dropped blurred or partly framed hands on a real webcam.
+const DETECTION = { minHandDetectionConfidence: 0.5, minHandPresenceConfidence: 0.5, minTrackingConfidence: 0.5 } as const;
 const MAX_MESSAGE = 300;
 
 // Outside Electron (e.g. opened directly in a browser) the page runs with no host to report to.
 const bridge: TrackerAPI = window.saoTracker ?? { emit: () => {}, onConfig: () => () => {} };
-const isDebug = new URLSearchParams(location.search).has('debug');
 const video = document.querySelector<HTMLVideoElement>('#camera')!;
 const canvas = document.querySelector<HTMLCanvasElement>('#overlay')!;
 const readout = document.querySelector<HTMLElement>('#readout')!;
 
-let config: TrackerConfig = { fps: TRACKER_FPS.idle, menuOpen: false };
+let config: TrackerConfig = { fps: TRACKER_FPS.idle, menuOpen: false, origin: { x: 0.5, y: 0.5 }, debug: false };
 let recognizer: RecognizerState = initialRecognizerState();
 
 function friendlyError(error: unknown): string {
@@ -55,10 +55,11 @@ function processFrame(landmarker: HandLandmarker, lastVideoTime: number): number
   const t = performance.now();
   const result = landmarker.detectForVideo(video, t);
   const hand = fromMediaPipe(result, video.videoWidth, video.videoHeight);
-  const next = recognize(recognizer, { t, hand, menuOpen: config.menuOpen });
+  const next = recognize(recognizer, { t, hand, menuOpen: config.menuOpen, origin: config.origin });
   recognizer = next.state;
   next.events.forEach(event => bridge.emit(event as TrackerEvent));
-  if (isDebug) drawDebug(canvas, readout, hand, next.events);
+  if (config.debug) drawDebug(canvas, readout, hand, next.events);
+  if (config.debug) logDiagnostics(hand, config.menuOpen, config.fps, next.state.summon.length, next.events);
   return video.currentTime;
 }
 

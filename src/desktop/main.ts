@@ -73,8 +73,8 @@ const handTracking = new HandTrackingController(
     dismiss: () => window?.webContents.send('sao:menu:dismiss'),
     cursor: (point, visible) => sendHandPoint('sao:hand:cursor', point, { visible }),
     click: point => sendHandPoint('sao:hand:click', point, {}),
+    debugClosed: () => { void saveSettings({ ...settings, handDebugView: false }).catch(error => console.warn('Could not save the debug view setting.', error)); },
   },
-  !app.isPackaged && process.env.SAO_HAND_DEBUG === '1',
 );
 
 /** Converts a normalized hand position into overlay CSS pixels. */
@@ -188,6 +188,7 @@ function summonAt(point: Position): void {
     x: Math.max(minimumX, Math.min(Math.max(minimumX, width - 400), point.x - x)),
     y: Math.max(minimumY, Math.min(Math.max(minimumY, height - 200), point.y - y)),
   };
+  handTracking.setMenuOpen(true, { x: menuAnchor.x / width, y: menuAnchor.y / height });
   window.show();
   window.focus();
   window.webContents.send('sao:menu:toggle', true, menuAnchor);
@@ -229,9 +230,11 @@ async function applySettings(input: unknown): Promise<Settings> {
       if (next.launchAtLogin !== previous.launchAtLogin) configureLogin(next.launchAtLogin);
       window?.setAlwaysOnTop(next.alwaysOnTop, 'floating');
       if (handTrackingChanged) await (next.handTracking ? handTracking.enable(true) : handTracking.disable());
+      if (next.handDebugView !== previous.handDebugView) handTracking.setDebugView(next.handDebugView);
       await atomicWrite(settingsPath(), next);
     } catch (error) {
       if (handTrackingChanged) await restoreHandTracking(previous.handTracking);
+      handTracking.setDebugView(previous.handDebugView);
       if (newShortcutRegistered) globalShortcut.unregister(next.shortcut);
       window?.setAlwaysOnTop(previous.alwaysOnTop, 'floating');
       try { if (next.launchAtLogin !== previous.launchAtLogin) configureLogin(previous.launchAtLogin); } catch { /* Preserve the original failure. */ }
@@ -481,6 +484,7 @@ else {
     await surfaces.restore();
     await social.start();
     gesture.start();
+    handTracking.setDebugView(settings.handDebugView);
     if (settings.handTracking) void handTracking.enable(false).catch(error => console.warn('Hand tracking could not start.', error));
     pointerTimer = setInterval(() => {
       if (!window?.isVisible()) return;

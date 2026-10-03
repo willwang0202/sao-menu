@@ -11,7 +11,7 @@ const bool = (value: unknown, fallback: boolean) => typeof value === 'boolean' ?
 export function defaultSettings(_platform: Platform, playerName = 'Kirito'): Settings {
   return {
     version: 1, playerName: playerName.slice(0, 40), sound: true,
-    reducedMotion: false, alwaysOnTop: false, launchAtLogin: false, handTracking: false,
+    reducedMotion: false, alwaysOnTop: false, launchAtLogin: false, handTracking: false, handDebugView: false,
     shortcut: 'Alt+S',
     favorites: [],
   };
@@ -49,6 +49,7 @@ export function normalizeSettings(value: unknown, platform: Platform): Settings 
     sound: bool(input.sound, defaults.sound), reducedMotion: bool(input.reducedMotion, defaults.reducedMotion),
     alwaysOnTop: bool(input.alwaysOnTop, defaults.alwaysOnTop), launchAtLogin: bool(input.launchAtLogin, defaults.launchAtLogin),
     handTracking: bool(input.handTracking, defaults.handTracking),
+    handDebugView: bool(input.handDebugView, defaults.handDebugView),
     shortcut: text(input.shortcut, defaults.shortcut, 100) || defaults.shortcut,
     favorites,
     menu: normalizeMenu(input.menu, platform, validateLauncher),

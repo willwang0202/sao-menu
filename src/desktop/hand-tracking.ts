@@ -1,4 +1,4 @@
-import { BrowserWindow, ipcMain, systemPreferences, type IpcMainEvent, type WebContents } from 'electron';
+import { app, BrowserWindow, ipcMain, systemPreferences, type IpcMainEvent, type WebContents } from 'electron';
 import { allowsCameraRequest, parseTrackerEvent, TRACKER_FPS, type TrackerConfig, type TrackerEvent } from '../shared/hand/protocol';
 import type { HandTrackingStatus, Position } from '../shared/contracts';
 
@@ -13,6 +13,8 @@ export interface HandTrackingHandlers {
   dismiss(): void;
   cursor(point: Position, visible: boolean): void;
   click(point: Position): void;
+  /** The user closed the debug window; the caller turns the setting off. */
+  debugClosed(): void;
 }
 
 /** Owns the hidden camera page. Only validated, derived gesture events leave it. */
@@ -20,6 +22,9 @@ export class HandTrackingController {
   private window: BrowserWindow | null = null;
   private enabled = false;
   private menuOpen = false;
+  private origin: Position = { x: 0.5, y: 0.5 };
+  private isDebugVisible = false;
+  private isQuitting = false;
   private restarts = 0;
   private restartTimer: ReturnType<typeof setTimeout> | null = null;
   private dropped = 0;
@@ -32,9 +37,9 @@ export class HandTrackingController {
     private readonly trackerURL: string,
     private readonly preload: string,
     private readonly handlers: HandTrackingHandlers,
-    private readonly isDebug = false,
   ) {
     ipcMain.on('sao:tracker:event', this.receive);
+    app.on('before-quit', () => { this.isQuitting = true; });
   }
 
   getStatus(): HandTrackingStatus {
@@ -68,8 +73,18 @@ export class HandTrackingController {
     this.update({ enabled: false, running: false, message: 'Hand gestures are off. The camera is not in use.' });
   }
 
-  setMenuOpen(open: boolean): void {
+  /** `origin` is where the menu opened, normalized to the overlay; the hand cursor starts there. */
+  setMenuOpen(open: boolean, origin?: Position): void {
     this.menuOpen = open;
+    if (origin) this.origin = { x: Math.min(1, Math.max(0, origin.x)), y: Math.min(1, Math.max(0, origin.y)) };
+    this.sendConfig();
+  }
+
+  setDebugView(visible: boolean): void {
+    this.isDebugVisible = visible;
+    if (this.window && !this.window.isDestroyed()) {
+      if (visible) this.window.showInactive(); else this.window.hide();
+    }
     this.sendConfig();
   }
 
@@ -93,9 +108,8 @@ export class HandTrackingController {
   private async open(): Promise<void> {
     this.close();
     const url = new URL(this.trackerURL);
-    if (this.isDebug) url.searchParams.set('debug', '1');
     const window = this.window = new BrowserWindow({
-      ...DEBUG_SIZE, show: this.isDebug, title: 'SAO Hand Tracker', skipTaskbar: !this.isDebug, focusable: this.isDebug,
+      ...DEBUG_SIZE, show: this.isDebugVisible, title: 'SAO Hand Tracker', skipTaskbar: true,
       webPreferences: {
         preload: this.preload, nodeIntegration: false, contextIsolation: true, sandbox: true,
         webSecurity: true, backgroundThrottling: false,
@@ -106,6 +120,11 @@ export class HandTrackingController {
     window.webContents.on('will-attach-webview', event => event.preventDefault());
     window.webContents.on('render-process-gone', (_event, details) => this.crashed(details.reason));
     window.webContents.on('did-finish-load', () => this.sendConfig());
+    // Closing the debug view hides it; only disable() or quitting destroys the tracker.
+    window.on('close', event => {
+      if (this.isQuitting) return;
+      event.preventDefault(); window.hide(); this.isDebugVisible = false; this.sendConfig(); this.handlers.debugClosed();
+    });
     await window.loadURL(url.href);
   }
 
@@ -140,7 +159,9 @@ export class HandTrackingController {
 
   private sendConfig(): void {
     if (!this.window || this.window.isDestroyed()) return;
-    const config: TrackerConfig = { fps: this.menuOpen ? TRACKER_FPS.active : TRACKER_FPS.idle, menuOpen: this.menuOpen };
+    const config: TrackerConfig = {
+      fps: this.menuOpen ? TRACKER_FPS.active : TRACKER_FPS.idle, menuOpen: this.menuOpen, origin: this.origin, debug: this.isDebugVisible,
+    };
     this.window.webContents.send('sao:tracker:config', config);
   }
 

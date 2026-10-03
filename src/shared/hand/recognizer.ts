@@ -19,7 +19,15 @@ const SWIPE_MIN_TRAVEL = 0.18;
 /** Cross-axis travel allowed per unit of travel along the swipe axis. */
 const MAX_CROSS_RATIO = 0.75;
 const GESTURE_COOLDOWN_MS = 800;
-const ACTIVE_REGION = { left: 0.15, right: 0.85, top: 0.1, bottom: 0.75 } as const;
+/*
+ * The cursor is hand-anchored: it starts at the menu origin wherever the hand
+ * is, then moves by the hand's displacement times CURSOR_GAIN. Short tracking
+ * gaps keep the anchor; after ANCHOR_RESET_MS the hand re-anchors at the last
+ * cursor position, like lifting and replacing a mouse.
+ */
+const CURSOR_GAIN = 1.5;
+const ANCHOR_RESET_MS = 500;
+const CENTRE: Point = { x: 0.5, y: 0.5 };
 const CURSOR_FILTER: OneEuroParams = { minCutoff: 1.2, beta: 7, dCutoff: 1 };
 const PUSH_WINDOW_MS = 300;
 const PUSH_SCALE_RATIO = 1.12;
@@ -33,10 +41,17 @@ export type RecognizerEvent =
   | { kind: 'cursor'; x: number; y: number; visible: boolean }
   | { kind: 'click'; x: number; y: number };
 
-export interface RecognizerInput { t: number; hand: HandFrame | null; menuOpen: boolean }
+export interface RecognizerInput {
+  t: number;
+  hand: HandFrame | null;
+  menuOpen: boolean;
+  /** Where the menu opened, in normalized overlay coordinates; the cursor starts here. */
+  origin?: Point;
+}
 
 interface TimedPoint { readonly t: number; readonly point: Point }
 interface PushSample { readonly t: number; readonly scale: number; readonly tip: Point; readonly cursor: Point }
+interface CursorAnchor { readonly tip: Point; readonly cursor: Point }
 
 export interface RecognizerState {
   readonly summon: readonly TimedPoint[];
@@ -47,20 +62,41 @@ export interface RecognizerState {
   readonly gestureReadyAt: number;
   readonly clickReadyAt: number;
   readonly hold: { readonly until: number; readonly point: Point } | null;
+  readonly anchor: CursorAnchor | null;
+  readonly anchorSeenAt: number;
+  /** Last cursor position, kept while hidden so the hand can re-anchor to it. */
+  readonly cursor: Point;
+  /** Origin of the current menu session; null while the menu is closed. */
+  readonly origin: Point | null;
 }
 
 export function initialRecognizerState(): RecognizerState {
-  return { summon: [], swipe: [], push: [], filter: null, cursorVisible: false, gestureReadyAt: -Infinity, clickReadyAt: -Infinity, hold: null };
+  return {
+    summon: [], swipe: [], push: [], filter: null, cursorVisible: false, gestureReadyAt: -Infinity, clickReadyAt: -Infinity,
+    hold: null, anchor: null, anchorSeenAt: -Infinity, cursor: CENTRE, origin: null,
+  };
 }
 
 const within = <T extends { t: number }>(samples: readonly T[], t: number, windowMs: number): T[] => samples.filter(sample => t - sample.t <= windowMs);
 const clampUnit = (value: number) => Math.min(1, Math.max(0, value));
 
-function toCursorSpace(point: Point): Point {
-  return {
-    x: clampUnit((point.x - ACTIVE_REGION.left) / (ACTIVE_REGION.right - ACTIVE_REGION.left)),
-    y: clampUnit((point.y - ACTIVE_REGION.top) / (ACTIVE_REGION.bottom - ACTIVE_REGION.top)),
-  };
+const samePoint = (a: Point, b: Point) => a.x === b.x && a.y === b.y;
+
+/** A new menu session (or a new origin) restarts the cursor at the origin. */
+function syncOrigin(state: RecognizerState, input: RecognizerInput): RecognizerState {
+  if (!input.menuOpen) return state.origin ? { ...state, origin: null } : state;
+  const origin = input.origin ?? CENTRE;
+  if (state.origin && samePoint(state.origin, origin)) return state;
+  return { ...state, origin, anchor: null, cursor: origin, filter: null };
+}
+
+/** Maps the fingertip through the anchor; at a screen edge the anchor moves so reversing responds at once. */
+function anchoredTarget(state: RecognizerState, tip: Point, t: number): { target: Point; anchor: CursorAnchor } {
+  const isFresh = state.anchor && t - state.anchorSeenAt <= ANCHOR_RESET_MS;
+  const anchor = isFresh && state.anchor ? state.anchor : { tip, cursor: state.cursor };
+  const raw = { x: anchor.cursor.x + (tip.x - anchor.tip.x) * CURSOR_GAIN, y: anchor.cursor.y + (tip.y - anchor.tip.y) * CURSOR_GAIN };
+  const target = { x: clampUnit(raw.x), y: clampUnit(raw.y) };
+  return { target, anchor: samePoint(target, raw) ? anchor : { tip, cursor: target } };
 }
 
 /** True when some earlier sample lies far enough back along `axis` with little cross-axis travel. */
@@ -127,11 +163,13 @@ function stepPush(state: RecognizerState, input: RecognizerInput, hand: HandFram
 
 function stepCursor(step: Step, input: RecognizerInput, hand: HandFrame, pose: Pose): Step {
   if (!input.menuOpen || (pose !== 'point' && pose !== 'summon')) return hideCursor(step);
-  const tip = hand.landmarks[LANDMARK.INDEX_TIP];
-  const filtered = filterPoint(step.state.filter, toCursorSpace(tip), input.t, CURSOR_FILTER);
-  const base = { ...step.state, filter: filtered.state, cursorVisible: true };
+  const landmark = hand.landmarks[LANDMARK.INDEX_TIP];
+  const tip = { x: landmark.x, y: landmark.y };
+  const { target, anchor } = anchoredTarget(step.state, tip, input.t);
+  const filtered = filterPoint(step.state.filter, target, input.t, CURSOR_FILTER);
+  const base = { ...step.state, filter: filtered.state, cursorVisible: true, anchor, anchorSeenAt: input.t, cursor: filtered.value };
   const pushed = pose === 'point'
-    ? stepPush(base, input, hand, { x: tip.x, y: tip.y }, filtered.value)
+    ? stepPush(base, input, hand, tip, filtered.value)
     : { state: { ...base, push: [] }, click: null };
   const hold = pushed.state.hold && input.t < pushed.state.hold.until ? pushed.state.hold : null;
   const shown = hold?.point ?? filtered.value;
@@ -141,7 +179,8 @@ function stepCursor(step: Step, input: RecognizerInput, hand: HandFrame, pose: P
 }
 
 /** Pure reducer: one camera frame in, the next state and any gesture events out. */
-export function recognize(state: RecognizerState, input: RecognizerInput): { state: RecognizerState; events: RecognizerEvent[] } {
+export function recognize(previous: RecognizerState, input: RecognizerInput): { state: RecognizerState; events: RecognizerEvent[] } {
+  const state = syncOrigin(previous, input);
   if (!input.hand) {
     const summon = input.menuOpen ? [] : within(state.summon, input.t, SUMMON_WINDOW_MS);
     const swipe = input.menuOpen ? within(state.swipe, input.t, SWIPE_WINDOW_MS) : [];

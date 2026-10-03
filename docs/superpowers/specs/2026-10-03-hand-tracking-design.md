@@ -94,9 +94,12 @@ Fire on a summon-pose frame when at least `SUMMON_MIN_SAMPLES = 2` exist and, ag
 `SWIPE_WINDOW_MS = 600`, surviving dropout frames like summon samples; fire on an open-pose frame when `|dx| ≥ 0.18` and `|dy| ≤ 0.75 · |dx|` against some earlier sample (at least 2
 samples). Either direction. Then cooldown.
 
-**Cursor** — index tip, mirrored, mapped from the active region `x ∈ [0.15, 0.85], y ∈ [0.10, 0.75]` to `[0, 1]`,
-clamped, then One-Euro filtered (`minCutoff 1.2`, `beta 7`, `dCutoff 1`). Emitted for `point` and `summon` poses;
-otherwise a single `cursor` with `visible: false`.
+**Cursor** — hand-anchored. When the menu opens (or reopens at a new origin), the cursor starts at the menu origin
+sent by the main process, wherever the hand is. It then moves by the mirrored index-tip displacement times
+`CURSOR_GAIN = 1.5`, clamped to `[0, 1]`. At an edge the anchor rebases, so reversing responds at once. Gaps up to
+`ANCHOR_RESET_MS = 500` keep the anchor; after longer gaps the hand re-anchors at the last cursor position. Output is
+One-Euro filtered (`minCutoff 1.2`, `beta 7`, `dCutoff 1`). Emitted for `point` and `summon` poses; otherwise a single
+`cursor` with `visible: false`. (Replaced a fixed active-region mapping after testing with an off-centre webcam.)
 
 **Push click** — while pointing, keep `(t, palmScale, rawTip, cursor)` samples from the last `PUSH_WINDOW_MS = 300`.
 `palmScale` = mean of the wrist–indexMCP, wrist–pinkyMCP and indexMCP–pinkyMCP distances (palm triangle; independent
@@ -121,7 +124,7 @@ Tracker → main, `sao:tracker:event` (sender must be the tracker's main frame a
 - `{ kind: 'cursor', x, y, visible }`
 - `{ kind: 'click', x, y }`
 
-Main → tracker, `sao:tracker:config`: `{ fps: 10 | 30, menuOpen: boolean }`.
+Main → tracker, `sao:tracker:config`: `{ fps: 10 | 30, menuOpen: boolean, origin: { x, y }, debug: boolean }`.
 
 Main → overlay: `sao:hand:cursor` `{ x, y, visible }` in overlay CSS pixels; `sao:hand:click` `{ x, y }`.
 Overlay → main: `sao:hand:status` (invoke) → `HandTrackingStatus { supported, enabled, permission, running, message }`.
@@ -157,7 +160,8 @@ Overlay → main: `sao:hand:status` (invoke) → `HandTrackingStatus { supported
 - Click: `elementFromPoint` → closest `button, a, [role="menuitem"], [data-hover-id]` → `.click()`; the existing
   click sound and handlers run.
 - Preferences: "Enable hand gestures (camera)" toggle plus status line, next to the mouse-gesture status.
-- Dev only: `SAO_HAND_DEBUG=1` shows the tracker window with video, skeleton, pose and push ratio.
+- `handDebugView` setting ("Camera debug view"): shows the tracker window with video, landmarks, pose and palm scale,
+  live, without restarting the camera. Closing that window turns the setting off.
 
 ## Testing
 

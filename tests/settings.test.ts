@@ -71,3 +71,9 @@ test('importing a configuration keeps the local camera choice', () => {
   const result = parseConfiguration(JSON.stringify({ ...defaultSettings('win32'), handTracking: false }), current, 'darwin');
   assert.equal(result.settings.handTracking, true);
 });
+
+test('the camera debug view is off by default and recovers from corrupt values', () => {
+  assert.equal(defaultSettings('darwin').handDebugView, false);
+  assert.equal(normalizeSettings({ handDebugView: 1 }, 'darwin').handDebugView, false);
+  assert.equal(normalizeSettings({ handDebugView: true }, 'darwin').handDebugView, true);
+});

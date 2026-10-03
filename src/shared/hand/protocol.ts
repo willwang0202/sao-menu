@@ -7,7 +7,14 @@ export type TrackerEvent =
   | { kind: 'click'; x: number; y: number };
 
 export const TRACKER_FPS = { idle: 10, active: 30 } as const;
-export interface TrackerConfig { fps: typeof TRACKER_FPS.idle | typeof TRACKER_FPS.active; menuOpen: boolean }
+export interface TrackerConfig {
+  fps: typeof TRACKER_FPS.idle | typeof TRACKER_FPS.active;
+  menuOpen: boolean;
+  /** Where the menu opened, normalized to the overlay; the hand cursor starts here. */
+  origin: { x: number; y: number };
+  /** Draw the camera, landmarks and pose readout in the tracker window. */
+  debug: boolean;
+}
 
 export const MAX_STATUS_MESSAGE = 300;
 const STATUS_STATES = new Set(['starting', 'running', 'error']);
@@ -44,9 +51,10 @@ export function parseTrackerEvent(value: unknown): TrackerEvent | null {
 }
 
 export function parseTrackerConfig(value: unknown): TrackerConfig | null {
-  if (!isRecord(value) || typeof value.menuOpen !== 'boolean') return null;
+  if (!isRecord(value) || typeof value.menuOpen !== 'boolean' || typeof value.debug !== 'boolean') return null;
   if (value.fps !== TRACKER_FPS.idle && value.fps !== TRACKER_FPS.active) return null;
-  return { fps: value.fps, menuOpen: value.menuOpen };
+  const origin = isRecord(value.origin) ? parsePoint(value.origin) : null;
+  return origin ? { fps: value.fps, menuOpen: value.menuOpen, origin, debug: value.debug } : null;
 }
 
 export interface CameraRequest { isTracker: boolean; permission: string; mediaTypes?: readonly string[]; mediaType?: string }

@@ -72,6 +72,15 @@ try {
   }, centre);
   assert.equal(await received, label, 'push-click activates the control under the reticle');
 
+  // The debug view shows live and closing it only turns the setting off; tracking keeps running.
+  const trackerVisible = () => instance.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find(window => window.getTitle() === 'SAO Hand Tracker')?.isVisible() ?? null);
+  await page.evaluate(next => window.sao.saveSettings(next), { ...settings, handTracking: true, handDebugView: true });
+  assert.equal(await trackerVisible(), true, 'debug view shown');
+  await instance.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find(window => window.getTitle() === 'SAO Hand Tracker').close());
+  await page.waitForFunction(async () => !(await window.sao.getSettings()).handDebugView);
+  assert.equal(await trackerVisible(), false, 'closing the debug view hides it');
+  assert.equal((await page.evaluate(() => window.sao.getHandTrackingStatus())).running, true, 'tracking survives closing the debug view');
+
   await page.evaluate(next => window.sao.saveSettings(next), { ...settings, handTracking: false });
   const stopped = await page.evaluate(() => window.sao.getHandTrackingStatus());
   assert.deepEqual([stopped.enabled, stopped.running], [false, false]);

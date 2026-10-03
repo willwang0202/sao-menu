@@ -24,8 +24,12 @@ test('rejects unknown kinds, out-of-range and non-finite coordinates', () => {
 });
 
 test('validates tracker configuration', () => {
-  assert.deepEqual(parseTrackerConfig({ fps: 30, menuOpen: true }), { fps: 30, menuOpen: true });
-  assert.equal(parseTrackerConfig({ fps: 60, menuOpen: true }), null);
+  const origin = { x: 0.25, y: 0.75 };
+  assert.deepEqual(parseTrackerConfig({ fps: 30, menuOpen: true, origin, debug: true }), { fps: 30, menuOpen: true, origin, debug: true });
+  assert.equal(parseTrackerConfig({ fps: 30, menuOpen: true, origin, debug: 'yes' }), null);
+  assert.equal(parseTrackerConfig({ fps: 60, menuOpen: true, origin, debug: false }), null);
+  assert.equal(parseTrackerConfig({ fps: 30, menuOpen: true, debug: false }), null);
+  assert.equal(parseTrackerConfig({ fps: 30, menuOpen: true, origin: { x: 2, y: 0 }, debug: false }), null);
   assert.equal(parseTrackerConfig({ fps: 10 }), null);
 });
 

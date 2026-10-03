@@ -4,7 +4,7 @@ import { initialRecognizerState, recognize, type RecognizerEvent, type Recognize
 import type { HandFrame } from '../src/shared/hand/landmarks';
 import { makeHand, SHAPES } from './fixtures/hand';
 
-interface Step { t: number; hand: HandFrame | null; menuOpen: boolean }
+interface Step { t: number; hand: HandFrame | null; menuOpen: boolean; origin?: { x: number; y: number } }
 
 function run(steps: Step[], state: RecognizerState = initialRecognizerState()) {
   const events: (RecognizerEvent & { t: number })[] = [];
@@ -89,13 +89,63 @@ test('streams a visible cursor while pointing and hides it when the hand drops',
   assert.ok(cursors[4].kind === 'cursor' && !cursors[4].visible);
 });
 
-test('maps the active region of the frame to the full cursor range', () => {
-  // makeHand puts the index tip at cx - 0.3*scale, cy - 1.1*scale.
-  const atTopLeft = run([{ t: 0, hand: makeHand(SHAPES.point, 0.15 + 0.06, 0.10 + 0.22), menuOpen: true }]).events[0];
-  assert.ok(atTopLeft.kind === 'cursor');
-  assert.ok(Math.abs(atTopLeft.x) < 1e-9 && Math.abs(atTopLeft.y) < 1e-9);
-  const outside = run([{ t: 0, hand: makeHand(SHAPES.point, 0.99, 0.99), menuOpen: true }]).events[0];
-  assert.ok(outside.kind === 'cursor' && outside.x === 1 && outside.y === 1);
+/** A pointing frame whose index tip sits at (tipX, tipY); makeHand puts the tip at cx - 0.06, cy - 0.22. */
+const pointAt = (t: number, tipX: number, tipY: number, origin?: { x: number; y: number }) =>
+  ({ t, menuOpen: true, origin, hand: makeHand(SHAPES.point, tipX + 0.06, tipY + 0.22) });
+const lastCursor = (events: RecognizerEvent[]) => {
+  const cursor = events.filter(event => event.kind === 'cursor').at(-1);
+  assert.ok(cursor?.kind === 'cursor');
+  return cursor;
+};
+const near = (actual: number, expected: number, tolerance = 0.01) =>
+  assert.ok(Math.abs(actual - expected) <= tolerance, `${actual} is not within ${tolerance} of ${expected}`);
+/** Holds the tip still long enough for the smoothing filter to settle. */
+const settle = (start: number, tipX: number, tipY: number, origin?: { x: number; y: number }) =>
+  Array.from({ length: 30 }, (_, index) => pointAt(start + index * 33, tipX, tipY, origin));
+
+test('starts the cursor at the menu origin wherever the hand is when the menu opens', () => {
+  const origin = { x: 0.3, y: 0.4 };
+  const cursor = lastCursor(run([pointAt(0, 0.8, 0.9, origin)]).events);
+  near(cursor.x, 0.3); near(cursor.y, 0.4);
+});
+
+test('starts at the screen centre when no origin is given', () => {
+  const cursor = lastCursor(run([pointAt(0, 0.1, 0.1)]).events);
+  near(cursor.x, 0.5); near(cursor.y, 0.5);
+});
+
+test('moves the cursor relative to where the hand started, at the cursor gain', () => {
+  const origin = { x: 0.5, y: 0.5 };
+  const cursor = lastCursor(run([pointAt(0, 0.6, 0.6, origin), ...settle(33, 0.66, 0.56, origin)]).events);
+  near(cursor.x, 0.5 + 0.06 * 1.5); near(cursor.y, 0.5 - 0.04 * 1.5);
+});
+
+test('keeps the anchor through a brief tracking dropout, so the cursor does not jump', () => {
+  const origin = { x: 0.5, y: 0.5 };
+  const before = lastCursor(run([pointAt(0, 0.6, 0.6, origin), ...settle(33, 0.66, 0.6, origin)]).events);
+  const steps = [pointAt(0, 0.6, 0.6, origin), ...settle(33, 0.66, 0.6, origin), { t: 1100, hand: null, menuOpen: true, origin }, pointAt(1300, 0.66, 0.6, origin)];
+  near(lastCursor(run(steps).events).x, before.x);
+});
+
+test('after a long gap the hand re-anchors at the last cursor position', () => {
+  const origin = { x: 0.5, y: 0.5 };
+  const moved = [pointAt(0, 0.5, 0.5, origin), ...settle(33, 0.6, 0.5, origin)];
+  const last = lastCursor(run(moved).events);
+  const back = run([...moved, { t: 1100, hand: null, menuOpen: true, origin }, pointAt(2500, 0.2, 0.8, origin)]);
+  const cursor = lastCursor(back.events);
+  near(cursor.x, last.x); near(cursor.y, last.y);
+});
+
+test('rebases at the screen edge so moving back responds immediately', () => {
+  const origin = { x: 0.9, y: 0.5 };
+  const steps = [pointAt(0, 0.5, 0.5, origin), ...settle(33, 0.7, 0.5, origin), ...settle(1100, 0.64, 0.5, origin)];
+  near(lastCursor(run(steps).events).x, 1 - 0.06 * 1.5);
+});
+
+test('re-anchors at the new origin when the menu is summoned somewhere else', () => {
+  const first = settle(0, 0.6, 0.6, { x: 0.2, y: 0.2 });
+  const cursor = lastCursor(run([...first, pointAt(1100, 0.6, 0.6, { x: 0.7, y: 0.6 })]).events);
+  near(cursor.x, 0.7); near(cursor.y, 0.6);
 });
 
 test('emits no cursor while the menu is closed', () => {
