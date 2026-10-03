@@ -1,0 +1,699 @@
+{
+  "sourceBundle": "/Volumes/Music Library/crossover/Bottles/Steam/drive_c/Program Files (x86)/Steam/steamapps/common/SAO Utils 2/",
+  "observedVersions": {
+    "system": "1.7.0",
+    "saoTheme": "1.0.6"
+  },
+  "purpose": "Read-only design measurements and provenance for user-authorized local personal port; no executable or QML content in this manifest.",
+  "launcher": {
+    "root": {
+      "width": 64,
+      "height": 414,
+      "button": 64,
+      "gap": 6,
+      "pathItemCount": 7,
+      "highlightMoveMs": 250
+    },
+    "submenu": {
+      "width": 182,
+      "height": 310,
+      "buttonHeight": 46,
+      "gap": -2,
+      "pathItemCount": 8,
+      "highlightMoveMs": 250,
+      "highlightFraction": 0.5
+    },
+    "placement": {
+      "screenMargins": {
+        "top": 200,
+        "bottom": 300,
+        "left": 400,
+        "right": 300
+      },
+      "mouseOffset": {
+        "x": 32,
+        "y": 150
+      },
+      "alignedHeight": 150,
+      "firstSubmenuDeltaX": 74,
+      "nestedSubmenuDeltaX": 172
+    },
+    "font": {
+      "family": "SAO UI, Source Han Sans",
+      "pixelSize": 15,
+      "weight": "Medium"
+    },
+    "textColors": {
+      "normalARGB": "#CC333333",
+      "activeARGB": "#EEFFFFFF",
+      "panelARGB": "#BB333333"
+    },
+    "animations": {
+      "rootEnterOpacityMs": 600,
+      "rootButtonSlideMs": 200,
+      "rootButtonStaggerMs": 100,
+      "submenuFadeInMs": 400,
+      "submenuSlideInMs": 600,
+      "submenuSoundDelayMs": 300,
+      "submenuFadeOutMs": 400,
+      "submenuSlideOutMs": 300,
+      "viewEdgeOffsetMs": 400
+    }
+  },
+  "rootIcons": {
+    "user": "Images/symbol/info.png",
+    "party": "Images/symbol/party.png",
+    "message": "Images/symbol/msg.png",
+    "navigation": "Images/symbol/navi.png",
+    "settings": "Images/symbol/setting.png"
+  },
+  "originalHotkey": {
+    "qtInteger": 134217811,
+    "hex": "0x08000053",
+    "combination": "Alt+S"
+  },
+  "gesture": {
+    "mouse": "Hold left and right buttons, slide downward",
+    "touch": "Hold two fingers, slide downward",
+    "threshold": "not exposed in inspected readable sources"
+  },
+  "menu": [
+    {
+      "id": "user",
+      "label": "Kirito",
+      "type": 100,
+      "children": [
+        {
+          "id": "user.items",
+          "label": "Items",
+          "type": 100,
+          "children": [
+            {
+              "id": "user.documents",
+              "label": "My Documents",
+              "type": 1,
+              "children": []
+            },
+            {
+              "id": "user.music",
+              "label": "My Music",
+              "type": 1,
+              "children": []
+            },
+            {
+              "id": "user.pictures",
+              "label": "My Pictures",
+              "type": 1,
+              "children": []
+            },
+            {
+              "id": "user.videos",
+              "label": "My Videos",
+              "type": 1,
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "user.skills",
+          "label": "Skills",
+          "type": 100,
+          "children": [
+            {
+              "id": "user.explorer",
+              "label": "Explorer",
+              "type": 1,
+              "children": []
+            },
+            {
+              "id": "user.notepad",
+              "label": "Notepad",
+              "type": 1,
+              "children": []
+            },
+            {
+              "id": "user.calculator",
+              "label": "Calculator",
+              "type": 1,
+              "children": []
+            },
+            {
+              "id": "user.cmd",
+              "label": "CMD",
+              "type": 1,
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "user.equipment",
+          "label": "Equipment",
+          "type": 100,
+          "children": [
+            {
+              "id": "user.events",
+              "label": "Events",
+              "type": 1,
+              "children": []
+            },
+            {
+              "id": "user.services",
+              "label": "Services",
+              "type": 1,
+              "children": []
+            },
+            {
+              "id": "user.management",
+              "label": "Management",
+              "type": 1,
+              "children": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "party",
+      "label": "Party",
+      "type": 101,
+      "children": []
+    },
+    {
+      "id": "message",
+      "label": "Message",
+      "type": 101,
+      "children": []
+    },
+    {
+      "id": "navigation",
+      "label": "Navigation",
+      "type": 100,
+      "children": [
+        {
+          "id": "navigation.search",
+          "label": "Search",
+          "type": 100,
+          "children": [
+            {
+              "id": "navigation.google",
+              "label": "Google",
+              "type": 1,
+              "children": []
+            },
+            {
+              "id": "navigation.bing",
+              "label": "Bing",
+              "type": 1,
+              "children": []
+            },
+            {
+              "id": "navigation.yahoo",
+              "label": "Yahoo",
+              "type": 1,
+              "children": []
+            },
+            {
+              "id": "navigation.baidu",
+              "label": "百度一下",
+              "type": 1,
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "navigation.favorite",
+          "label": "Favorite",
+          "type": 100,
+          "children": [
+            {
+              "id": "navigation.sao",
+              "label": "TV アニメ",
+              "type": 1,
+              "children": []
+            },
+            {
+              "id": "navigation.saop",
+              "label": "劇場版 -Progressive-",
+              "type": 1,
+              "children": []
+            },
+            {
+              "id": "navigation.fb",
+              "label": "Fatal Bullet",
+              "type": 1,
+              "children": []
+            },
+            {
+              "id": "navigation.bilibili",
+              "label": "哔哩哔哩",
+              "type": 1,
+              "children": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "settings",
+      "label": "Settings",
+      "type": 100,
+      "children": [
+        {
+          "id": "settings.option",
+          "label": "Option",
+          "type": 1,
+          "children": []
+        },
+        {
+          "id": "settings.help",
+          "label": "Help",
+          "type": 1,
+          "children": []
+        },
+        {
+          "id": "settings.exit",
+          "label": "Exit",
+          "type": 1,
+          "children": []
+        }
+      ]
+    }
+  ],
+  "assets": [
+    {
+      "path": "Packages/com.gpbeta.theme.sao/Images/background/btn.png",
+      "bytes": 4269,
+      "sha256": "c09c442db2a364e6b020488b1ddbf3a9e6d6cbfb8e9628cc1b8f543646c81253",
+      "width": 64,
+      "height": 64
+    },
+    {
+      "path": "Packages/com.gpbeta.theme.sao/Images/background/btn-hovered.png",
+      "bytes": 4297,
+      "sha256": "7720b5f8b9999d91f35c64ffd8352eb46d9785959ce8ef9c806b31d2d062a4c8",
+      "width": 64,
+      "height": 64
+    },
+    {
+      "path": "Packages/com.gpbeta.theme.sao/Images/background/btn-pressed.png",
+      "bytes": 4072,
+      "sha256": "918768b0109e8425f3afd95fe3a40f14acb4f00084182655f56ba595cebf867b",
+      "width": 64,
+      "height": 64
+    },
+    {
+      "path": "Packages/com.gpbeta.theme.sao/Images/background/btn-mask.png",
+      "bytes": 992,
+      "sha256": "799f3ddf4b396c11dc8f114e661d72eb57627c68959ce7c97fe1b6f388032751",
+      "width": 64,
+      "height": 414
+    },
+    {
+      "path": "Packages/com.gpbeta.theme.sao/Images/background/btn-mask-checked.png",
+      "bytes": 967,
+      "sha256": "4ba72688b01ce4a31a1edcba96d4ab4cdac2f418c2ff5696e0075c60bf62bda5",
+      "width": 64,
+      "height": 414
+    },
+    {
+      "path": "Packages/com.gpbeta.theme.sao/Images/background/item.png",
+      "bytes": 2967,
+      "sha256": "f13df6b82fa78232663eb9c3b5eda4571e22efbb84fb8693108a02c8721436ad",
+      "width": 182,
+      "height": 46
+    },
+    {
+      "path": "Packages/com.gpbeta.theme.sao/Images/background/item-hovered.png",
+      "bytes": 6037,
+      "sha256": "1879858d223ba2188b3ca382c0043b094a48a537fe9402c35ecc0edaa042b8b7",
+      "width": 182,
+      "height": 46
+    },
+    {
+      "path": "Packages/com.gpbeta.theme.sao/Images/background/item-pressed.png",
+      "bytes": 5672,
+      "sha256": "e48ecbd7d095134018a66f468f465e81dec5efec8a04f45336622e573b275f23",
+      "width": 182,
+      "height": 46
+    },
+    {
+      "path": "Packages/com.gpbeta.theme.sao/Images/background/item-selected.png",
+      "bytes": 5708,
+      "sha256": "ac3d3e543cff7246825f0a4a7365be8dbc4d953fc493b90b5063481dd3d60412",
+      "width": 182,
+      "height": 46
+    },
+    {
+      "path": "Packages/com.gpbeta.theme.sao/Images/background/item-mask.png",
+      "bytes": 1063,
+      "sha256": "d374240d6ff0bd4f0a537d5ec42bec3addcc23c88fde4fe316e2ae6d59898874",
+      "width": 182,
+      "height": 310
+    },
+    {
+      "path": "Packages/com.gpbeta.theme.sao/Images/background/message.png",
+      "bytes": 2939,
+      "sha256": "da33ee2dcb6596f77cfa1b22a950e2d06a96c030346c32ff931ee8507427b973",
+      "width": 350,
+      "height": 237
+    },
+    {
+      "path": "Packages/com.gpbeta.theme.sao/Images/background/dialog.png",
+      "bytes": 3067,
+      "sha256": "8e27f1badbdd1182251dd31634d3b2b2d679afe5f6d697a7c30c090b63e9c91d",
+      "width": 350,
+      "height": 253
+    },
+    {
+      "path": "Packages/com.gpbeta.theme.sao/Images/symbol/info.png",
+      "bytes": 1120,
+      "sha256": "9d7bf316a0f2abd8d0abc5335cbfd1933fcda7682d980a751e258ce73a7d3fd4",
+      "width": 46,
+      "height": 46
+    },
+    {
+      "path": "Packages/com.gpbeta.theme.sao/Images/symbol/info-hovered.png",
+      "bytes": 1357,
+      "sha256": "de400c8a9fe7185fe7cb843d3fc4f773ede4e273573d149375e4ec33e166b553",
+      "width": 46,
+      "height": 46
+    },
+    {
+      "path": "Packages/com.gpbeta.theme.sao/Images/symbol/party.png",
+      "bytes": 1432,
+      "sha256": "b89d6997cc5b75d8725067cc640162dda0d7b02837410305b5458b521046d4cc",
+      "width": 46,
+      "height": 46
+    },
+    {
+      "path": "Packages/com.gpbeta.theme.sao/Images/symbol/party-hovered.png",
+      "bytes": 1591,
+      "sha256": "d32e0b56c3b11faeebe067cf57f63f9cc5cbb8a9c60b0781e48f0a70d944261a",
+      "width": 46,
+      "height": 46
+    },
+    {
+      "path": "Packages/com.gpbeta.theme.sao/Images/symbol/msg.png",
+      "bytes": 916,
+      "sha256": "5be45a1dc70b620caa8118e9542e6e55a181eb0d6be01ff30646b52665fc1da3",
+      "width": 46,
+      "height": 46
+    },
+    {
+      "path": "Packages/com.gpbeta.theme.sao/Images/symbol/msg-hovered.png",
+      "bytes": 1033,
+      "sha256": "3d2e4beaeb93586a034d7ff16913100f8f6f36b3a8e5a0394035699266c71bd0",
+      "width": 46,
+      "height": 46
+    },
+    {
+      "path": "Packages/com.gpbeta.theme.sao/Images/symbol/navi.png",
+      "bytes": 1324,
+      "sha256": "c367047cf1d6c57c3480a74da546e2445751442f5773a096812afe93988f0c22",
+      "width": 46,
+      "height": 46
+    },
+    {
+      "path": "Packages/com.gpbeta.theme.sao/Images/symbol/navi-hovered.png",
+      "bytes": 1550,
+      "sha256": "11f1906d8a9dca1f89e010ac84ba89299c0cd16f911979986e2a23712d1f0ea6",
+      "width": 46,
+      "height": 46
+    },
+    {
+      "path": "Packages/com.gpbeta.theme.sao/Images/symbol/setting.png",
+      "bytes": 1768,
+      "sha256": "e4d24ba959032ec88f18be239faa41d1d7d574a872b8615836f6c9e93a394a83",
+      "width": 46,
+      "height": 46
+    },
+    {
+      "path": "Packages/com.gpbeta.theme.sao/Images/symbol/setting-hovered.png",
+      "bytes": 2021,
+      "sha256": "135c51b1e1327a9d1d64a189683ebb67c208d7a5cf1fe75888520e48c1ea13e4",
+      "width": 46,
+      "height": 46
+    },
+    {
+      "path": "Packages/com.gpbeta.theme.sao/Images/item/items.png",
+      "bytes": 1483,
+      "sha256": "4ae1e7f9e09baf2711147e3b95860b49e6fb234d4278b6ac38b1018ec16f86c6",
+      "width": 26,
+      "height": 26
+    },
+    {
+      "path": "Packages/com.gpbeta.theme.sao/Images/item/items-hovered.png",
+      "bytes": 897,
+      "sha256": "25cff0de110dc34e1326ee401ba66e3d299cb20121e1de0bc70c1dd7ce2084e7",
+      "width": 26,
+      "height": 26
+    },
+    {
+      "path": "Packages/com.gpbeta.theme.sao/Images/item/skills.png",
+      "bytes": 1014,
+      "sha256": "2cfbe5e3e0de81bada44692b8c2af5c750808e32b6d91a3b888f262f30e462f9",
+      "width": 26,
+      "height": 26
+    },
+    {
+      "path": "Packages/com.gpbeta.theme.sao/Images/item/skills-hovered.png",
+      "bytes": 863,
+      "sha256": "9f2b5fc7dbd07f4959a1d9d539b6218963441dabb7c2d782a82311fdbbde7f15",
+      "width": 26,
+      "height": 26
+    },
+    {
+      "path": "Packages/com.gpbeta.theme.sao/Images/item/equipment.png",
+      "bytes": 1140,
+      "sha256": "a8aab1fe0f071abd0816de9c16e7528deffcc92082cf4283b0985f0ab3a9c758",
+      "width": 26,
+      "height": 26
+    },
+    {
+      "path": "Packages/com.gpbeta.theme.sao/Images/item/equipment-hovered.png",
+      "bytes": 499,
+      "sha256": "b69400753ad32c140e6db904bd1b94967b5a6fbc2c3c3095419a739f8f7f6145",
+      "width": 26,
+      "height": 26
+    },
+    {
+      "path": "Packages/com.gpbeta.theme.sao/Images/item/option.png",
+      "bytes": 1705,
+      "sha256": "8ff3af47ecd9673e69872a25e637341cb49b0dee6bc9bd862dc12e4fec0ef9c4",
+      "width": 26,
+      "height": 26
+    },
+    {
+      "path": "Packages/com.gpbeta.theme.sao/Images/item/option-hovered.png",
+      "bytes": 1022,
+      "sha256": "b7de3e45aec70937e71f1edbe74a6d519a3aa44c499bd9381634d6ce2ee529c3",
+      "width": 26,
+      "height": 26
+    },
+    {
+      "path": "Packages/com.gpbeta.theme.sao/Images/item/help.png",
+      "bytes": 1442,
+      "sha256": "583ba00a39edb4aefcb9d171842be8a08fe902d12fd954e709abe219859be723",
+      "width": 26,
+      "height": 26
+    },
+    {
+      "path": "Packages/com.gpbeta.theme.sao/Images/item/help-hovered.png",
+      "bytes": 903,
+      "sha256": "2e6252f78f156b7f9630869cc1fd56726be49db76b3054ffdf2564d70061b697",
+      "width": 26,
+      "height": 26
+    },
+    {
+      "path": "Packages/com.gpbeta.theme.sao/Images/item/logout.png",
+      "bytes": 1472,
+      "sha256": "e2ce875f731a71b588bf16709b01a46a9c3ae9e030b5a3b2308f837d94ef8db0",
+      "width": 26,
+      "height": 26
+    },
+    {
+      "path": "Packages/com.gpbeta.theme.sao/Images/item/logout-hovered.png",
+      "bytes": 917,
+      "sha256": "8bf786055083bc601368059c9e3d9207c0d53b82432be30c3bdb1283d6d84434",
+      "width": 26,
+      "height": 26
+    },
+    {
+      "path": "Packages/com.gpbeta.theme.sao/Images/item/folder.png",
+      "bytes": 1114,
+      "sha256": "f94e5ffac6fcf980893fc1a16dcf639dbf0e2ca4eeffbe7e16e388af45ad6c79",
+      "width": 26,
+      "height": 26
+    },
+    {
+      "path": "Packages/com.gpbeta.theme.sao/Images/item/folder-hovered.png",
+      "bytes": 708,
+      "sha256": "68f2b2e6169a753c33f6d875ff251d60cce1d6c9fe43d17de999695dc9a721ca",
+      "width": 26,
+      "height": 26
+    },
+    {
+      "path": "Packages/com.gpbeta.theme.sao/Images/item/file.png",
+      "bytes": 1306,
+      "sha256": "7e937eb70e206640e60df2098ad2fc69e718577cfbabd2e3df57f787516a8e55",
+      "width": 26,
+      "height": 26
+    },
+    {
+      "path": "Packages/com.gpbeta.theme.sao/Images/item/file-hovered.png",
+      "bytes": 722,
+      "sha256": "7489c9f46b868c9d8f24892b94e6a479a7d986f1bc4bf269017646f4e2910f70",
+      "width": 26,
+      "height": 26
+    },
+    {
+      "path": "Packages/com.gpbeta.theme.sao/Images/etc/panel.png",
+      "bytes": 4436,
+      "sha256": "2fb2f6bbf1fcd186add6f002b76b81c1dfc78814bf8603d5fa0ae00796774f2b",
+      "width": 270,
+      "height": 421
+    },
+    {
+      "path": "Packages/com.gpbeta.theme.sao/Images/etc/panel-shadow.png",
+      "bytes": 487,
+      "sha256": "24286c300f53674547fe645c2fa75d6e8eb50ba368589a2f08c088341c5eee8d",
+      "width": 270,
+      "height": 8
+    },
+    {
+      "path": "Packages/com.gpbeta.theme.sao/Images/etc/info.png",
+      "bytes": 20738,
+      "sha256": "90279d87046d2c38155b885fb963eefabff57a5467f5a67a945af0b5027b0b1e",
+      "width": 200,
+      "height": 200
+    },
+    {
+      "path": "Packages/com.gpbeta.theme.sao/Images/etc/indicator-upper.png",
+      "bytes": 939,
+      "sha256": "cd31833bbfbe76b11484823efde9fefe15b18298d33260dd8203c5b6850fcaa7",
+      "width": 28,
+      "height": 115
+    },
+    {
+      "path": "Packages/com.gpbeta.theme.sao/Images/etc/indicator-lower.png",
+      "bytes": 1029,
+      "sha256": "2ee87775907d7d217131323401a50fb738cc2562c1ed08823343cd031dd73245",
+      "width": 28,
+      "height": 115
+    },
+    {
+      "path": "Packages/com.gpbeta.theme.sao/Images/etc/hp-main.png",
+      "bytes": 6462,
+      "sha256": "70cec188d9bdd13351a3acd522c9060248d5067ac9411ea66191e959599b4c58",
+      "width": 358,
+      "height": 62
+    },
+    {
+      "path": "Packages/com.gpbeta.theme.sao/Images/etc/hp-main-ex.png",
+      "bytes": 9586,
+      "sha256": "3a0f598c070ba6e7d39cc4e29e03f2bdca3395dfbd699c087b90b297aa0a3c7f",
+      "width": 360,
+      "height": 62
+    },
+    {
+      "path": "Packages/com.gpbeta.theme.sao/Images/etc/hp-extra.png",
+      "bytes": 4329,
+      "sha256": "38ce833eaa7cfa8d8a197a8af52c5a61f5fcc9aab9a942a47777d31d2fdbc39a",
+      "width": 218,
+      "height": 42
+    },
+    {
+      "path": "Packages/com.gpbeta.theme.sao/Images/etc/hp-bar-mask.png",
+      "bytes": 653,
+      "sha256": "ea5ec2b7e1732f3df6a9966a87471247fe746395acb8fde00a9852231a6f56e2",
+      "width": 258,
+      "height": 24
+    },
+    {
+      "path": "Packages/com.gpbeta.theme.sao/Images/etc/hp-bar-green.png",
+      "bytes": 4530,
+      "sha256": "a15f5ec7495a47f44247d5fba626c09d0bd20d9907428b6171c85a3884fc28da",
+      "width": 258,
+      "height": 24
+    },
+    {
+      "path": "Packages/com.gpbeta.theme.sao/Images/etc/hp-bar-yellow.png",
+      "bytes": 3133,
+      "sha256": "7b2513869b886512c30c3df6042b67ed4e7d42472b184691115788381bea6908",
+      "width": 258,
+      "height": 24
+    },
+    {
+      "path": "Packages/com.gpbeta.theme.sao/Images/etc/hp-bar-red.png",
+      "bytes": 3497,
+      "sha256": "567187ceeaed55b11ce34a99efc25ee44fae0a0009ea5f104ad039c92039b954",
+      "width": 258,
+      "height": 24
+    },
+    {
+      "path": "Packages/com.gpbeta.theme.sao/Images/etc/clock-bg.png",
+      "bytes": 5319,
+      "sha256": "2ed96d0b56c4abb49b063672c5090feda56cc28b203716549aec49155ed46ac8",
+      "width": 304,
+      "height": 80
+    },
+    {
+      "path": "Packages/com.gpbeta.theme.sao/Images/etc/clock-h.png",
+      "bytes": 249,
+      "sha256": "4cc2444d7fb4c04c3ecb7008a9080effb8174657b052ed0b95d66d825324047b",
+      "width": 5,
+      "height": 16
+    },
+    {
+      "path": "Packages/com.gpbeta.theme.sao/Images/etc/clock-m.png",
+      "bytes": 260,
+      "sha256": "ca870b60c529b0f0daa43375005a07bccabadd857dc3d18c81d6f47fd133788e",
+      "width": 5,
+      "height": 22
+    },
+    {
+      "path": "Packages/com.gpbeta.theme.sao/Sounds/Feedback.SAO.Click.wav",
+      "bytes": 88246,
+      "sha256": "a0c423913f757e6f23c60dfdec283b8157e5f1531849b101ffea36b5c83534ea"
+    },
+    {
+      "path": "Packages/com.gpbeta.theme.sao/Sounds/Popup.SAO.Launcher.wav",
+      "bytes": 352846,
+      "sha256": "3b4833eae6c5443dd26b746a1d882739de3c2c9d06de2e346d7112919b3a5c8e"
+    },
+    {
+      "path": "Packages/com.gpbeta.theme.sao/Sounds/Popup.SAO.Menu.wav",
+      "bytes": 37614,
+      "sha256": "0c2d73c742035da8e45821a73c668838f80927a710f14b71727f550ab44945e5"
+    },
+    {
+      "path": "Packages/com.gpbeta.theme.sao/Sounds/Popup.SAO.Panel.wav",
+      "bytes": 66728,
+      "sha256": "525aef3ba9c972c96ea4cdfd2c6842444bf2dc113c5d89a24afb7f9891667dc6"
+    },
+    {
+      "path": "Packages/com.gpbeta.theme.sao/Sounds/Dismiss.SAO.Launcher.wav",
+      "bytes": 282286,
+      "sha256": "7f28b68abca269f731a6f3857ae7c36ff18ad0bdbc16e1f99153198efe556b6c"
+    },
+    {
+      "path": "Fonts/SAOUI-Regular.otf",
+      "bytes": 91052,
+      "sha256": "748b12450917957ed7b681ba595a3d0bcc03ecdf5931ce9103f82896a32967e3"
+    },
+    {
+      "path": "Packages/com.gpbeta.theme.sao/LICENSE.GPGPL",
+      "bytes": 778,
+      "sha256": "bedc88d737c0b8bc5b839fbd2b91c50b4eb4a1b176ea92e999318b1bc85124b8"
+    },
+    {
+      "path": "win64/README.EN.txt",
+      "bytes": 3365,
+      "sha256": "06195a104023eb3ec3265a1650024bc90ca0749e820ba44954b2c9a6fd397226"
+    }
+  ],
+  "noticePaths": [
+    "Packages/com.gpbeta.theme.sao/LICENSE.GPGPL",
+    "win64/README.EN.txt"
+  ]
+}

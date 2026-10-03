@@ -1,0 +1,87 @@
+{
+  "name": "sao-utils-port",
+  "version": "0.1.1",
+  "private": true,
+  "description": "A local cross-platform port of the SAO Utils 2 launcher using its original theme resources",
+  "type": "module",
+  "main": "dist-desktop/main.cjs",
+  "scripts": {
+    "dev": "node scripts/check-original-assets.mjs && node scripts/dev.mjs",
+    "dev:web": "node scripts/check-original-assets.mjs && vite --host 127.0.0.1",
+    "build": "node scripts/check-original-assets.mjs && tsc --noEmit && vite build && node scripts/build-desktop.mjs",
+    "start": "electron .",
+    "test": "node --import tsx --test tests/*.test.ts",
+    "test:desktop": "npm run build && node scripts/smoke-desktop.mjs",
+    "import:assets": "node scripts/import-original-assets.mjs",
+    "package": "npm run build && electron-builder --publish never",
+    "package:mac": "npm run build && electron-builder --mac --publish never",
+    "package:win": "npm run build && electron-builder --win --publish never",
+    "package:linux": "npm run build && electron-builder --linux --publish never",
+    "test:surfaces": "npm run build && node --import tsx scripts/smoke-surfaces.mjs",
+    "test:media": "npm run build && node --import tsx scripts/smoke-media-library.mjs",
+    "build:service": "node scripts/build-service.mjs",
+    "start:service": "npm run build:service && node dist-service/server.cjs",
+    "test:hover": "npm run build && node scripts/smoke-hover.mjs",
+    "test:social": "npm run build && node --import tsx scripts/smoke-social.mjs"
+  },
+  "dependencies": {
+    "fast-xml-parser": "^5.5.0",
+    "lucide-react": "^0.468.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^6.1.1",
+    "electron": "^44.5.1",
+    "electron-builder": "^26.0.12",
+    "esbuild": "^0.28.2",
+    "playwright": "^1.63.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.8.2",
+    "vite": "^8.3.2"
+  },
+  "build": {
+    "icon": "resources/icon.png",
+    "appId": "dev.sao-utils.port",
+    "productName": "SAO Utils 2",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-desktop/**/*",
+      "resources/icon.png",
+      "package.json"
+    ],
+    "mac": {
+      "icon": "resources/icon.icns",
+      "extraResources": [
+        {
+          "from": "dist-desktop/gesture-helper",
+          "to": "gesture-helper"
+        }
+      ],
+      "category": "public.app-category.utilities",
+      "target": [
+        "dir",
+        "dmg"
+      ],
+      "hardenedRuntime": true
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Utility"
+    }
+  }
+}

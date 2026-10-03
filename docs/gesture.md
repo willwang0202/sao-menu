@@ -1,0 +1,21 @@
+# Launcher activation
+
+The supplied `Configs/system/hotkey.xml` stores `134217811` for `toggle-launcher`. This is Qt's `AltModifier` (`0x08000000`) plus `Key_S` (`0x53`), so the port defaults to **Alt+S**, displayed as **Option+S** on macOS. This mapping comes from the [Qt keyboard constants](https://doc.qt.io/qt-6/qt.html). Existing saved shortcuts remain configurable.
+
+The developer's [Steam description](https://store.steampowered.com/app/877280/SAO_Utils_2_Progressive/) specifies holding the left and right mouse buttons together and sliding down anywhere to summon the launcher. It also describes a two-finger gesture on touch tablets. The supplied readable configuration does not specify the original native gesture threshold.
+
+On macOS the port uses a small Swift helper with a passive Core Graphics event tap. Hold both mouse buttons and move downward by at least 64 screen points, keeping the movement mostly vertical. Moving upward by the same amount dismisses the launcher. It triggers once per button chord; releasing either button resets it. The invocation chord and direction match the original mechanism; the 64-point threshold and upward dismissal are port choices because the original Windows core is not supplied as source.
+
+Choose **Enable mouse gesture** in preferences to request macOS **Input Monitoring** permission. In System Settings → Privacy & Security → Input Monitoring, authorize SAO Utils 2 or its gesture helper if listed. Restart if macOS requests it. Checking status and starting the app never request permission. The configured shortcut and tray continue to work without this permission. Apple documents the passive event-tap approach in its [Input Monitoring guidance](https://developer.apple.com/forums/thread/811443).
+
+The helper observes only left/right button and pointer-motion events, with no keyboard-event subscription, event suppression, or pointer-history storage. It emits listener status, summon, dismiss and pointer-down events. The native process launches it using fixed arguments and validates bounded messages; the renderer cannot submit commands or executable paths to it. Permission status refreshes in the background; granting permission can start the listener without another request. Choosing Enable opens the Input Monitoring pane if macOS still reports denial; the user controls the actual grant.
+
+Summoning chooses the monitor nearest the pointer, fills its available work area, and sends the renderer a pointer anchor with margins for the launcher columns. The launcher uses the original theme's offset around that anchor and leaves the desktop background transparent. Pointer coordinates sampled at 32 ms intervals drive perspective, hover and click-through; these samples are not retained. Reduced Motion disables tilt while keeping the cursor stream active for hover.
+
+On macOS/Windows the renderer checks which controls are under the pointer and the native host passes clicks through transparent space. The host uses Electron's [forwarded mouse-move API](https://www.electronjs.org/docs/latest/api/browser-window#winsetignoremouseeventsignore-options), while retaining input for buttons, menus, panels, dialogs and active dragging. Linux's adapter currently keeps the window interactive.
+
+Outside pointer-down events are compared with current control bounds, including their perspective transforms. An outside click starts the source's 400 ms dismissal and hides the native window afterward. Preferences ignore global outside dismissal while their dialog is open. Independent media/browser previews remain visible after the launcher hides.
+
+The global mouse gesture currently requires macOS. Windows and Linux use the configurable shortcut and tray. The web preview recognizes the same chord only within its tab. The original touch-tablet gesture has no macOS trackpad equivalent in this implementation; ordinary two-finger scrolling is preserved.
+
+`src/desktop/gesture-build.mjs` compiles a universal arm64/x86_64 helper using the installed Xcode command-line tools. It is packaged outside Electron's `asar` as `Resources/gesture-helper`. Run `dist-desktop/gesture-helper --self-test` to verify gesture recognition without requesting permission or observing live input.

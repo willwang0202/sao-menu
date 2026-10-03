@@ -1,0 +1,15 @@
+{
+  "verifiedAt": "2026-10-03T18:12:54.598Z",
+  "version": "0.1.1",
+  "gitTag": "v0.1.1",
+  "app": "/Users/edu/Code/sao-util-mac/release/mac-arm64/SAO Utils 2.app",
+  "zip": "/Users/edu/Code/sao-util-mac/release/SAO Utils 2-0.1.1-arm64.zip",
+  "packagedFilesMatched": 1098,
+  "rendererFiles": 1091,
+  "gestureHelperMatches": true,
+  "originalIconMatches": true,
+  "appArchiveSHA256": "6f8ac794e170f9e907c242c8f11606f8129d16e42ce7273fa4901480e43cb864",
+  "zipSHA256": "67c1f27b974b4858dd9c2e877a2428a0e271a890f7664ea82fbbb79363f014dd",
+  "socialNativeAcceptance": "pending",
+  "onlineService": "not deployed"
+}
