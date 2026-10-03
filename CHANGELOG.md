@@ -1,5 +1,11 @@
 # Release notes
 
+## Unreleased
+
+- Replace the Link Start video with a real-time reconstruction drawn every display refresh: rainbow tunnel, five sensor dials, language/login/registration cards, welcome text and blue dive, timed frame by frame to the reference. The reference's audio track (stream-copied, not re-encoded) supplies the voice and effects, and the picture follows it.
+- Add `scripts/compare-startup.mjs` for side-by-side checks against the reference clip, which stays in test fixtures and is no longer bundled.
+- The startup smoke test now reports frame timing per scene, checks a new frame is drawn every refresh, and compares launch bounds against the display the window opened on.
+
 ## 0.1.2 — October 3, 2026
 
 - Use the user's selected 1080p anime Link Start source, original Japanese voice/effects, sensor checks and animated login/entry transitions. Startup covers the entire native display with no outer borders; the previous Integral Factor movie and low-resolution login still are removed.

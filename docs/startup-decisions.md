@@ -26,3 +26,10 @@ The following records the implementation decisions and fresh review findings for
 - Session validation could fail after login while the entry sequence still played. A local login-token/HTTP-401 reproduction failed, then passed after authentication required a connected account snapshot.
 
 All 81 unit tests and the complete native startup/HP check passed after these fixes. Native hand integration, menu/hover, browser/FOV, media/gallery and two-account social acceptance also passed in this release cycle. Packaging is verified separately in output/current-package.json.
+
+## Real-time reconstruction (after 0.1.2)
+
+- Ruling: replace the anime footage with a canvas reconstruction drawn every display refresh, timed and coloured from frame measurements of the same clip — the user asked for the animation to match the reference exactly and follow the screen's refresh rate rather than play a 24fps video — cost if wrong: fine details (dial segments, warp blur) differ from the film and need further tuning against `scripts/compare-startup.mjs`.
+- Ruling: keep the reference's own audio track, stream-copied without re-encoding, and lock the picture to it — the voice and effects are part of the sequence and were not asked to change — cost if wrong: the audio can be swapped through the manifest.
+- Ruling: hold on the empty login card (10.62s) and resume at its fade-out (11.64s) with real credential lengths shown as asterisks — the source's typed placeholder login is not presented as a real one — cost if wrong: the hold/resume points are single constants in `src/ui/link-start/timeline.ts`.
+- Ruling: cap the canvas at 2× device pixels and avoid canvas blur filters — a blur filter dropped the blue dive to about 40fps at Retina resolution — cost if wrong: softer details would need a GPU shader path.

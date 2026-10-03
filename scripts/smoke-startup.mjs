@@ -14,6 +14,10 @@ const launch=profile=>electron.launch({executablePath:electronPath,args:['.'],cw
 const mainWindow=async instance=>{const page=await instance.firstWindow();await page.waitForFunction(()=>!!window.sao);return page;};
 const quietInput=instance=>instance.evaluate(({BrowserWindow})=>{const main=BrowserWindow.getAllWindows().find(w=>w.getTitle()==='SAO Utils 2');const send=main.webContents.send.bind(main.webContents);main.webContents.send=(channel,...args)=>{if(!['sao:pointer:down','sao:menu:dismiss'].includes(channel))send(channel,...args);};});
 const mediaProbe=page=>page.addInitScript(()=>{window.testMedia=[];const play=HTMLMediaElement.prototype.play;HTMLMediaElement.prototype.play=function(){const entry={src:this.src,played:false};window.testMedia.push(entry);const result=play.call(this);void result.then(()=>{entry.played=true;});return result;};});
+// Frame intervals grouped by the scene on screen, for the whole sequence rather than one sample window.
+const sceneProbe=page=>page.addInitScript(()=>{window.testSceneTiming={};let prior=0;const tick=time=>{const scene=document.querySelector('.link-start')?.dataset.scene;if(scene&&prior)(window.testSceneTiming[scene]??=[]).push(time-prior);prior=time;requestAnimationFrame(tick);};requestAnimationFrame(tick);});
+const sceneStats=async page=>Object.fromEntries(Object.entries(await page.evaluate(()=>window.testSceneTiming)).map(([scene,values])=>{const sorted=values.slice(2).sort((a,b)=>a-b);const median=sorted[Math.floor(sorted.length/2)];return [scene,{frames:sorted.length,medianMs:+median.toFixed(2),p95Ms:+sorted[Math.floor(sorted.length*.95)].toFixed(2),missed:sorted.filter(v=>v>median*1.5).length}];}));
+const assertRefresh=stats=>{for(const [scene,stat] of Object.entries(stats))if(stat.frames>10)assert.ok(stat.medianMs<20,`${scene} renders at display refresh: ${JSON.stringify(stat)}`);};
 let instance;const errors=[];
 const service=createSocialService(path.join(temporary,'accounts.sqlite'));
 const server=accountHTTPServer(service);await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
@@ -21,29 +25,33 @@ const serviceURL=`http://127.0.0.1:${server.address().port}`;
 try {
   const registered=await fetch(serviceURL+'/v1/register',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({username:'kirito',password:'a long startup test password',displayName:'Kirito'})});assert.equal(registered.status,201);
   instance=await launch(path.join(temporary,'normal'));let page=await mainWindow(instance);page.on('pageerror',e=>errors.push(e.message));await quietInput(instance);
-  await mediaProbe(page);await page.reload({waitUntil:'domcontentloaded'});
-  await page.locator('.startup-film').waitFor();
+  await mediaProbe(page);await sceneProbe(page);await page.reload({waitUntil:'domcontentloaded'});
+  await page.locator('.startup-canvas').waitFor();
   for(let i=0;i<40 && !instance.windows().some(p=>p.url().includes('hp=1'));i++)await new Promise(resolve=>setTimeout(resolve,50));
-  const windows=await instance.evaluate(({BrowserWindow,screen})=>({display:screen.getPrimaryDisplay(),windows:BrowserWindow.getAllWindows().map(w=>({title:w.getTitle(),visible:w.isVisible(),bounds:w.getBounds(),shadow:w.hasShadow()}))}));
+  const windows=await instance.evaluate(({BrowserWindow,screen})=>{const main=BrowserWindow.getAllWindows().find(w=>w.getTitle()==='SAO Utils 2');return {display:screen.getPrimaryDisplay(),launchDisplay:screen.getDisplayMatching(main.getBounds()),windows:BrowserWindow.getAllWindows().map(w=>({title:w.getTitle(),visible:w.isVisible(),bounds:w.getBounds(),shadow:w.hasShadow()}))};});
   const hp=windows.windows.find(w=>w.title==='SAO HP Display');assert.ok(hp,JSON.stringify(windows.windows));assert.equal(hp.visible,false);assert.equal(hp.shadow,false);
   assert.equal(hp.bounds.x,windows.display.workArea.x+24);assert.equal(hp.bounds.y,windows.display.workArea.y+24);assert.equal(hp.bounds.width,358);assert.equal(hp.bounds.height,89);
   assert.equal(windows.windows.find(w=>w.title==='SAO Utils 2').shadow,false);
-  assert.deepEqual(windows.windows.find(w=>w.title==='SAO Utils 2').bounds,windows.display.bounds,'launch covers the whole display, including menu and dock areas');
-  assert.equal(await page.locator('video').evaluate(v=>getComputedStyle(v).objectFit),'cover','source fills the display without white letterbox borders');
-  await page.waitForFunction(()=>document.querySelector('.startup-film')?.currentTime>.8);
-  const movie=await page.locator('video').evaluate(v=>({width:v.videoWidth,height:v.videoHeight,rate:v.playbackRate,duration:v.duration,muted:v.muted}));assert.equal(movie.width,1920);assert.equal(movie.height,1080);assert.equal(movie.rate,1);assert.ok(Math.abs(movie.duration-19.110023)<.1);
-  await page.evaluate(()=>{const v=document.querySelector('video');window.testVideoFrames=[];const observe=(_time,meta)=>{window.testVideoFrames.push(meta.mediaTime);v.requestVideoFrameCallback(observe);};v.requestVideoFrameCallback(observe);});
+  assert.deepEqual(windows.windows.find(w=>w.title==='SAO Utils 2').bounds,windows.launchDisplay.bounds,'launch covers its whole display, including menu and dock areas');
+  const surface=await page.locator('.startup-canvas').evaluate(c=>({width:c.width,height:c.height,cssWidth:c.clientWidth,cssHeight:c.clientHeight,ratio:Math.min(2,devicePixelRatio),viewport:[innerWidth,innerHeight]}));
+  assert.deepEqual([surface.cssWidth,surface.cssHeight],surface.viewport,'canvas fills the display edge to edge');
+  assert.equal(surface.width,Math.round(surface.viewport[0]*surface.ratio),'canvas renders at device resolution');
+  await page.waitForFunction(()=>{const a=document.querySelector('.link-start audio');return a&&a.currentTime>.8;});
+  const track=await page.locator('.link-start audio').evaluate(a=>({duration:a.duration,rate:a.playbackRate,paused:a.paused}));assert.ok(Math.abs(track.duration-19.110023)<.1);assert.equal(track.rate,1);assert.equal(track.paused,false);
+  // Count distinct canvas frames: every display refresh should draw a new image, not a held 24fps frame.
+  await page.evaluate(()=>{const c=document.querySelector('.startup-canvas'),x=c.getContext('2d');window.testCanvasFrames={draws:0};const draw=x.fillRect.bind(x);let last=-1;x.fillRect=function(...a){const f=performance.now();if(f-last>2){last=f;window.testCanvasFrames.draws++;}return draw(...a);};});
   const intervals=await page.evaluate(()=>new Promise(resolve=>{const samples=[];let prior=performance.now(),begin=prior;const tick=time=>{samples.push(time-prior);prior=time;if(time-begin<2000)requestAnimationFrame(tick);else resolve(samples.slice(2));};requestAnimationFrame(tick);}));
   const sorted=intervals.slice().sort((a,b)=>a-b),median=sorted[Math.floor(sorted.length/2)];
-  const timing={displayFrequency:windows.display.displayFrequency,frames:intervals.length,medianMs:median,p95Ms:sorted[Math.floor(sorted.length*.95)],missedFrames:intervals.filter(value=>value>median*1.5).length};
+  const timing={displayFrequency:windows.launchDisplay.displayFrequency,frames:intervals.length,medianMs:median,p95Ms:sorted[Math.floor(sorted.length*.95)],missedFrames:intervals.filter(value=>value>median*1.5).length};
   assert.ok(median<20,`startup follows at least 60Hz on this display: ${JSON.stringify(timing)}`);
   await page.screenshot({path:path.join(output,'current-link-start.png')});
-  const videoQuality=await page.locator('video').evaluate(v=>({total:v.getVideoPlaybackQuality().totalVideoFrames,dropped:v.getVideoPlaybackQuality().droppedVideoFrames,presented:window.testVideoFrames.length}));assert.ok(videoQuality.presented>35,`source anime frames present at their original 24fps cadence: ${JSON.stringify(videoQuality)}`);Object.assign(timing,{videoQuality});
-  await page.locator('[data-phase=sensors]').waitFor();await page.screenshot({path:path.join(output,'current-sensor-checks.png')});
+  const canvasFrames=await page.evaluate(()=>window.testCanvasFrames.draws);assert.ok(canvasFrames>=intervals.length*.9,`a new frame renders every refresh: ${canvasFrames} draws for ${intervals.length} refreshes`);Object.assign(timing,{canvasFrames});
+  await page.locator('[data-scene=sensors]').waitFor();await page.screenshot({path:path.join(output,'current-sensor-checks.png')});
   await page.getByRole('form',{name:'SAO account login'}).waitFor();
-  const playback=await page.evaluate(()=>window.testMedia);assert.ok(playback.some(t=>t.src.endsWith('link-start.mp4')&&t.played),'original anime movie includes Japanese voice and SFX');assert.ok(!playback.some(t=>t.src.endsWith('LinkStart.SAO.Kirito.wav')),'source voice is not doubled');
+  const playback=await page.evaluate(()=>window.testMedia);assert.ok(playback.some(t=>t.src.endsWith('link-start.m4a')&&t.played),'original Japanese voice and SFX play with the animation');assert.ok(!playback.some(t=>t.src.endsWith('LinkStart.SAO.Kirito.wav')),'source voice is not doubled');
   assert.equal(await page.locator('.startup-login-error').count(),0,'source startup plays without error');
   await page.screenshot({path:path.join(output,'current-anime-login.png')});
+  const introScenes=await sceneStats(page);assertRefresh(introScenes);Object.assign(timing,{scenes:introScenes});
   await page.getByRole('button',{name:'Continue offline',exact:true}).click();await page.getByRole('menuitem',{name:'Kirito',exact:true}).waitFor();
   assert.equal((await page.evaluate(()=>window.sao.getRuntime())).startup,false);
   assert.equal(await instance.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows().find(w=>w.getTitle()==='SAO HP Display').isVisible()),false,'offline continuation does not expose HP before login');
@@ -60,9 +68,11 @@ try {
   await instance.close();instance=null;
   // The blue form authenticates against the real service, not a decorative login.
   instance=await launch(path.join(temporary,'login'));page=await mainWindow(instance);page.on('pageerror',e=>errors.push(e.message));await quietInput(instance);
+  await sceneProbe(page);await page.reload();
   await page.getByRole('button',{name:'Skip intro'}).click();await page.getByRole('button',{name:'Account service',exact:true}).click();await page.getByLabel('Startup account service').fill(serviceURL);await page.getByLabel('Account',{exact:true}).fill('kirito');await page.getByLabel('Password',{exact:true}).fill('a long startup test password');await page.getByRole('button',{name:'Log in',exact:true}).click();await page.getByRole('menuitem',{name:'Kirito',exact:true}).waitFor();assert.equal((await page.evaluate(()=>window.saoSocial.getState())).snapshot.profile.username,'kirito');
+  const entryScenes=await sceneStats(page);assert.ok(entryScenes.warp?.frames>100,'the entry sequence plays through the warp after login');assertRefresh(entryScenes);Object.assign(timing.scenes,Object.fromEntries(Object.entries(entryScenes).filter(([scene])=>!['login'].includes(scene))));
   await instance.close();instance=null;
   const reduced=path.join(temporary,'reduced');await mkdir(reduced);await writeFile(path.join(reduced,'settings.json'),JSON.stringify({version:1,playerName:'Kirito',sound:false,reducedMotion:true,alwaysOnTop:true,launchAtLogin:false,shortcut:'CommandOrControl+Shift+Space',favorites:[]}));
-  instance=await launch(reduced);page=await mainWindow(instance);await mediaProbe(page);await page.reload();await page.getByRole('form',{name:'SAO account login'}).waitFor();assert.equal(await page.locator('.startup-film').evaluate(v=>v.paused && v.muted && Math.abs(v.currentTime-10.635)<.1),true);assert.deepEqual(await page.evaluate(()=>window.testMedia),[],'sound off plays no startup audio');await page.getByRole('button',{name:'Continue offline'}).click();await page.getByRole('menuitem',{name:'Kirito',exact:true}).waitFor();
-  assert.deepEqual(errors,[]);await writeFile(path.join(output,'startup-timing.json'),JSON.stringify(timing,null,2)+'\n');console.log(JSON.stringify({startup:'JP voice, selected 1080p anime source/SFX, animated login transition, edge-to-edge full display, real login/offline, entry sequence, no replay, reduced motion and sound off',hp:'original geometry, live CPU/RAM, anchored native window, persists, isolated bridge',timing},null,2));
+  instance=await launch(reduced);page=await mainWindow(instance);await mediaProbe(page);await page.reload();await page.getByRole('form',{name:'SAO account login'}).waitFor();assert.equal(await page.locator('.link-start').getAttribute('data-scene'),'login','reduced motion shows the login card without animating');assert.deepEqual(await page.evaluate(()=>window.testMedia),[],'sound off plays no startup audio');await page.getByRole('button',{name:'Continue offline'}).click();await page.getByRole('menuitem',{name:'Kirito',exact:true}).waitFor();
+  assert.deepEqual(errors,[]);await writeFile(path.join(output,'startup-timing.json'),JSON.stringify(timing,null,2)+'\n');console.log(JSON.stringify({startup:'procedural Link Start at display refresh, JP voice/SFX track, edge-to-edge full display, real login/offline, entry sequence, no replay, reduced motion and sound off',hp:'original geometry, live CPU/RAM, anchored native window, persists, isolated bridge',timing},null,2));
 } finally {if(instance)await instance.close();server.closeAllConnections();await new Promise(resolve=>server.close(resolve));service.close();await rm(temporary,{recursive:true,force:true});}

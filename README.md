@@ -48,25 +48,9 @@ Tracking uses [MediaPipe Hand Landmarker](https://ai.google.dev/edge/mediapipe/s
 
 ## Link Start and HP display
 
-A foreground launch plays the user-selected [1080p anime sequence](https://www.youtube.com/watch?v=cCfJvBgAd3E), including the Japanese voice, rainbow tunnel, sensor checks and animated login transition, edge to edge across the display. The source's empty blue login card becomes the real account form. Set an account-service URL and sign in, or continue offline; successful login resumes the source's entry animation. Startup does not replay on menu invocation or renderer reload. Sound off and Reduced Motion are respected. The persistent SAO HP widget stays at the screen's top left after successful login and disappears on logout; offline continuation leaves it hidden. Its source preset reports CPU/RAM headroom rather than invented game stats.
+A foreground launch plays Link Start as a real-time animation reconstructed from the user-selected [anime sequence](https://www.youtube.com/watch?v=cCfJvBgAd3E): rainbow tunnel, sensor checks, language and login cards, character registration, "Welcome to Sword Art Online!" and the blue dive, edge to edge across the display. Every display refresh draws a new frame (120 frames per second on a 120Hz display) instead of holding 24fps film frames. The original Japanese voice and effects play from the reference's own audio track, and the picture follows it. The empty blue login card becomes the real account form. Set an account-service URL and sign in, or continue offline; successful login resumes the entry sequence. Startup does not replay on menu invocation or renderer reload. Sound off and Reduced Motion are respected. The persistent SAO HP widget stays at the screen's top left after successful login and disappears on logout; offline continuation leaves it hidden. Its source preset reports CPU/RAM headroom rather than invented game stats.
 
-[Community reference comparisons](docs/startup-references.md) cover Cad-noob, Asakitan and Akilar. Source video retains its approximately 24fps cadence; interactive UI and GPU browser follow display refresh. Native timing on this 120Hz Mac measured a median 8.3ms animation interval with no missed intervals in the two-second sample. Source fidelity does not establish full app parity or guarantee frame rates on all hardware.
-
-## Browser and media
-
-Navigation links open in the built-in browser. **Settings → Option → Web Browser**, the tray, and the native **File** menu also open a browser. Its original tab, close, reload/stop and address artwork curve with the actual page. Click, type and scroll normally; **Command/Control+L** changes the address. Right-click for history, reload, opening in your default browser and **Field of view** (20°–100°, default 45°). The FOV slider updates the curve and perspective together, keeps clicks aligned and remembers your choice after restarting. Remote pages run in an isolated process without the local desktop bridge.
-
-Choose **Images / Video** in Options, or **File → Preview images and videos**, and select one or several local files. Browsing media through the launcher opens the same previews. Images, animated GIFs and looping videos stay visible when the launcher hides. Right-click for Fit/Crop, Auto Resize, Reset Size, Change Image/Video, Mute and Close. Click a video to pause/resume; the title's external-viewer icon opens the selected file in its default application. Supported extensions include PNG/JPEG/GIF/WebP/AVIF/BMP and MP4/WebM/M4V/MOV/OGV; actual video codecs depend on Electron.
-
-Cursor movement changes launcher and preview perspective even outside their windows. The launcher background stays transparent, with no desktop blur. Original numeric compositor settings are unavailable in the supplied compiled host; the current curvature and perspective are reconstructed from the [publisher's video](https://www.youtube.com/watch?v=82yPo7IMMAk), not proven identical shader parameters. The anime clips in that demonstration are not bundled media.
-
-Use **File → Gallery Widget** for an image folder with all 18 original GLSL transitions. Click to pause/resume and scroll to change images; right-click for settings and original frames. Drag local media onto the launcher to open previews, or onto a preview to replace its source. Preview sources, bounds and presentation settings survive an app restart; closing a preview removes its saved entry.
-
-## Configuration
-
-The resource importer supplies `Configs/system/launcher/menu.xml` for first-run initialization. To replace the hierarchy later, choose **Settings → Option → Import** and select that XML or an exported JSON backup. The supplied XML retains 32 menu nodes and 8 web links, with 11 notices for recognized Windows actions mapped to native equivalents. Unknown commands stay unsupported; importing never executes command strings.
-
-Export writes version 1 JSON containing menus and portable settings. JSON import keeps the current device's login, hotkey and always-on-top preferences; application locations selected outside normal discovery roots must be authorized again with the picker. Settings stay in Electron's local user-data directory.
+Scene timing, positions and colours were measured frame by frame from the reference. `npm run test:startup:frames` renders the animation next to the reference at chosen times (written to `output/startup-compare/`). The reconstruction matches the reference's composition, timing and palette; fine detail is approximate, mainly dial segment layout, the soft motion blur and haze of the final blue dive, and panel font weight. [Community reference comparisons](docs/startup-references.md) cover Cad-noob, Asakitan and Akilar. On this 120Hz Mac every scene measured a median 8.3ms frame interval; this does not guarantee frame rates on all hardware.
 
 ## Verify and package
 
@@ -76,6 +60,7 @@ npm run test:desktop
 npm run test:hover
 npm run test:surfaces
 npm run test:startup
+npm run test:startup:frames
 npm run test:social
 npm run test:hand
 npm run package:mac

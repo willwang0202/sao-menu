@@ -1,75 +1,113 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type { Settings } from '../shared/contracts';
 import type { SocialState } from '../shared/social';
+import { clockTime, followAudio, holdClock, resumeClock, shouldResyncAudio, startClock, type StartupClock } from './link-start/clock';
+import { renderFrame, type FrameOptions } from './link-start/render';
+import { STARTUP, sceneAt } from './link-start/timeline';
 import './startup.css';
 
-const LOGIN_HOLD = 10.635;
-const ENTRY_START = 12.85;
-type Phase = 'tunnel' | 'sensors' | 'login' | 'entering';
+type Phase = 'playing' | 'login' | 'entering';
+/** Start silently if the audio track has not begun by then; the dark opening hides the wait. */
+const AUDIO_START_TIMEOUT_MS = 1000;
+const AUDIO_VOLUME = 0.55;
+const MAX_PIXEL_RATIO = 2;
 
-/** The selected source supplies the voice, animation, login transition and SFX. */
+/**
+ * Real-time Link Start: every display refresh renders a unique frame of the procedural
+ * reconstruction, timed by a clock the original voice/SFX track follows.
+ */
 export function LinkStart({ settings, onComplete }: { settings: Settings; onComplete: () => void }) {
   const reduced = settings.reducedMotion || matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const [phase, setPhase] = useState<Phase>(reduced ? 'login' : 'tunnel');
+  const [phase, setPhase] = useState<Phase>(reduced ? 'login' : 'playing');
   const [state, setState] = useState<SocialState | null>(null);
-  const [error, setError] = useState('');
-  const [blocked, setBlocked] = useState(false);
-  const video = useRef<HTMLVideoElement>(null);
-  const held = useRef(reduced), currentPhase = useRef(phase);
-  const done = useRef(onComplete); done.current = onComplete;
+  const [audioError, setAudioError] = useState('');
+  const [serviceError, setServiceError] = useState('');
+  const section = useRef<HTMLElement>(null), canvas = useRef<HTMLCanvasElement>(null), audio = useRef<HTMLAudioElement>(null);
+  const clock = useRef<StartupClock | null>(reduced ? holdClock(startClock(0), STARTUP.loginHold) : null);
+  const currentPhase = useRef(phase), credentials = useRef<FrameOptions>({ accountLength: 0, passwordLength: 0 });
+  const completed = useRef(false), done = useRef(onComplete); done.current = onComplete;
   const changePhase = (next: Phase) => { currentPhase.current = next; setPhase(next); };
+  const complete = () => {
+    if (completed.current) return;
+    completed.current = true; audio.current?.pause(); done.current();
+  };
   const holdLogin = () => {
-    held.current = true;
-    const movie = video.current;
-    movie?.pause();
-    if (movie && movie.readyState >= 1) movie.currentTime = LOGIN_HOLD;
-    changePhase('login'); setBlocked(false);
+    if (currentPhase.current !== 'playing') return;
+    clock.current = holdClock(clock.current ?? startClock(performance.now()), STARTUP.loginHold);
+    audio.current?.pause();
+    changePhase('login');
   };
-  const enter = () => {
+  const enter = (lengths: FrameOptions) => {
     if (currentPhase.current === 'entering') return;
-    if (reduced || error || !video.current) { done.current(); return; }
-    changePhase('entering'); video.current.currentTime = ENTRY_START;
-    void video.current.play().catch(() => done.current());
+    if (reduced) { complete(); return; }
+    credentials.current = lengths;
+    clock.current = resumeClock(clock.current!, performance.now(), STARTUP.loginResume);
+    const track = audio.current;
+    if (track && settings.sound) { track.currentTime = STARTUP.loginResume; void track.play().catch(() => setAudioError('blocked')); }
+    changePhase('entering');
   };
+
   useEffect(() => {
     const api = window.saoSocial;
     if (!api) return;
     let active = true;
     const detach = api.onState(next => { if (active) setState(next); });
-    void api.getState().then(next => { if (active) setState(next); }).catch(e => { if (active) setError(String(e)); });
+    void api.getState().then(next => { if (active) setState(next); }).catch(e => { if (active) setServiceError(e instanceof Error ? e.message : String(e)); });
     return () => { active = false; detach(); };
   }, []);
+
   useEffect(() => {
-    const movie = video.current!; movie.volume = .55;
-    if (!reduced) void movie.play().catch(() => setBlocked(true));
-    let callback = 0, active = true;
-    const advance = (_time: number, frame: VideoFrameCallbackMetadata) => {
-      if (!active) return;
-      if (!held.current && frame.mediaTime >= LOGIN_HOLD) holdLogin();
-      else if (currentPhase.current === 'tunnel' && frame.mediaTime >= 4) changePhase('sensors');
-      callback = movie.requestVideoFrameCallback(advance);
-    };
-    if (movie.requestVideoFrameCallback) callback = movie.requestVideoFrameCallback(advance);
-    return () => { active = false; movie.pause(); if (callback) movie.cancelVideoFrameCallback(callback); };
+    const track = audio.current!;
+    track.volume = AUDIO_VOLUME;
+    if (reduced) return;
+    const begin = () => { if (!clock.current) clock.current = startClock(performance.now(), track.currentTime); };
+    const timeout = window.setTimeout(begin, settings.sound ? AUDIO_START_TIMEOUT_MS : 0);
+    track.addEventListener('playing', begin, { once: true });
+    if (settings.sound) void track.play().catch(() => { setAudioError('blocked'); begin(); });
+    return () => { window.clearTimeout(timeout); track.removeEventListener('playing', begin); track.pause(); };
   }, []);
-  useEffect(() => { if (phase === 'login' && state?.snapshot) enter(); }, [phase, state?.snapshot]);
-  return <section className="link-start" data-phase={phase} aria-label="Link Start" onKeyDown={event => {
-    event.stopPropagation(); if (event.key === 'Escape' && phase !== 'login') { if (phase === 'entering') onComplete(); else holdLogin(); }
+
+  useEffect(() => {
+    const view = canvas.current!, ctx = view.getContext('2d', { alpha: false })!;
+    let frame = 0, scene = '';
+    const resize = () => {
+      const ratio = Math.min(MAX_PIXEL_RATIO, devicePixelRatio || 1);
+      view.width = Math.round(innerWidth * ratio); view.height = Math.round(innerHeight * ratio);
+    };
+    const tick = (now: number) => {
+      if (currentPhase.current === 'playing' && clock.current && clockTime(clock.current, now) >= STARTUP.loginHold) holdLogin();
+      const track = audio.current;
+      if (clock.current && track && !track.paused && !track.seeking) {
+        // Large drift re-seeks the audio; small offsets ease the picture onto the voice.
+        if (shouldResyncAudio(track.currentTime, clockTime(clock.current, now))) track.currentTime = clockTime(clock.current, now);
+        else clock.current = followAudio(clock.current, now, track.currentTime);
+      }
+      const time = clock.current ? clockTime(clock.current, now) : 0;
+      if (time >= STARTUP.end) { complete(); return; }
+      renderFrame(ctx, time, view.width, view.height, credentials.current);
+      const next = sceneAt(time);
+      if (next !== scene && section.current) { scene = next; section.current.dataset.scene = next; }
+      frame = requestAnimationFrame(tick);
+    };
+    resize();
+    addEventListener('resize', resize);
+    frame = requestAnimationFrame(tick);
+    return () => { cancelAnimationFrame(frame); removeEventListener('resize', resize); };
+  }, []);
+
+  useEffect(() => { if (phase === 'login' && state?.snapshot) enter(credentials.current); }, [phase, state?.snapshot]);
+  const skip = () => { if (currentPhase.current === 'entering') complete(); else holdLogin(); };
+  return <section ref={section} className="link-start" data-phase={phase} data-audio={audioError || undefined} aria-label="Link Start" onKeyDown={event => {
+    event.stopPropagation(); if (event.key === 'Escape' && phase !== 'login') skip();
   }}>
-    <div className="startup-film-plane">
-      <video ref={video} className="startup-film" src="./startup/link-start.mp4" playsInline muted={!settings.sound} preload="auto" aria-label="Original anime Link Start and login animation"
-        onLoadedMetadata={() => { if (held.current) holdLogin(); }}
-        onPlaying={() => setBlocked(false)}
-        onTimeUpdate={event => { if (!event.currentTarget.requestVideoFrameCallback && !held.current && event.currentTarget.currentTime >= LOGIN_HOLD) holdLogin(); }}
-        onEnded={onComplete} onError={() => { setError('The startup movie could not be played.'); changePhase('login'); }} />
-    </div>
-    {phase === 'login' && !state?.snapshot && <StartupLogin state={state} error={error} onAuthenticated={enter} onOffline={onComplete} />}
-    {blocked && <button className="start-intro" onClick={() => { void video.current?.play().catch(() => setError('The startup movie could not be played.')); }}>Start Link Start</button>}
-    {phase !== 'login' && <button className="skip-intro" onClick={() => { if (phase === 'entering') onComplete(); else holdLogin(); }}>Skip intro</button>}
+    <canvas ref={canvas} className="startup-canvas" role="img" aria-label="Link Start animation" />
+    <audio ref={audio} src="./startup/link-start.m4a" preload="auto" />
+    {phase === 'login' && !state?.snapshot && <StartupLogin state={state} initialError={serviceError} onAuthenticated={enter} onOffline={complete} />}
+    {phase !== 'login' && <button className="skip-intro" onClick={skip}>Skip intro</button>}
   </section>;
 }
 
-function StartupLogin({ state, error: initialError, onAuthenticated, onOffline }: { state: SocialState | null; error: string; onAuthenticated: () => void; onOffline: () => void }) {
+function StartupLogin({ state, initialError, onAuthenticated, onOffline }: { state: SocialState | null; initialError: string; onAuthenticated: (lengths: FrameOptions) => void; onOffline: () => void }) {
   const [account, setAccount] = useState(''), [password, setPassword] = useState(''), [service, setService] = useState(state?.serviceURL ?? '');
   const [configure, setConfigure] = useState(false), [busy, setBusy] = useState(false), [error, setError] = useState(initialError);
   useEffect(() => { if (state?.serviceURL) setService(state.serviceURL); }, [state?.serviceURL]);
@@ -78,8 +116,11 @@ function StartupLogin({ state, error: initialError, onAuthenticated, onOffline }
       event.preventDefault(); if (busy) return;
       if (!window.saoSocial || !service) { setConfigure(true); setError('Set your account service, or continue offline.'); return; }
       setBusy(true); setError('');
-      try { await window.saoSocial.authenticate({ serviceURL: service, username: account, password, register: false, displayName: '' }); setPassword(''); onAuthenticated(); }
-      catch (e) { setError(e instanceof Error ? e.message : String(e)); } finally { setBusy(false); }
+      try {
+        await window.saoSocial.authenticate({ serviceURL: service, username: account, password, register: false, displayName: '' });
+        const lengths = { accountLength: account.length, passwordLength: password.length };
+        setPassword(''); onAuthenticated(lengths);
+      } catch (e) { setError(e instanceof Error ? e.message : String(e)); } finally { setBusy(false); }
     }}>
       <h1 className="startup-accessible">Log in_::</h1>
       <input className="anime-account" aria-label="Account" value={account} onChange={e => setAccount(e.target.value)} required maxLength={32} autoComplete="username" autoCapitalize="none" spellCheck={false} />

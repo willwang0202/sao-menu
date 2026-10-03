@@ -36,7 +36,5 @@ if (!manifest.icon?.sha256 || createHash('sha256').update(icon).digest('hex') !=
   throw new Error('The original executable icon is missing or changed. Reimport the Steam resources.');
 }
 const startup = JSON.parse(await readFile('public/startup/manifest.json', 'utf8'));
-for (const entry of [startup.video]) {
-  const bytes = await readFile(path.join('public/startup', entry.file));
-  if (createHash('sha256').update(bytes).digest('hex') !== entry.sha256) throw new Error('The exact startup reference asset has changed.');
-}
+const startupAudio = await readFile(path.join('public/startup', startup.audio.file));
+if (createHash('sha256').update(startupAudio).digest('hex') !== startup.audio.sha256) throw new Error('The startup audio track has changed.');

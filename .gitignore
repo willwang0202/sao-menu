@@ -6,6 +6,7 @@ social-data/
 release/
 test-results/
 output/playwright/
+output/startup-compare/
 public/sao-original/
 .DS_Store
 *.log
