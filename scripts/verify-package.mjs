@@ -27,7 +27,7 @@ assert.equal(packagedRenderer.length, renderer.length, 'Archive contains obsolet
 assert.deepEqual(await readFile(path.join(resources, 'gesture-helper')), await readFile('dist-desktop/gesture-helper'));
 assert.deepEqual(await readFile(path.join(resources, 'icon.icns')), await readFile('resources/icon.icns'));
 const zip = path.resolve(`release/SAO Utils 2-${packageInfo.version}-arm64.zip`);
-const report = { verifiedAt: new Date().toISOString(), version: packageInfo.version, gitTag: `v${packageInfo.version}`, app, zip, packagedFilesMatched: built.length, rendererFiles: renderer.length, gestureHelperMatches: true, originalIconMatches: true, appArchiveSHA256: createHash('sha256').update(await readFile(archive)).digest('hex'), zipSHA256: createHash('sha256').update(await readFile(zip)).digest('hex'), socialNativeAcceptance: 'pending', onlineService: 'not deployed' };
+const report = { verifiedAt: new Date().toISOString(), version: packageInfo.version, gitTag: `v${packageInfo.version}`, app, zip, packagedFilesMatched: built.length, rendererFiles: renderer.length, gestureHelperMatches: true, originalIconMatches: true, appArchiveSHA256: createHash('sha256').update(await readFile(archive)).digest('hex'), zipSHA256: createHash('sha256').update(await readFile(zip)).digest('hex'), nativeAcceptanceReport: 'docs/verification.md', onlineService: 'not deployed' };
 await mkdir('output', { recursive: true });
 await writeFile('output/current-package.json', JSON.stringify(report, null, 2) + '\n');
 console.log(JSON.stringify(report, null, 2));

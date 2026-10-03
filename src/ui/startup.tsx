@@ -62,8 +62,8 @@ export function LinkStart({ settings, onComplete }: { settings: Settings; onComp
         onPlaying={() => setBlocked(false)}
         onTimeUpdate={event => { if (!event.currentTarget.requestVideoFrameCallback && !held.current && event.currentTarget.currentTime >= LOGIN_HOLD) holdLogin(); }}
         onEnded={onComplete} onError={() => { setError('The startup movie could not be played.'); changePhase('login'); }} />
-      {phase === 'login' && !state?.snapshot && <StartupLogin state={state} error={error} onAuthenticated={enter} onOffline={onComplete} />}
     </div>
+    {phase === 'login' && !state?.snapshot && <StartupLogin state={state} error={error} onAuthenticated={enter} onOffline={onComplete} />}
     {blocked && <button className="start-intro" onClick={() => { void video.current?.play().catch(() => setError('The startup movie could not be played.')); }}>Start Link Start</button>}
     {phase !== 'login' && <button className="skip-intro" onClick={() => { if (phase === 'entering') onComplete(); else holdLogin(); }}>Skip intro</button>}
   </section>;
@@ -85,8 +85,10 @@ function StartupLogin({ state, error: initialError, onAuthenticated, onOffline }
       <input className="anime-account" aria-label="Account" value={account} onChange={e => setAccount(e.target.value)} required maxLength={32} autoComplete="username" autoCapitalize="none" spellCheck={false} />
       <input className="anime-password" aria-label="Password" type="password" value={password} onChange={e => setPassword(e.target.value)} required maxLength={128} autoComplete="current-password" />
     </form>
-    <div className="startup-login-actions"><button form="sao-account-login" type="submit" disabled={busy}>{busy ? 'Signing in…' : 'Log in'}</button><button onClick={onOffline}>Continue offline</button><button onClick={() => setConfigure(!configure)}>Account service</button></div>
-    {configure && <label className="startup-service">Account service<input aria-label="Startup account service" type="url" value={service} onChange={e => setService(e.target.value)} placeholder="https://…" spellCheck={false} autoCapitalize="none" /></label>}
-    {error && <p className="startup-login-error" role="alert">{error}</p>}
+    <div className="startup-login-tools">
+      <div className="startup-login-actions"><button form="sao-account-login" type="submit" disabled={busy}>{busy ? 'Signing in…' : 'Log in'}</button><button onClick={onOffline}>Continue offline</button><button onClick={() => setConfigure(!configure)}>Account service</button></div>
+      {configure && <label className="startup-service">Account service<input aria-label="Startup account service" type="url" value={service} onChange={e => setService(e.target.value)} placeholder="https://…" spellCheck={false} autoCapitalize="none" /></label>}
+      {error && <p className="startup-login-error" role="alert">{error}</p>}
+    </div>
   </div>;
 }

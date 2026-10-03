@@ -36,6 +36,7 @@ export class SocialClient {
     if (!/^[a-zA-Z0-9_-]{43}$/.test(result.token)) throw new Error('The account service returned an invalid session.');
     this.generation++; this.token = result.token; this.state = { serviceURL: address, connected: false, error: '', snapshot: null };
     await this.persist(); await this.refresh(true);
+    if (!this.state.connected || !this.state.snapshot) throw new Error(this.state.error || 'The account session could not be verified. Try signing in again.');
   }
   async logout(): Promise<void> {
     const address = this.state.serviceURL, token = this.token;

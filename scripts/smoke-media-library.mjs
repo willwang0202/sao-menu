@@ -45,6 +45,7 @@ try {
   await gallery.evaluate(settings => window.saoSurface.setGallery(settings), { ...settings, transition: 'Fade.glsl', fill: 'contain', frame: 'compact-white.9.png', fillColor: '#e0e0e0', animateTime: 500 });
   await gallery.waitForFunction(() => document.querySelector('.gallery-canvas')?.dataset.shader === 'Fade.glsl');
   await gallery.screenshot({ path: path.resolve('output/playwright/current-gallery.png') });
+  console.log('Gallery shaders and controls passed');
   const oldUrls = (await gallery.evaluate(() => window.saoSurface.getState())).gallery.images.map(image => image.url);
   await gallery.evaluate(() => window.saoSurface.command('refresh'));
   for (const url of oldUrls) assert.equal(await instance.evaluate(async ({ net }, url) => (await net.fetch(url)).status, url), 404);
@@ -55,10 +56,12 @@ try {
     await page.evaluate(() => (window.saoSurface ?? window.sao).dropFiles([...document.querySelector('#native-drop-fixture').files]));
     await page.locator('#native-drop-fixture').evaluate(element => element.remove());
   };
+  console.log('Gallery token refresh passed; testing native file drop');
   await selectFiles(main, [path.join(folder, '1.png')]);
   let image = instance.windows().find(page => page !== gallery && page.url().includes('surface=')); assert.ok(image);
   await image.waitForFunction(() => document.querySelector('.preview-image')?.naturalWidth > 0);
   const oldToken = (await image.evaluate(() => window.saoSurface.getState())).url;
+  console.log('Media open passed; testing replacement');
   await selectFiles(image, [path.join(folder, '2.png')]);
   assert.equal((await image.evaluate(() => window.saoSurface.getState())).title, '2.png');
   assert.equal(await instance.evaluate(async ({ net }, url) => (await net.fetch(url)).status, oldToken), 404);
@@ -68,10 +71,12 @@ try {
   await image.waitForTimeout(450);
   const saved = JSON.parse(await readFile(path.join(temporary, 'surface-layout.json'), 'utf8'));
   const savedImage = saved.find(entry => entry.kind === 'image'); assert.ok(savedImage);
+  console.log('Media drop and geometry passed; restarting native app');
   await instance.close(); instance = await launch(); main = await instance.firstWindow();
   await main.waitForFunction(() => !!window.sao); await main.evaluate(() => window.sao.completeStartup());
   await main.getByRole('menuitem', { name: 'Kirito', exact: true }).waitFor();
   await main.waitForTimeout(500);
+  console.log('Restart passed; checking restored surfaces');
   const restored = instance.windows().filter(page => page.url().includes('surface='));
   assert.equal(restored.length, 2, 'gallery and preview restore without choosing files again');
   for (const page of restored) {
