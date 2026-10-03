@@ -2,7 +2,7 @@ import { FilesetResolver, HandLandmarker } from '@mediapipe/tasks-vision';
 import { fromMediaPipe } from '../shared/hand/landmarks';
 import { initialRecognizerState, recognize, type RecognizerState } from '../shared/hand/recognizer';
 import { parseTrackerConfig, TRACKER_FPS, type TrackerAPI, type TrackerConfig, type TrackerEvent } from '../shared/hand/protocol';
-import { drawDebug, logDiagnostics } from './debug';
+import { drawDebug } from './debug';
 
 const CAMERA = { width: 640, height: 480 } as const;
 const MS_PER_SECOND = 1000;
@@ -59,7 +59,6 @@ function processFrame(landmarker: HandLandmarker, lastVideoTime: number): number
   recognizer = next.state;
   next.events.forEach(event => bridge.emit(event as TrackerEvent));
   if (config.debug) drawDebug(canvas, readout, hand, next.events);
-  if (config.debug) logDiagnostics(hand, config.menuOpen, config.fps, next.state.summon.length, next.events);
   return video.currentTime;
 }
 
