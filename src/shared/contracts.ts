@@ -1,6 +1,8 @@
 export type Platform = 'darwin' | 'win32' | 'linux' | 'web';
 export interface Position { x: number; y: number }
 export interface GestureStatus { supported: boolean; permission: 'granted' | 'denied' | 'unknown'; running: boolean; message: string }
+export interface HandTrackingStatus { supported: boolean; enabled: boolean; permission: 'granted' | 'denied' | 'unknown'; running: boolean; message: string }
+export interface HandCursor extends Position { visible: boolean }
 export interface MenuEntry { id: string; name: string; description?: string; icon?: string; image?: string; infoPanel?: boolean; kind: 'menu' | 'launcher' | 'settings' | 'quit' | 'unsupported'; children?: MenuEntry[]; launcher?: LauncherItem; reason?: string; nativeTarget?: string; directory?: string; social?: 'friends' | 'messages' }
 export interface LauncherItem { id: string; name: string; kind: 'application' | 'url' | 'folder' | 'file'; target: string }
 export interface Settings {
@@ -10,6 +12,10 @@ export interface Settings {
   reducedMotion: boolean;
   alwaysOnTop: boolean;
   launchAtLogin: boolean;
+  /** Opt-in webcam hand gestures. */
+  handTracking: boolean;
+  /** Shows the tracker's camera view with landmarks, for tuning. */
+  handDebugView: boolean;
   shortcut: string;
   favorites: LauncherItem[];
   menu?: MenuEntry[];
@@ -44,6 +50,9 @@ export interface DesktopAPI {
   onDismissMenu(callback: () => void): () => void;
   onGlobalPointerDown(callback: (point: Position) => void): () => void;
   onPointerMove(callback: (point: Position) => void): () => void;
+  getHandTrackingStatus(): Promise<HandTrackingStatus>;
+  onHandCursor(callback: (cursor: HandCursor) => void): () => void;
+  onHandClick(callback: (point: Position) => void): () => void;
   openBrowser(): Promise<void>;
   openMedia(): Promise<void>;
   openGallery(): Promise<void>;

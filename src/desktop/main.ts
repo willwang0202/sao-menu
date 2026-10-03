@@ -16,6 +16,7 @@ import { SurfaceLayoutStore } from './surface-store';
 import { SocialClient } from './social';
 import { HpDisplay } from './hud';
 import { pointerInterval } from '../shared/refresh';
+import { HandTrackingController } from './hand-tracking';
 
 protocol.registerSchemesAsPrivileged([{ scheme: 'sao-media', privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true, corsEnabled: true } }]);
 
@@ -79,6 +80,27 @@ function developmentURL(): string | null {
 
 const localRendererURL = pathToFileURL(path.join(__dirname, '../dist/index.html')).href;
 const rendererURL = developmentURL() || localRendererURL;
+const handTracking = new HandTrackingController(
+  new URL('tracker.html', rendererURL).href,
+  path.join(__dirname, 'tracker-preload.cjs'),
+  {
+    summon: point => {
+      const area = screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea;
+      summonAt({ x: Math.round(area.x + point.x * area.width), y: Math.round(area.y + point.y * area.height) });
+    },
+    dismiss: () => window?.webContents.send('sao:menu:dismiss'),
+    cursor: (point, visible) => sendHandPoint('sao:hand:cursor', point, { visible }),
+    click: point => sendHandPoint('sao:hand:click', point, {}),
+    debugClosed: () => { void saveSettings({ ...settings, handDebugView: false }).catch(error => console.warn('Could not save the debug view setting.', error)); },
+  },
+);
+
+/** Converts a normalized hand position into overlay CSS pixels. */
+function sendHandPoint(channel: 'sao:hand:cursor' | 'sao:hand:click', point: Position, extra: Record<string, unknown>): void {
+  if (!window || window.isDestroyed() || !window.isVisible()) return;
+  const bounds = window.getBounds();
+  window.webContents.send(channel, { x: point.x * bounds.width, y: point.y * bounds.height, ...extra });
+}
 
 if (!app.isPackaged && process.env.SAO_USER_DATA) {
   const isolatedData = path.resolve(process.env.SAO_USER_DATA);
@@ -185,6 +207,7 @@ function summonAt(point: Position): void {
     x: Math.max(minimumX, Math.min(Math.max(minimumX, width - 400), point.x - x)),
     y: Math.max(minimumY, Math.min(Math.max(minimumY, height - 200), point.y - y)),
   };
+  handTracking.setMenuOpen(true, { x: menuAnchor.x / width, y: menuAnchor.y / height });
   window.show();
   window.focus();
   window.webContents.send('sao:menu:toggle', true, menuAnchor);
@@ -217,6 +240,7 @@ async function applySettings(input: unknown): Promise<Settings> {
     const previous = settings;
     const previousShortcut = activeShortcut;
     let newShortcutRegistered = false;
+    const handTrackingChanged = next.handTracking !== previous.handTracking;
     if (next.shortcut !== activeShortcut) {
       newShortcutRegistered = registerShortcut(next.shortcut);
       if (!newShortcutRegistered && next.shortcut !== previous.shortcut) throw new Error(`The shortcut ${next.shortcut} is already in use or is unavailable. Your previous shortcut was kept.`);
@@ -224,8 +248,12 @@ async function applySettings(input: unknown): Promise<Settings> {
     try {
       if (next.launchAtLogin !== previous.launchAtLogin) configureLogin(next.launchAtLogin);
       window?.setAlwaysOnTop(next.alwaysOnTop, 'floating');
+      if (handTrackingChanged) await (next.handTracking ? handTracking.enable(true) : handTracking.disable());
+      if (next.handDebugView !== previous.handDebugView) handTracking.setDebugView(next.handDebugView);
       await atomicWrite(settingsPath(), next);
     } catch (error) {
+      if (handTrackingChanged) await restoreHandTracking(previous.handTracking);
+      handTracking.setDebugView(previous.handDebugView);
       if (newShortcutRegistered) globalShortcut.unregister(next.shortcut);
       window?.setAlwaysOnTop(previous.alwaysOnTop, 'floating');
       try { if (next.launchAtLogin !== previous.launchAtLogin) configureLogin(previous.launchAtLogin); } catch { /* Preserve the original failure. */ }
@@ -237,6 +265,11 @@ async function applySettings(input: unknown): Promise<Settings> {
     shortcutRegistered = activeShortcut !== null;
     updateTrayMenu();
     return structuredClone(settings);
+}
+
+async function restoreHandTracking(enabled: boolean): Promise<void> {
+  if (!enabled) { handTracking.disable(); return; }
+  try { await handTracking.enable(false); } catch (error) { console.warn('Hand tracking could not be restored.', error); }
 }
 
 function saveSettings(input: unknown): Promise<Settings> {
@@ -358,6 +391,7 @@ function installHandlers(): void {
     if (platform === 'darwin' && status.permission === 'denied') await shell.openExternal('x-apple.systempreferences:com.apple.preference.security?Privacy_ListenEvent');
     return status;
   });
+  handler('sao:hand:status', () => handTracking.getStatus());
   handler('sao:menu:anchor', () => ({ ...menuAnchor }));
   handler('sao:pointer:passthrough', enabled => {
     if (typeof enabled !== 'boolean') throw new Error('Pointer passthrough must be a boolean.');
@@ -435,6 +469,8 @@ async function createWindow(): Promise<void> {
   });
   window.on('close', event => { if (!quitting) { event.preventDefault(); window?.hide(); } });
   startup = !openedAtLogin;
+  window.on('show', () => handTracking.setMenuOpen(true));
+  window.on('hide', () => handTracking.setMenuOpen(false));
   if (platform === 'darwin') window.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   window.webContents.on('will-navigate', (event, url) => { if (url !== rendererURL) event.preventDefault(); });
@@ -454,15 +490,16 @@ else {
     event.preventDefault();
     void surfaces.flush().catch(error => console.warn('Preview layout could not be saved.', error)).finally(() => { quitFlushed = true; app.quit(); });
   });
-  app.on('will-quit', () => { gesture.stop(); surfaces?.stop(); social?.stop(); hpDisplay?.stop(); if (pointerTimer) clearInterval(pointerTimer); globalShortcut.unregisterAll(); tray?.destroy(); });
+  app.on('will-quit', () => { gesture.stop(); handTracking.stop(); surfaces?.stop(); social?.stop(); hpDisplay?.stop(); if (pointerTimer) clearInterval(pointerTimer); globalShortcut.unregisterAll(); tray?.destroy(); });
   app.on('window-all-closed', () => { if (quitting) app.quit(); });
   app.whenReady().then(async () => {
     await loadConfiguration();
     surfaces = new SurfaceManager(rendererURL, path.join(__dirname, 'surface-preload.cjs'), () => settings.reducedMotion, new SurfaceLayoutStore(path.join(app.getPath('userData'), 'surface-layout.json')));
     social = new SocialClient(path.join(app.getPath('userData'), 'social-account.json'), state => { if (!startup && state.snapshot) hpDisplay?.show(); else hpDisplay?.hide(); if (window && !window.isDestroyed()) window.webContents.send('sao:social:state', state); });
     surfaces.install();
-    session.defaultSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
-    session.defaultSession.setPermissionCheckHandler(() => false);
+    // Everything is denied except the hand tracker's own video-only camera request.
+    session.defaultSession.setPermissionRequestHandler((contents, permission, callback, details) => callback(handTracking.allowsPermission(contents, permission, details as { mediaTypes?: string[] })));
+    session.defaultSession.setPermissionCheckHandler((contents, permission, _origin, details) => handTracking.allowsPermission(contents, permission, details as { mediaType?: string }));
     installHandlers();
     installNativeMenu();
     shortcutRegistered = registerShortcut(settings.shortcut);
@@ -474,6 +511,8 @@ else {
     await surfaces.restore();
     await social.start();
     gesture.start();
+    handTracking.setDebugView(settings.handDebugView);
+    if (settings.handTracking) void handTracking.enable(false).catch(error => console.warn('Hand tracking could not start.', error));
     refreshPointerRate();
     screen.on('display-metrics-changed', refreshPointerRate);
     screen.on('display-added', refreshPointerRate); screen.on('display-removed', refreshPointerRate);

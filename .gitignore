@@ -17,3 +17,4 @@ public/sao-original/
 *.sqlite
 *.sqlite-shm
 *.sqlite-wal
+public/mediapipe/

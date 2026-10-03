@@ -40,6 +40,8 @@ const browserAPI: DesktopAPI = {
   hide: unavailable, quit: unavailable, completeStartup: async () => { startup = false; }, onStartupComplete: () => () => {}, onToggleMenu: () => () => {},
   onDismissMenu: () => () => {}, onGlobalPointerDown: () => () => {},
   onPointerMove: () => () => {},
+  getHandTrackingStatus: async () => ({ supported: false, enabled: false, permission: 'unknown', running: false, message: 'Hand gestures require the desktop app.' }),
+  onHandCursor: () => () => {}, onHandClick: () => () => {},
   openBrowser: unavailable, openMedia: unavailable, openGallery: unavailable, dropFiles: unavailable,
 };
 export const api: DesktopAPI = window.sao ?? browserAPI;

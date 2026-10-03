@@ -59,3 +59,22 @@ test('deduplicates stored favorite IDs and bounds menu depth', () => {
   const nested = '<root><menu>' + '<item><menu>'.repeat(34) + '</menu></item>'.repeat(34) + '</menu></root>';
   assert.throws(() => parseConfiguration(nested, defaultSettings('darwin'), 'darwin'), /deeply/);
 });
+
+test('hand tracking is off by default, recovers from corrupt values, and survives a save round trip', () => {
+  assert.equal(defaultSettings('darwin').handTracking, false);
+  assert.equal(normalizeSettings({ handTracking: 'yes' }, 'darwin').handTracking, false);
+  assert.equal(normalizeSettings({ handTracking: true }, 'darwin').handTracking, true);
+});
+
+test('importing a configuration keeps the local camera choices', () => {
+  const current = { ...defaultSettings('darwin'), handTracking: true };
+  const result = parseConfiguration(JSON.stringify({ ...defaultSettings('win32'), handTracking: false, handDebugView: true }), current, 'darwin');
+  assert.equal(result.settings.handTracking, true);
+  assert.equal(result.settings.handDebugView, false, 'an imported file never shows the camera feed');
+});
+
+test('the camera debug view is off by default and recovers from corrupt values', () => {
+  assert.equal(defaultSettings('darwin').handDebugView, false);
+  assert.equal(normalizeSettings({ handDebugView: 1 }, 'darwin').handDebugView, false);
+  assert.equal(normalizeSettings({ handDebugView: true }, 'darwin').handDebugView, true);
+});

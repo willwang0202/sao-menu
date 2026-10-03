@@ -11,7 +11,7 @@ const bool = (value: unknown, fallback: boolean) => typeof value === 'boolean' ?
 export function defaultSettings(_platform: Platform, playerName = 'Kirito'): Settings {
   return {
     version: 1, playerName: playerName.slice(0, 40), sound: true,
-    reducedMotion: false, alwaysOnTop: false, launchAtLogin: false,
+    reducedMotion: false, alwaysOnTop: false, launchAtLogin: false, handTracking: false, handDebugView: false,
     shortcut: 'Alt+S',
     favorites: [],
   };
@@ -48,6 +48,8 @@ export function normalizeSettings(value: unknown, platform: Platform): Settings 
     version: 1, playerName: text(input.playerName, defaults.playerName, 40) || defaults.playerName,
     sound: bool(input.sound, defaults.sound), reducedMotion: bool(input.reducedMotion, defaults.reducedMotion),
     alwaysOnTop: bool(input.alwaysOnTop, defaults.alwaysOnTop), launchAtLogin: bool(input.launchAtLogin, defaults.launchAtLogin),
+    handTracking: bool(input.handTracking, defaults.handTracking),
+    handDebugView: bool(input.handDebugView, defaults.handDebugView),
     shortcut: text(input.shortcut, defaults.shortcut, 100) || defaults.shortcut,
     favorites,
     menu: normalizeMenu(input.menu, platform, validateLauncher),
@@ -149,7 +151,10 @@ export function parseConfiguration(source: string, current: Settings, platform: 
   if (data.version !== 1 || !Array.isArray(data.favorites)) throw new Error('This is not a supported SAO Utils 2 version 1 configuration.');
   const warnings: string[] = [];
   const favorites = portableFavorites(data.favorites, platform, warnings);
-  // Native login and shortcut settings are device-specific and never activated by an imported file.
-  const settings = normalizeSettings({ ...data, favorites, launchAtLogin: current.launchAtLogin, shortcut: current.shortcut, alwaysOnTop: current.alwaysOnTop }, platform);
+  // Native login, shortcut and camera settings are device-specific and never activated by an imported file.
+  const settings = normalizeSettings({
+    ...data, favorites, launchAtLogin: current.launchAtLogin, shortcut: current.shortcut, alwaysOnTop: current.alwaysOnTop,
+    handTracking: current.handTracking, handDebugView: current.handDebugView,
+  }, platform);
   return { imported: favorites.length, warnings, settings };
 }
