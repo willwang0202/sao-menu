@@ -25,6 +25,7 @@
     "test:social": "npm run build && node --import tsx scripts/smoke-social.mjs"
   },
   "dependencies": {
+    "@mediapipe/tasks-vision": "^1.0.1",
     "fast-xml-parser": "^5.5.0",
     "lucide-react": "^0.468.0",
     "react": "^19.0.0",

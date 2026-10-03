@@ -8,10 +8,10 @@ Control the SAO launcher with the built-in webcam, the way it works in the show:
 
 | Gesture | Effect | Accepted when |
 | --- | --- | --- |
-| Index + middle extended, ring + pinky curled, thumb tucked; swipe **down** | Summon the launcher | Menu closed |
+| Index + middle extended, ring + pinky curled; swipe **down** | Summon the launcher | Menu closed |
 | Index fingertip moves | Moves an SAO reticle inside the overlay; drives hover | Menu open |
 | Push the pointing hand **forward** (toward the screen) | Click the item under the reticle | Menu open |
-| Open hand (all five extended); swipe **left or right** | Dismiss the launcher | Menu open |
+| Open hand (four fingers extended); swipe **left or right** | Dismiss the launcher | Menu open |
 
 The feature is opt-in, macOS-first, and coexists with the mouse chord, shortcut and tray. It never moves the real
 system cursor and never acts outside the SAO overlay.
@@ -73,13 +73,14 @@ be tuned against the debug view.
 - *extended*: straightness `|MCP→TIP| / (|MCP→PIP|+|PIP→DIP|+|DIP→TIP|) ≥ 0.80` **and** `|wrist→TIP| > |wrist→PIP|`.
 - *curled*: `|wrist→TIP| < |wrist→PIP|` (tip folded back past the middle knuckle).
 - otherwise *neutral*.
-- *Thumb extended*: `|thumbTip→indexMCP| / palmWidth ≥ 1.0` where `palmWidth = |indexMCP→pinkyMCP|`.
+- The thumb is ignored: its 2-D projection is the least reliable landmark chain and the four fingers already make
+  each pose distinctive.
 
 **Poses**:
-- `summon`: index and middle extended, ring and pinky curled, thumb not extended. (Fingers together or in a V are both
+- `summon`: index and middle extended, ring and pinky curled. (Fingers together or in a V are both
   accepted; the curled ring and pinky already make the pose specific, and a togetherness check would add false negatives.)
 - `point`: index extended; middle, ring and pinky not extended.
-- `open`: all four fingers extended and thumb extended.
+- `open`: all four fingers extended.
 - `other`: anything else, or no hand.
 
 **Summon swipe** — tracked point: midpoint of index and middle tips. Keep summon-pose samples from the last
