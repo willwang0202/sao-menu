@@ -31,12 +31,14 @@ async function waitForStatus(page, predicate, label) {
 try {
   const page = await instance.firstWindow();
   page.on('pageerror', error => errors.push(error.message));
+  // Skip the Link Start intro, as the desktop smoke test does.
+  await page.waitForFunction(() => !!window.sao); await page.evaluate(() => window.sao.completeStartup());
   await page.getByRole('menuitem', { name: 'Kirito', exact: true }).waitFor();
   await instance.evaluate(({ systemPreferences }) => { systemPreferences.getMediaAccessStatus = () => 'granted'; });
 
   const off = await page.evaluate(() => window.sao.getHandTrackingStatus());
   assert.equal(off.enabled, false, 'hand tracking is off by default');
-  assert.equal(await instance.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().length), 1, 'no tracker window while off');
+  assert.equal(await instance.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().some(window => window.getTitle() === 'SAO Hand Tracker')), false, 'no tracker window while off');
 
   const settings = await page.evaluate(() => window.sao.getSettings());
   await page.evaluate(next => window.sao.saveSettings(next), { ...settings, handTracking: true });
