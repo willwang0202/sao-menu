@@ -66,10 +66,11 @@ test('hand tracking is off by default, recovers from corrupt values, and survive
   assert.equal(normalizeSettings({ handTracking: true }, 'darwin').handTracking, true);
 });
 
-test('importing a configuration keeps the local camera choice', () => {
+test('importing a configuration keeps the local camera choices', () => {
   const current = { ...defaultSettings('darwin'), handTracking: true };
-  const result = parseConfiguration(JSON.stringify({ ...defaultSettings('win32'), handTracking: false }), current, 'darwin');
+  const result = parseConfiguration(JSON.stringify({ ...defaultSettings('win32'), handTracking: false, handDebugView: true }), current, 'darwin');
   assert.equal(result.settings.handTracking, true);
+  assert.equal(result.settings.handDebugView, false, 'an imported file never shows the camera feed');
 });
 
 test('the camera debug view is off by default and recovers from corrupt values', () => {

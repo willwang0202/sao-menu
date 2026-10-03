@@ -151,7 +151,10 @@ export function parseConfiguration(source: string, current: Settings, platform: 
   if (data.version !== 1 || !Array.isArray(data.favorites)) throw new Error('This is not a supported SAO Utils 2 version 1 configuration.');
   const warnings: string[] = [];
   const favorites = portableFavorites(data.favorites, platform, warnings);
-  // Native login and shortcut settings are device-specific and never activated by an imported file.
-  const settings = normalizeSettings({ ...data, favorites, launchAtLogin: current.launchAtLogin, shortcut: current.shortcut, alwaysOnTop: current.alwaysOnTop, handTracking: current.handTracking }, platform);
+  // Native login, shortcut and camera settings are device-specific and never activated by an imported file.
+  const settings = normalizeSettings({
+    ...data, favorites, launchAtLogin: current.launchAtLogin, shortcut: current.shortcut, alwaysOnTop: current.alwaysOnTop,
+    handTracking: current.handTracking, handDebugView: current.handDebugView,
+  }, platform);
   return { imported: favorites.length, warnings, settings };
 }
