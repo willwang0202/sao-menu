@@ -1,6 +1,6 @@
 import { LANDMARK, midpoint, PALM_CENTRE, palmScale, type HandFrame, type Point } from './landmarks';
 import { filterPoint, type OneEuroParams, type OneEuroState } from './one-euro';
-import { classifyPose, type Pose } from './pose';
+import { classifyPose, fingerState, type Pose } from './pose';
 
 /* Thresholds are fractions of the camera frame unless named otherwise. */
 /*
@@ -75,14 +75,19 @@ function travelled(samples: readonly TimedPoint[], current: Point, axis: 'x' | '
 
 interface Step { state: RecognizerState; events: RecognizerEvent[] }
 
+/** Fast motion relaxes the other fingers, so a swipe may end on any frame that keeps index and middle up. */
+const isTwoFingersUp = (hand: HandFrame) => fingerState(hand, 'index') === 'extended' && fingerState(hand, 'middle') === 'extended';
+
 function stepSummon({ state, events }: Step, input: RecognizerInput, hand: HandFrame, pose: Pose): Step {
   if (input.menuOpen) return { state: { ...state, summon: [] }, events };
   const recent = within(state.summon, input.t, SUMMON_WINDOW_MS);
-  if (pose !== 'summon') return { state: { ...state, summon: recent }, events };
+  const isStartPose = pose === 'summon';
+  if (!isStartPose && (recent.length === 0 || !isTwoFingersUp(hand))) return { state: { ...state, summon: recent }, events };
   const point = midpoint(hand, [LANDMARK.INDEX_TIP, LANDMARK.MIDDLE_TIP]);
-  const summon = [...recent, { t: input.t, point }];
-  const ready = input.t >= state.gestureReadyAt && summon.length >= SUMMON_MIN_SAMPLES;
-  if (!ready || !travelled(summon, point, 'y', SUMMON_MIN_TRAVEL, true)) return { state: { ...state, summon }, events };
+  const candidates = [...recent, { t: input.t, point }];
+  const summon = isStartPose ? candidates : recent;
+  const ready = input.t >= state.gestureReadyAt && candidates.length >= SUMMON_MIN_SAMPLES;
+  if (!ready || !travelled(candidates, point, 'y', SUMMON_MIN_TRAVEL, true)) return { state: { ...state, summon }, events };
   return {
     state: { ...state, summon: [], gestureReadyAt: input.t + GESTURE_COOLDOWN_MS },
     events: [...events, { kind: 'summon', x: clampUnit(point.x), y: clampUnit(point.y) }],

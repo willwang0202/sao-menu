@@ -169,9 +169,26 @@ test('does not summon when the two-finger pose reappears lower after the window 
   assert.deepEqual(run(trace).kinds, []);
 });
 
-test('does not summon when the swipe ends in a different pose', () => {
-  const trace = [atTip(0, SHAPES.summon, 0.2), atTip(120, null, 0), atTip(240, SHAPES.open, 0.8), atTip(360, SHAPES.point, 0.85)];
-  assert.deepEqual(run(trace).kinds, []);
+test('summons when the other fingers relax by the end of the swipe (recorded webcam trace)', () => {
+  const relaxed = { index: 'extended', middle: 'extended', ring: 'extended', pinky: 'curled' } as const;
+  const trace = [
+    atTip(6481, SHAPES.summon, 0.492), atTip(6606, SHAPES.summon, 0.434), atTip(6729, SHAPES.point, 0.422),
+    atTip(6849, SHAPES.summon, 0.321), atTip(6967, relaxed, 0.610),
+  ];
+  assert.deepEqual(run(trace).kinds, ['summon']);
+});
+
+test('also completes a summon swipe that ends with an open hand', () => {
+  assert.deepEqual(run([atTip(0, SHAPES.summon, 0.2), atTip(120, null, 0), atTip(240, SHAPES.open, 0.6)]).kinds, ['summon']);
+});
+
+test('does not summon when the swipe ends without the two fingers extended', () => {
+  assert.deepEqual(run([atTip(0, SHAPES.summon, 0.2), atTip(120, SHAPES.point, 0.6)]).kinds, []);
+  assert.deepEqual(run([atTip(0, SHAPES.summon, 0.2), atTip(120, SHAPES.fist, 0.6)]).kinds, []);
+});
+
+test('an open hand moving down never summons without a two-finger start', () => {
+  assert.deepEqual(run(motion(SHAPES.open, [0.5, 0.3], [0.5, 0.6], 400, false)).kinds, []);
 });
 
 test('never mutates the previous state', () => {
