@@ -1,6 +1,6 @@
 # Release notes
 
-## Unreleased
+## 0.1.3 — October 3, 2026
 
 - Replace the Link Start video with a real-time reconstruction drawn every display refresh: rainbow tunnel, five sensor dials, language/login/registration cards, welcome text and blue dive, timed frame by frame to the reference. The reference's audio track (stream-copied, not re-encoded) supplies the voice and effects, and the picture follows it.
 - Add `scripts/compare-startup.mjs` for side-by-side checks against the reference clip, which stays in test fixtures and is no longer bundled.

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readdir, readFile, writeFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
+import { execFileSync, spawnSync } from 'node:child_process';
 import asar from '@electron/asar';
 
 const app = path.resolve('release/mac-arm64/SAO Utils 2.app');
@@ -24,10 +25,19 @@ const built = [...renderer, ...(await files('dist-desktop')).filter(file => path
 for (const file of built) assert.deepEqual(asar.extractFile(archive, file.split(path.sep).join('/')), await readFile(file), `Packaged file differs: ${file}`);
 const packagedRenderer = asar.listPackage(archive).filter(file => file.startsWith('/dist/') && !asar.statFile(archive, file.slice(1)).files);
 assert.equal(packagedRenderer.length, renderer.length, 'Archive contains obsolete renderer files');
-assert.deepEqual(await readFile(path.join(resources, 'gesture-helper')), await readFile('dist-desktop/gesture-helper'));
+// Signing rewrites the helper's signature, so compare its machine code and strings per architecture instead of raw bytes.
+const helper = path.join(resources, 'gesture-helper');
+const sections = file => ['arm64', 'x86_64'].flatMap(arch => [['-t'], ['-s', '__TEXT', '__cstring']].map(args => execFileSync('otool', ['-arch', arch, ...args, file]).toString().split('\n').slice(1).join('\n')));
+assert.deepEqual(sections(helper), sections('dist-desktop/gesture-helper'), 'Packaged gesture helper code differs');
+execFileSync('codesign', ['--verify', '--deep', '--strict', app]);
+// codesign -d reports on stderr; an ad-hoc or missing identity is recorded as unsigned.
+const authority = spawnSync('codesign', ['-dvv', app], { encoding: 'utf8' }).stderr.match(/^Authority=(Developer ID Application: .*)$/m)?.[1] ?? null;
+const gatekeeper = spawnSync('spctl', ['-a', '-vv', '-t', 'exec', app], { encoding: 'utf8' }).stderr.match(/^source=(.*)$/m)?.[1] ?? 'unknown';
 assert.deepEqual(await readFile(path.join(resources, 'icon.icns')), await readFile('resources/icon.icns'));
 const zip = path.resolve(`release/SAO Utils 2-${packageInfo.version}-arm64.zip`);
-const report = { verifiedAt: new Date().toISOString(), version: packageInfo.version, gitTag: `v${packageInfo.version}`, app, zip, packagedFilesMatched: built.length, rendererFiles: renderer.length, gestureHelperMatches: true, originalIconMatches: true, appArchiveSHA256: createHash('sha256').update(await readFile(archive)).digest('hex'), zipSHA256: createHash('sha256').update(await readFile(zip)).digest('hex'), nativeAcceptanceReport: 'docs/verification.md', onlineService: 'not deployed' };
+const dmg = path.resolve(`release/SAO Utils 2-${packageInfo.version}-arm64.dmg`);
+const dmgSHA256 = await readFile(dmg).then(bytes => createHash('sha256').update(bytes).digest('hex'), () => null);
+const report = { verifiedAt: new Date().toISOString(), version: packageInfo.version, gitTag: `v${packageInfo.version}`, app, zip, packagedFilesMatched: built.length, rendererFiles: renderer.length, gestureHelperMatches: true, signedBy: authority, gatekeeper, originalIconMatches: true, appArchiveSHA256: createHash('sha256').update(await readFile(archive)).digest('hex'), zipSHA256: createHash('sha256').update(await readFile(zip)).digest('hex'), ...(dmgSHA256 ? { dmg, dmgSHA256 } : {}), nativeAcceptanceReport: 'docs/verification.md', onlineService: 'not deployed' };
 await mkdir('output', { recursive: true });
 await writeFile('output/current-package.json', JSON.stringify(report, null, 2) + '\n');
 console.log(JSON.stringify(report, null, 2));

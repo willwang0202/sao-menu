@@ -1,5 +1,14 @@
 # Current test release verification
 
+The Apple Silicon 0.1.3 app, ZIP and DMG were built and verified on October 3, 2026. The packaged native and JavaScript versions both report 0.1.3. All 1,111 packaged renderer, host and icon files match the final build, and no obsolete renderer files remain. electron-builder signed the app with the local Developer ID Application certificate; `codesign --verify --deep --strict` passes. The app is not notarized, so Gatekeeper reports "Unnotarized Developer ID". Signing rewrites the gesture helper's signature, so its machine code and strings are compared per architecture rather than byte for byte. Both match. ZIP and DMG integrity checks passed; checksums are in `output/current-package.json`. Windows/Linux runtime behavior remains unverified.
+
+- `npm test`: 94/94 passed, including the Link Start clock, audio follow, cover scaling, keyframes, scene order and the audio/reference checksums.
+- Native startup acceptance on the release build, with a 120Hz display, used the procedural Link Start and the reference's Japanese voice/SFX track. Every scene had a median frame interval of 8.3ms and a p95 of 9.4–9.9ms. Late frames: sensors 1, language 2, all others 0. A new canvas frame was drawn on each refresh. The entry sequence played through the warp after real login. Full-display bounds were compared with the display the window opened on, because a second monitor was connected.
+- Desktop, hover, social, surfaces/gallery and hand-gesture native suites passed again on the release build.
+- `node scripts/compare-startup.mjs` renders side-by-side checks against the reference. Composition, timing and palette match; fine detail is approximate (see [references](startup-references.md)).
+
+## Earlier 0.1.2 release
+
 The Apple Silicon 0.1.2 app and ZIP were built and verified on October 3, 2026. The packaged native and JavaScript versions both report 0.1.2; all 1,111 packaged renderer/host/icon files match the final build, no obsolete renderer files remain, and the helper/icon match their source artifacts. ZIP integrity passed. Only the current release app and ZIP are retained. Checksums are recorded in `output/current-package.json`; the build is unsigned and not notarized. Windows/Linux runtime behavior remains unverified.
 
 - `npm test`: 81/81 passed, including real SQLite account rules, original startup byte/metadata checks, CPU/RAM headroom, display frequency normalization, FOV mapping/limits and the independently merged hand-gesture suite.

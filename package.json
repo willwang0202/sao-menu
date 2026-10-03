@@ -1,6 +1,6 @@
 {
   "name": "sao-utils-port",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "private": true,
   "description": "A local cross-platform port of the SAO Utils 2 launcher using its original theme resources",
   "type": "module",
