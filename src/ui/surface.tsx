@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { pagePoint, type BrowserFrame, type SurfaceInput, type SurfaceState } from '../shared/surfaces';
+import { browserPerspective, pagePoint, type BrowserFrame, type SurfaceInput, type SurfaceState } from '../shared/surfaces';
 import { CurvedBrowser } from './browser-gl';
 import './surface.css';
 import { GallerySurface } from './gallery';
@@ -25,8 +25,9 @@ export function SurfaceApp() {
   const motion = !state.reducedMotion && !matchMedia('(prefers-reduced-motion: reduce)').matches;
   const horizontal = Math.max(-1, Math.min(1, (pointer.x - innerWidth / 2) / innerWidth));
   const vertical = Math.max(-1, Math.min(1, (pointer.y - innerHeight / 2) / innerHeight));
+  const perspective = state.kind === 'browser' ? browserPerspective(innerWidth-40,state.fieldOfView) : 1600;
   return <div className={`surface-scene ${state.reducedMotion ? 'reduce-motion' : ''} ${dragging ? 'file-drag' : ''}`} onDragOver={event => { if (state.kind !== 'browser' && event.dataTransfer.types.includes('Files')) { event.preventDefault(); event.dataTransfer.dropEffect = 'link'; setDragging(true); } }} onDragLeave={event => { if (!event.currentTarget.contains(event.relatedTarget as Node)) setDragging(false); }} onDrop={event => { event.preventDefault(); setDragging(false); setError(''); void api.dropFiles([...event.dataTransfer.files]).catch(error => setError(String(error))); }}>
-    <section className={`floating-surface ${state.kind === 'browser' ? 'browser-surface' : 'media-surface'}`} style={{ transform: motion ? `perspective(1600px) rotateX(${-vertical * 6}deg) rotateY(${horizontal * 9}deg)` : undefined }} aria-label={state.kind === 'browser' ? 'Built-in web browser' : state.kind === 'video' ? 'Video preview' : state.kind === 'gallery' ? 'Gallery preview' : 'Image preview'}>
+    <section className={`floating-surface ${state.kind === 'browser' ? 'browser-surface' : 'media-surface'}`} style={{ transform: motion ? `perspective(${perspective}px) rotateX(${-vertical * 6}deg) rotateY(${horizontal * 9}deg)` : undefined }} aria-label={state.kind === 'browser' ? 'Built-in web browser' : state.kind === 'video' ? 'Video preview' : state.kind === 'gallery' ? 'Gallery preview' : 'Image preview'}>
       {state.kind === 'browser' ? <BrowserSurface state={state} /> : state.kind === 'gallery' ? <GallerySurface state={state} /> : <MediaSurface state={state} />}
       {error && <div className="surface-error" role="alert">{error}<button onClick={() => setError('')}>Dismiss</button></div>}
     </section>
@@ -89,7 +90,7 @@ function BrowserSurface({ state }: { state: SurfaceState }) {
       try {
         if (next) renderer.updatePage(next);
         if (dirty) drawChrome();
-        if (next || dirty) { renderer.draw(); element.dataset.frames = String(++count); }
+        if (next || dirty) { renderer.draw(stateRef.current.fieldOfView); element.dataset.frames = String(++count); }
         dirty = false;
       } catch(error) { setError(String(error)); }
       finally { if (next) api.acknowledgeFrame(); }
@@ -98,13 +99,13 @@ function BrowserSurface({ state }: { state: SurfaceState }) {
     animation = requestAnimationFrame(tick);
     return () => { active = false; cancelAnimationFrame(animation); resize.disconnect(); detach(); renderer.dispose(); redraw.current = () => {}; };
   }, []);
-  useEffect(() => { redraw.current(); }, [state.title, state.url, state.loading]);
+  useEffect(() => { redraw.current(); }, [state.title, state.url, state.loading, state.fieldOfView]);
   const send = (input: SurfaceInput) => {
     inputQueue.current = inputQueue.current.catch(() => {}).then(() => api.input(input)).catch(e => setError(String(e)));
   };
   const point = (event: React.MouseEvent<HTMLCanvasElement>) => {
     const element = event.currentTarget;
-    const mapped = pagePoint(event.nativeEvent.offsetX * 1000 / element.clientWidth, event.nativeEvent.offsetY * 700 / element.clientHeight, 1000, 700);
+    const mapped = pagePoint(event.nativeEvent.offsetX * 1000 / element.clientWidth, event.nativeEvent.offsetY * 700 / element.clientHeight, 1000, 700, state.fieldOfView);
     return mapped && mapped.y >= 38 && mapped.y < 678 ? { x: mapped.x, y: mapped.y - 38 } : null;
   };
   const mouse = (event: React.MouseEvent<HTMLCanvasElement>, type: 'mouseMove' | 'mouseDown' | 'mouseUp') => {
@@ -126,7 +127,10 @@ function BrowserSurface({ state }: { state: SurfaceState }) {
     <footer className="browser-status"><OriginalControl icon={state.loading ? 'web-stop' : 'web-reload'} label={state.loading ? 'Stop loading' : 'Reload page'} onHover={value => hoverChrome('reload', value)} onClick={() => call(state.loading ? 'stop' : 'reload')} /><button className="browser-address-display" title="Open address · ⌘/Ctrl+L" onClick={() => setAddressOpen(true)}>{state.url === 'about:blank' ? 'Enter web address' : state.url}</button></footer>
     {(error || state.error) && <div className="surface-error" role="alert">{error || state.error}<button onClick={() => { setError(''); setAddressOpen(true); }}>Change address</button></div>}
     {addressOpen && <form className="browser-address-form" onSubmit={e => { e.preventDefault(); void api.navigate(address.trim()).then(() => { setError(''); setAddressOpen(false); canvas.current?.focus(); }).catch(e => setError(String(e))); }}><label>Web address<input aria-label="Web address" autoFocus placeholder="https://…" value={address} onChange={e => setAddress(e.target.value)} onFocus={e => e.target.select()} /></label><button type="submit">Open</button><button type="button" onClick={() => setAddressOpen(false)}>Cancel</button></form>}
-    {menu && <div className="surface-context" role="menu" style={{ left: Math.min(menu.x, innerWidth - 190), top: Math.min(menu.y, innerHeight - 220) }}><button role="menuitem" disabled={!state.canGoBack} onClick={() => { call('back'); setMenu(null); }}>Back</button><button role="menuitem" disabled={!state.canGoForward} onClick={() => { call('forward'); setMenu(null); }}>Forward</button><button role="menuitem" onClick={() => { call('reload'); setMenu(null); }}>Reload</button><button role="menuitem" onClick={() => { setAddressOpen(true); setMenu(null); }}>Web address</button><button role="menuitem" onClick={() => { call('external'); setMenu(null); }}>Open in default browser</button></div>}
+    {menu && <div className="surface-context" role="menu" style={{ left: Math.min(menu.x, innerWidth - 190), top: Math.min(menu.y, innerHeight - 330) }}><button role="menuitem" disabled={!state.canGoBack} onClick={() => { call('back'); setMenu(null); }}>Back</button><button role="menuitem" disabled={!state.canGoForward} onClick={() => { call('forward'); setMenu(null); }}>Forward</button><button role="menuitem" onClick={() => { call('reload'); setMenu(null); }}>Reload</button><button role="menuitem" onClick={() => { setAddressOpen(true); setMenu(null); }}>Web address</button><button role="menuitem" onClick={() => { call('external'); setMenu(null); }}>Open in default browser</button>
+      <label className="browser-fov">Field of view <output>{Math.round(state.fieldOfView)}°</output><input aria-label="Web preview field of view" type="range" min="20" max="100" step="1" value={state.fieldOfView} onChange={event => { void api.setFieldOfView(Number(event.target.value)).catch(e => setError(String(e))); }} /></label>
+      <button role="menuitem" onClick={() => { void api.setFieldOfView(45).catch(e => setError(String(e))); }}>Reset field of view</button>
+    </div>}
   </>;
 }
 

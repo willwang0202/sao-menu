@@ -1,14 +1,15 @@
 import type { BrowserFrame } from '../shared/surfaces';
-import { pageBend } from '../shared/surfaces';
+import { browserBend } from '../shared/surfaces';
 import { gpuProgram } from './webgl';
 const vertex=`#version 300 es
 precision highp float;
 in vec2 aPoint;
 out vec2 vUV;
+uniform float uBend;
 void main(){
   vUV=aPoint;
   float n=aPoint.x*2.-1.;
-  float inset=${pageBend.toFixed(2)}*(1.-n*n)*.5;
+  float inset=uBend*(1.-n*n)*.5;
   float y=inset+aPoint.y*(1.-inset*2.);
   gl_Position=vec4(n,1.-y*2.,0.,1.);
 }`;
@@ -60,11 +61,12 @@ export class CurvedBrowser {
     else gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,frame.width,frame.height,gl.RGBA,gl.UNSIGNED_BYTE,frame.pixels);
   }
   updateChrome(source:HTMLCanvasElement):void {const gl=this.gl;gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,this.chrome);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,source);}
-  draw():void {
+  draw(fieldOfView:number):void {
     const gl=this.gl,ratio=devicePixelRatio;
     const width=Math.max(1,Math.round(this.canvas.clientWidth*ratio)),height=Math.max(1,Math.round(this.canvas.clientHeight*ratio));
     if(this.canvas.width!==width || this.canvas.height!==height){this.canvas.width=width;this.canvas.height=height;gl.viewport(0,0,width,height);}
-    gl.clear(gl.COLOR_BUFFER_BIT);gl.useProgram(this.program);gl.drawArrays(gl.TRIANGLES,0,this.vertices);
+    gl.clear(gl.COLOR_BUFFER_BIT);gl.useProgram(this.program);
+    gl.uniform1f(gl.getUniformLocation(this.program,'uBend'),browserBend(fieldOfView));gl.drawArrays(gl.TRIANGLES,0,this.vertices);
   }
   dispose():void {const gl=this.gl;gl.deleteBuffer(this.buffer);gl.deleteTexture(this.page);gl.deleteTexture(this.chrome);gl.deleteProgram(this.program);}
 }

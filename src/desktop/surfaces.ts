@@ -4,7 +4,7 @@ import { readdir, realpath, stat } from 'node:fs/promises';
 import { Readable } from 'node:stream';
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
-import { browserURL, mediaKind, type SurfaceState, type SurfaceInput, type BrowserFrame } from '../shared/surfaces';
+import { browserURL, mediaKind, normalizeFieldOfView, type SurfaceState, type SurfaceInput, type BrowserFrame } from '../shared/surfaces';
 import { defaultPresentation, normalizeGallery, normalizePresentation, type SurfaceLayout } from '../shared/surface-layout';
 import { SurfaceLayoutStore } from './surface-store';
 import { displayFrameRate, pointerInterval } from '../shared/refresh';
@@ -72,6 +72,11 @@ export class SurfaceManager {
       const surface = owner(event);
       if (!surface.state.gallery) throw new Error('This is not a gallery.');
       surface.state.gallery.settings = normalizeGallery(value); this.publish(surface); this.scheduleSave();
+    });
+    ipcMain.handle('sao:surface:fov', (event, value) => {
+      const surface = owner(event);
+      if (surface.state.kind !== 'browser' || typeof value !== 'number' || !Number.isFinite(value)) throw new Error('Invalid browser field of view.');
+      surface.state.fieldOfView = normalizeFieldOfView(value); this.publish(surface); this.scheduleSave();
     });
     ipcMain.handle('sao:surface:input', (event, input) => this.input(owner(event), input));
     ipcMain.handle('sao:surface:resize', (event, width, height) => {
@@ -254,7 +259,7 @@ export class SurfaceManager {
   }
   async flush(): Promise<void> {
     if (this.saveTimer) { clearTimeout(this.saveTimer); this.saveTimer = null; }
-    const layouts = [...this.surfaces.values()].map(surface => ({ kind: surface.state.kind, source: surface.state.kind === 'browser' ? surface.state.url : surface.source, bounds: surface.view.getBounds(), presentation: surface.state.presentation, gallery: surface.state.gallery?.settings }));
+    const layouts = [...this.surfaces.values()].map(surface => ({ kind: surface.state.kind, source: surface.state.kind === 'browser' ? surface.state.url : surface.source, bounds: surface.view.getBounds(), presentation: surface.state.presentation, fieldOfView: surface.state.kind === 'browser' ? surface.state.fieldOfView : undefined, gallery: surface.state.gallery?.settings }));
     await this.store.save(layouts);
   }
   private scheduleSave(): void {
@@ -328,7 +333,7 @@ export class SurfaceManager {
       show: false, frame: false, transparent: true, backgroundColor: '#00000000', hasShadow: false, resizable: true,
       title, autoHideMenuBar: true, alwaysOnTop: true,
       webPreferences: { preload: this.preload, nodeIntegration: false, sandbox: true, contextIsolation: true, webSecurity: true, autoplayPolicy: 'no-user-gesture-required' } });
-    const surface: Surface = { view, token, galleryTokens: [], source: layout?.source ?? '', url: location.href, state: { id, kind, title, url: source, loading: false, error: '', canGoBack: false, canGoForward: false, reducedMotion: this.reducedMotion(), restored: !!layout, presentation: layout?.presentation ?? { ...defaultPresentation } } };
+    const surface: Surface = { view, token, galleryTokens: [], source: layout?.source ?? '', url: location.href, state: { id, kind, title, url: source, loading: false, error: '', canGoBack: false, canGoForward: false, reducedMotion: this.reducedMotion(), restored: !!layout, fieldOfView: normalizeFieldOfView(layout?.fieldOfView), presentation: layout?.presentation ?? { ...defaultPresentation } } };
     const senderId = view.webContents.id;
     this.surfaces.set(senderId, surface);
     view.on('page-title-updated', event => event.preventDefault());

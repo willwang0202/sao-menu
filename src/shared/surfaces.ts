@@ -5,7 +5,7 @@ export interface GalleryImage { title: string; url: string }
 export interface SurfaceState {
   id: string; kind: SurfaceKind; title: string; url: string; loading: boolean;
   error: string; canGoBack: boolean; canGoForward: boolean; reducedMotion: boolean;
-  restored: boolean; presentation: MediaPresentation;
+  restored: boolean; presentation: MediaPresentation; fieldOfView: number;
   gallery?: { images: GalleryImage[]; settings: GallerySettings; revision: number };
 }
 export interface BrowserFrame { pixels: Uint8Array; width: number; height: number }
@@ -21,6 +21,7 @@ export interface SurfaceAPI {
   command(command: 'back' | 'forward' | 'reload' | 'stop' | 'close' | 'external' | 'change' | 'refresh'): Promise<void>;
   dropFiles(files: File[]): Promise<void>;
   setPresentation(presentation: MediaPresentation): Promise<void>;
+  setFieldOfView(degrees: number): Promise<void>;
   setGallery(settings: GallerySettings): Promise<void>;
   input(input: SurfaceInput): Promise<void>;
   resize(width: number, height: number): Promise<void>;
@@ -45,13 +46,22 @@ export function mediaKind(file: string): 'image' | 'video' | null {
 // Cylindrical presentation and its inverse use the same mapping, so clicking
 // the curved page addresses the corresponding point in the actual browser.
 export const pageBend = .11;
-export function curveInset(x: number, width: number, height: number): number {
-  const normalized = 2 * x / Math.max(1, width) - 1;
-  return height * pageBend * (1 - normalized * normalized) / 2;
+export function normalizeFieldOfView(value: unknown): number {
+  return typeof value === 'number' && Number.isFinite(value) ? Math.max(20,Math.min(100,value)) : 45;
 }
-export function pagePoint(x: number, y: number, width: number, height: number): { x: number; y: number } | null {
+export function browserPerspective(width: number, fieldOfView: number): number {
+  return Math.max(1,width)/(2*Math.tan(normalizeFieldOfView(fieldOfView)*Math.PI/360));
+}
+export function browserBend(fieldOfView: number): number {
+  return pageBend*Math.tan(normalizeFieldOfView(fieldOfView)*Math.PI/360)/Math.tan(Math.PI/8);
+}
+export function curveInset(x: number, width: number, height: number, fieldOfView = 45): number {
+  const normalized = 2 * x / Math.max(1, width) - 1;
+  return height * browserBend(fieldOfView) * (1 - normalized * normalized) / 2;
+}
+export function pagePoint(x: number, y: number, width: number, height: number, fieldOfView = 45): { x: number; y: number } | null {
   if (x < 0 || x >= width) return null;
-  const inset = curveInset(x, width, height);
+  const inset = curveInset(x, width, height, fieldOfView);
   if (y < inset || y >= height - inset) return null;
   return { x: Math.floor(x), y: Math.floor((y - inset) * height / (height - 2 * inset)) };
 }

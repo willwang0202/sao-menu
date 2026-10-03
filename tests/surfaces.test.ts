@@ -2,6 +2,24 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { browserURL, curveInset, pagePoint, mediaKind } from '../src/shared/surfaces';
 import { resolveNativeMenu } from '../src/shared/menu';
+import * as surfaces from '../src/shared/surfaces';
+
+test('browser FOV accepts safe degrees and keeps page input aligned at every zoom', () => {
+  assert.equal(typeof surfaces.normalizeFieldOfView, 'function');
+  assert.equal(surfaces.normalizeFieldOfView(undefined),45);
+  for (const value of [NaN,Infinity,'90',null]) assert.equal(surfaces.normalizeFieldOfView(value),45);
+  assert.equal(surfaces.normalizeFieldOfView(-10),20);
+  assert.equal(surfaces.normalizeFieldOfView(180),100);
+  assert.equal(surfaces.normalizeFieldOfView(70),70);
+  assert.ok(surfaces.browserPerspective(1000,90)<surfaces.browserPerspective(1000,45));
+  assert.ok(surfaces.curveInset(500,1000,700,90)>surfaces.curveInset(500,1000,700,45));
+  for(const fov of [20,45,70,100])for(const x of [0,120,500,880,999])for(const y of [0,200,500,699]){
+    const inset=surfaces.curveInset(x,1000,700,fov);
+    const mapped=surfaces.pagePoint(x,inset+y/700*(700-2*inset),1000,700,fov);
+    assert.ok(mapped && Math.abs(mapped.y-y)<=1);
+    assert.equal(surfaces.pagePoint(x,inset-1,1000,700,fov),null);
+  }
+});
 
 test('browser URLs cannot navigate to privileged protocols or credential-bearing addresses', () => {
   assert.equal(browserURL('example.com/a'), 'https://example.com/a');

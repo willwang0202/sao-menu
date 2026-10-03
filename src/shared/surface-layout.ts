@@ -1,9 +1,9 @@
-import { browserURL, mediaKind, type GallerySettings, type MediaPresentation, type SurfaceKind } from './surfaces';
+import { browserURL, mediaKind, normalizeFieldOfView, type GallerySettings, type MediaPresentation, type SurfaceKind } from './surfaces';
 
 export const galleryTransitions = ['CircleCrop', 'Crosshatch', 'Cube', 'Directional', 'Fade', 'FadeColor', 'GridFlip', 'Hexagonalize', 'InvertedPageCurl', 'LinearBlur', 'LuminanceMelt', 'Pixelize', 'PolkaDotsCurtain', 'Radial', 'RandomSquares', 'SimpleZoom', 'SquaresWire', 'WindowSlice'].map(name => `${name}.glsl`);
 export const galleryFrames = ['classic-white.9.png', 'compact-black.9.png', 'compact-white.9.png', 'drop-l-cyan.9.png', 'drop-l-grey.9.png', 'drop-l-pink.9.png', 'drop-m-cyan.9.png', 'drop-m-grey.9.png', 'drop-m-pink.9.png', 'full-black.9.png', 'instant-film.9.png', 'shadow-high.9.png', 'shadow-low.9.png', 'small-black.9.png', 'small-white.9.png', ...['dark', 'light'].flatMap(tone => [20, 40, 60].map(level => `scrim-${tone}-${level}.png`))];
 export const defaultPresentation: MediaPresentation = { fill: 'contain', muted: false, autoResize: true };
-export interface SurfaceLayout { kind: SurfaceKind; source: string; bounds: { x: number; y: number; width: number; height: number }; presentation: MediaPresentation; gallery?: GallerySettings }
+export interface SurfaceLayout { kind: SurfaceKind; source: string; bounds: { x: number; y: number; width: number; height: number }; presentation: MediaPresentation; fieldOfView?: number; gallery?: GallerySettings }
 const record = (value: unknown): Record<string, unknown> => value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
 export function normalizePresentation(value: unknown): MediaPresentation {
   const data = record(value);
@@ -33,7 +33,7 @@ export function normalizeLayouts(value: unknown): SurfaceLayout[] {
     }
     if (!['x', 'y', 'width', 'height'].every(key => typeof bounds[key] === 'number' && Number.isFinite(bounds[key]) && Math.abs(bounds[key] as number) <= 100000)) continue;
     if (Number(bounds.width) < 180 || Number(bounds.height) < 120) continue;
-    result.push({ kind, source, bounds: { x: Math.round(Number(bounds.x)), y: Math.round(Number(bounds.y)), width: Math.round(Number(bounds.width)), height: Math.round(Number(bounds.height)) }, presentation: normalizePresentation(data.presentation), ...(kind === 'gallery' ? { gallery: normalizeGallery(data.gallery) } : {}) });
+    result.push({ kind, source, bounds: { x: Math.round(Number(bounds.x)), y: Math.round(Number(bounds.y)), width: Math.round(Number(bounds.width)), height: Math.round(Number(bounds.height)) }, presentation: normalizePresentation(data.presentation), ...(kind === 'browser' ? { fieldOfView: normalizeFieldOfView(data.fieldOfView) } : {}), ...(kind === 'gallery' ? { gallery: normalizeGallery(data.gallery) } : {}) });
     if (result.length === 12) break;
   }
   return result;

@@ -193,13 +193,16 @@ function summonAt(point: Position): void {
   if (!window) return;
   window.setIgnoreMouseEvents(false);
   if (window.isMinimized()) window.restore();
-  const workArea = screen.getDisplayNearestPoint(point).workArea;
+  const display = screen.getDisplayNearestPoint(point);
+  const workArea = startup ? display.bounds : display.workArea;
   const width = workArea.width;
   const height = workArea.height;
   const x = workArea.x;
   const y = workArea.y;
+  if (startup && platform === 'darwin' && !window.isSimpleFullScreen()) window.setSimpleFullScreen(true);
   window.setMinimumSize(Math.min(720, width), Math.min(540, height));
   window.setBounds({ x, y, width, height });
+  window.setAlwaysOnTop(startup || settings.alwaysOnTop, startup ? 'screen-saver' : 'floating');
   refreshPointerRate();
   const minimumX = Math.min(300, width / 2);
   const minimumY = Math.min(200, height / 2);
@@ -382,7 +385,13 @@ function installHandlers(): void {
   handler('sao:media:open', () => window ? surfaces.pickMedia(window) : undefined);
   handler('sao:runtime', () => ({ platform, version: app.getVersion(), desktop: true, shortcutRegistered, startup }));
   handler('sao:startup:complete', () => {
-    startup = false; if (social?.getState().snapshot) hpDisplay?.show();
+    const wasStarting = startup; startup = false;
+    if (wasStarting && window) {
+      if (platform === 'darwin' && window.isSimpleFullScreen()) window.setSimpleFullScreen(false);
+      const area = screen.getDisplayMatching(window.getBounds()).workArea;
+      window.setBounds(area); window.setAlwaysOnTop(settings.alwaysOnTop,'floating'); refreshPointerRate();
+    }
+    if (social?.getState().snapshot) hpDisplay?.show();
     window?.webContents.send('sao:startup:done');
   });
   handler('sao:gesture:status', () => gesture.getStatus());

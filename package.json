@@ -1,6 +1,6 @@
 {
   "name": "sao-utils-port",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "description": "A local cross-platform port of the SAO Utils 2 launcher using its original theme resources",
   "type": "module",
@@ -23,7 +23,9 @@
     "start:service": "npm run build:service && node dist-service/server.cjs",
     "test:hover": "npm run build && node scripts/smoke-hover.mjs",
     "test:social": "npm run build && node --import tsx scripts/smoke-social.mjs",
-    "test:hand": "npm run build && node scripts/smoke-hand.mjs"
+    "test:hand": "npm run build && node scripts/smoke-hand.mjs",
+    "test:startup": "npm run build && node --import tsx scripts/smoke-startup.mjs",
+    "test:startup:frames": "npm run build && node scripts/smoke-startup-frames.mjs"
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "^1.0.1",

@@ -20,7 +20,7 @@ const server = createServer((request, response) => {
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 const address = `http://127.0.0.1:${server.address().port}/`;
 const env = Object.fromEntries(Object.entries(process.env).filter(([key, value]) => value !== undefined && !['ELECTRON_RUN_AS_NODE', 'SAO_DEV_URL'].includes(key)));
-const instance = await electron.launch({ executablePath: electronPath, args: ['.'], cwd: process.cwd(), env: { ...env, SAO_USER_DATA: temporary }, timeout: 30000 });
+let instance = await electron.launch({ executablePath: electronPath, args: ['.'], cwd: process.cwd(), env: { ...env, SAO_USER_DATA: temporary }, timeout: 30000 });
 const errors = [];
 try {
   const main = await instance.firstWindow();
@@ -70,13 +70,28 @@ try {
     return remote.executeJavaScript('({node:typeof window.require, desktop:typeof window.sao, surface:typeof window.saoSurface})');
   });
   assert.deepEqual(remoteIsolation, { node: 'undefined', desktop: 'undefined', surface: 'undefined' });
+  await browser.locator('canvas').click({ button: 'right', position: {x:200,y:200} });
+  const fov = browser.getByRole('slider', {name:'Web preview field of view'});
+  await fov.press('End');
+  await browser.waitForFunction(() => document.querySelector('.browser-fov output')?.textContent === '100°');
+  assert.equal((await browser.evaluate(() => window.saoSurface.getState())).fieldOfView,100);
+  await browser.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  const wideInset=curveInset(750,1000,700,100);
+  const widePixel=await instance.evaluate(async ({BrowserWindow},point)=>{
+    const view=BrowserWindow.getAllWindows().find(w=>w.webContents.getURL().includes('surface='));
+    const capture=await view.webContents.capturePage({x:Math.round(point.x),y:Math.round(point.y),width:1,height:1});
+    return Array.from(capture.toBitmap().subarray(0,4));
+  },{x:bounds.x+750/1000*bounds.width,y:bounds.y+(wideInset+168/700*(700-wideInset*2))/700*bounds.height});
+  assert.ok(Math.abs(widePixel[0]-70)<10 && Math.abs(widePixel[1]-40)<10 && Math.abs(widePixel[2]-230)<10,`FOV changes the actual rendered curve: ${JSON.stringify(widePixel)}`);
+  assert.equal(await browser.evaluate(async () => {try{await window.saoSurface.setFieldOfView(NaN);return false;}catch{return true;}}),true);
   const hit = async selector => {
     const native = await instance.evaluate(async ({ webContents }, selector) => {
       const remote = webContents.getAllWebContents().find(contents => contents.getType() === 'offscreen');
       return remote.executeJavaScript(`(()=>{const box=document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();return {x:box.x+box.width/2,y:box.y+box.height/2}})()`);
     }, selector);
     const box = await browser.locator('canvas').boundingBox();
-    const inset = curveInset(native.x, 1000, 700);
+    const fieldOfView=(await browser.evaluate(() => window.saoSurface.getState())).fieldOfView;
+    const inset = curveInset(native.x, 1000, 700, fieldOfView);
     await browser.mouse.click(box.x + native.x / 1000 * box.width, box.y + (inset + (native.y + 38) / 700 * (700 - inset * 2)) / 700 * box.height);
   };
   await hit('#click');
@@ -175,13 +190,31 @@ try {
   // Outside native clicks and upward dismiss gestures reach the original exit transition.
   await instance.evaluate(({ app }) => app.emit('activate'));
   await main.locator('.original-menu').waitFor();
-  await instance.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find(window => window.webContents.getLastWebPreferences().preload?.endsWith('/preload.cjs')).webContents.send('sao:pointer:down', { x: -30, y: -30 }));
+  await instance.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find(window => window.webContents.getURL().endsWith('/index.html')).webContents.send('sao:pointer:down', { x: -30, y: -30 }));
   await main.waitForFunction(() => !document.querySelector('.original-menu'));
-  assert.equal(await instance.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find(window => window.webContents.getLastWebPreferences().preload?.endsWith('/preload.cjs')).isVisible()), false);
+  assert.equal(await instance.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find(window => window.webContents.getURL().endsWith('/index.html')).isVisible()), false);
   await instance.evaluate(({ app }) => app.emit('activate'));
   await main.locator('.original-menu').waitFor();
-  await instance.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find(window => window.webContents.getLastWebPreferences().preload?.endsWith('/preload.cjs')).webContents.send('sao:menu:dismiss'));
+  await instance.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find(window => window.webContents.getURL().endsWith('/index.html')).webContents.send('sao:menu:dismiss'));
   await main.waitForFunction(() => !document.querySelector('.original-menu'));
   assert.deepEqual(errors, []);
+  await main.evaluate(() => window.sao.openBrowser());
+  const savedBrowser=instance.windows().find(page=>page.url().includes('surface='));
+  await savedBrowser.waitForFunction(()=>!!window.saoSurface);
+  await savedBrowser.evaluate(async url=>{await window.saoSurface.navigate(url);await window.saoSurface.setFieldOfView(88);},address);
+  await instance.close();
+  const savedLayout=JSON.parse(await readFile(path.join(temporary,'surface-layout.json'),'utf8'));
+  assert.equal(savedLayout.find(layout=>layout.kind==='browser').fieldOfView,88,'FOV saved on native exit');
+  instance=await electron.launch({executablePath:electronPath,args:['.'],cwd:process.cwd(),env:{...env,SAO_USER_DATA:temporary},timeout:30000});
+  const restartedMain=await instance.firstWindow();
+  await restartedMain.waitForFunction(()=>!!window.sao);await restartedMain.evaluate(()=>window.sao.completeStartup());
+  for(let attempt=0;attempt<100&&!instance.windows().some(page=>page.url().includes('surface='));attempt++)await new Promise(resolve=>setTimeout(resolve,100));
+  const restoredBrowser=instance.windows().find(page=>page.url().includes('surface='));assert.ok(restoredBrowser);
+  await restoredBrowser.getByRole('region',{name:'Built-in web browser'}).waitFor();
+  assert.equal((await restoredBrowser.evaluate(()=>window.saoSurface.getState())).fieldOfView,88,'saved FOV restores after process restart');
+  await restoredBrowser.locator('canvas').click({button:'right',position:{x:200,y:200}});
+  await restoredBrowser.getByRole('menuitem',{name:'Reset field of view'}).click();
+  await restoredBrowser.waitForFunction(()=>document.querySelector('.browser-fov output')?.textContent==='45°');
+  await restoredBrowser.evaluate(()=>window.saoSurface.command('close'));
   console.log(JSON.stringify({ browser: 'native page painting, inverse curved click mapping, typed input, links/history, isolation and URL checks', media: 'simultaneous PNG, original GIF and looping WebM; pause/resume; replacement, token revocation and range streaming; previews survive menu dismissal', motion, dismissal: 'outside pointer and swipe channels animate and hide the native menu', screenshots: output }, null, 2));
 } finally { await instance.close(); await new Promise(resolve => server.close(resolve)); await rm(temporary, { recursive: true, force: true }); }

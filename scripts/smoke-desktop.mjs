@@ -16,7 +16,7 @@ try {
     await page.waitForFunction(() => !!window.sao); await page.evaluate(() => window.sao.completeStartup());
   page.on('pageerror', error => errors.push(error.message));
   await instance.evaluate(({ BrowserWindow }) => {
-    const primary = BrowserWindow.getAllWindows().find(window => window.webContents.getLastWebPreferences().preload?.endsWith('/preload.cjs'));
+    const primary = BrowserWindow.getAllWindows().find(window => window.webContents.getURL().endsWith('/index.html'));
     // This fixture drives its own input. Physical clicks in another app must
     // not dismiss the disposable test window during unrelated assertions.
     const send = primary.webContents.send.bind(primary.webContents);
@@ -35,7 +35,7 @@ try {
   const isolation = await page.evaluate(() => ({ node: typeof window.require, process: typeof window.process }));
   assert.deepEqual(isolation, { node: 'undefined', process: 'undefined' });
   const secure = await instance.evaluate(({ BrowserWindow }) => {
-    const preferences = BrowserWindow.getAllWindows().find(window => window.webContents.getLastWebPreferences().preload?.endsWith('/preload.cjs')).webContents.getLastWebPreferences();
+    const preferences = BrowserWindow.getAllWindows().find(window => window.webContents.getURL().endsWith('/index.html')).webContents.getLastWebPreferences();
     return { sandbox: preferences.sandbox, isolation: preferences.contextIsolation, node: preferences.nodeIntegration };
   });
   assert.deepEqual(secure, { sandbox: true, isolation: true, node: false });
@@ -60,7 +60,7 @@ try {
   if (['darwin', 'win32'].includes(process.platform)) {
     const control = await page.locator('.root-button').first().boundingBox();
     await instance.evaluate(({ BrowserWindow, screen }, point) => {
-      const primary = BrowserWindow.getAllWindows().find(window => window.webContents.getLastWebPreferences().preload?.endsWith('/preload.cjs'));
+      const primary = BrowserWindow.getAllWindows().find(window => window.webContents.getURL().endsWith('/index.html'));
       const original = primary.setIgnoreMouseEvents.bind(primary);
       primary.setIgnoreMouseEvents = (enabled, options) => { primary.pointerTest = { enabled, options }; return original(enabled, options); };
       primary.originalCursor = screen.getCursorScreenPoint;
@@ -70,24 +70,24 @@ try {
     // Establish the inside state before expecting an outside transition.
     // The renderer intentionally skips duplicate native ownership writes.
     await page.waitForFunction(() => document.querySelector('.root-button')?.classList.contains('hovered'));
-    await instance.evaluate(({ BrowserWindow }) => { BrowserWindow.getAllWindows().find(window => window.webContents.getLastWebPreferences().preload?.endsWith('/preload.cjs')).testPointer = { x: 10, y: 10 }; });
+    await instance.evaluate(({ BrowserWindow }) => { BrowserWindow.getAllWindows().find(window => window.webContents.getURL().endsWith('/index.html')).testPointer = { x: 10, y: 10 }; });
     await page.mouse.move(10, 10);
     await page.waitForFunction(() => window.sao && !document.querySelector('.hovered'));
     await instance.evaluate(async ({ BrowserWindow }) => {
-      const primary = BrowserWindow.getAllWindows().find(window => window.webContents.getLastWebPreferences().preload?.endsWith('/preload.cjs'));
+      const primary = BrowserWindow.getAllWindows().find(window => window.webContents.getURL().endsWith('/index.html'));
       for (let attempt = 0; attempt < 50; attempt++) {
         if (primary.pointerTest?.enabled === true) return;
         await new Promise(resolve => setTimeout(resolve, 20));
       }
       throw new Error('Native pointer did not enable outside passthrough');
     });
-    const outside = await instance.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find(window => window.webContents.getLastWebPreferences().preload?.endsWith('/preload.cjs')).pointerTest);
+    const outside = await instance.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find(window => window.webContents.getURL().endsWith('/index.html')).pointerTest);
     assert.equal(outside.enabled, true); assert.equal(outside.options.forward, true);
-    await instance.evaluate(({ BrowserWindow }, point) => { BrowserWindow.getAllWindows().find(window => window.webContents.getLastWebPreferences().preload?.endsWith('/preload.cjs')).testPointer = point; }, { x: control.x + control.width / 2, y: control.y + control.height / 2 });
+    await instance.evaluate(({ BrowserWindow }, point) => { BrowserWindow.getAllWindows().find(window => window.webContents.getURL().endsWith('/index.html')).testPointer = point; }, { x: control.x + control.width / 2, y: control.y + control.height / 2 });
     await page.mouse.move(control.x + control.width / 2, control.y + control.height / 2);
     await page.waitForFunction(() => document.querySelector('.root-button')?.classList.contains('hovered'));
-    assert.equal((await instance.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find(window => window.webContents.getLastWebPreferences().preload?.endsWith('/preload.cjs')).pointerTest)).enabled, false);
-    await instance.evaluate(({ BrowserWindow, screen }) => { screen.getCursorScreenPoint = BrowserWindow.getAllWindows().find(window => window.webContents.getLastWebPreferences().preload?.endsWith('/preload.cjs')).originalCursor; });
+    assert.equal((await instance.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find(window => window.webContents.getURL().endsWith('/index.html')).pointerTest)).enabled, false);
+    await instance.evaluate(({ BrowserWindow, screen }) => { screen.getCursorScreenPoint = BrowserWindow.getAllWindows().find(window => window.webContents.getURL().endsWith('/index.html')).originalCursor; });
   }
   await page.screenshot({ path: path.join(output, 'original-menu.png'), animations: 'disabled' });
   const railPositions = () => page.locator('.root-button').evaluateAll(buttons => buttons.map(button => {
@@ -172,7 +172,7 @@ try {
   assert.equal(JSON.parse(await readFile(exportPath, 'utf8')).playerName, 'Smoke Player');
 
   const strayDenied = await instance.evaluate(async ({ BrowserWindow }, preload) => {
-    const primary = BrowserWindow.getAllWindows().find(window => window.webContents.getLastWebPreferences().preload?.endsWith('/preload.cjs'));
+    const primary = BrowserWindow.getAllWindows().find(window => window.webContents.getURL().endsWith('/index.html'));
     const other = new BrowserWindow({ show: false, webPreferences: { preload, sandbox: true, contextIsolation: true, nodeIntegration: false } });
     await other.loadURL(primary.webContents.getURL());
     try { return await other.webContents.executeJavaScript('window.sao ? window.sao.getSettings().then(() => false, () => true) : "missing-preload"'); } finally { other.destroy(); }
@@ -183,13 +183,13 @@ try {
   await page.waitForFunction(() => Boolean(document.querySelector('.original-menu')));
   assert.equal((await page.evaluate(() => window.sao.getSettings())).playerName, 'Smoke Player');
   await page.evaluate(() => window.sao.hide());
-  assert.equal(await instance.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find(window => window.webContents.getLastWebPreferences().preload?.endsWith('/preload.cjs')).isVisible()), false);
+  assert.equal(await instance.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find(window => window.webContents.getURL().endsWith('/index.html')).isVisible()), false);
   await instance.evaluate(({ app }) => app.emit('activate'));
   await page.locator('.original-menu').waitFor({ state: 'visible' });
-  assert.equal(await instance.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find(window => window.webContents.getLastWebPreferences().preload?.endsWith('/preload.cjs')).isVisible()), true);
-  await instance.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find(window => window.webContents.getLastWebPreferences().preload?.endsWith('/preload.cjs')).webContents.send('sao:menu:toggle'));
+  assert.equal(await instance.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find(window => window.webContents.getURL().endsWith('/index.html')).isVisible()), true);
+  await instance.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find(window => window.webContents.getURL().endsWith('/index.html')).webContents.send('sao:menu:toggle'));
   await page.waitForFunction(() => !document.querySelector('.original-menu'));
-  assert.equal(await instance.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find(window => window.webContents.getLastWebPreferences().preload?.endsWith('/preload.cjs')).isVisible()), false, 'hotkey dismissal hides native window after its original transition');
+  assert.equal(await instance.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find(window => window.webContents.getURL().endsWith('/index.html')).isVisible()), false, 'hotkey dismissal hides native window after its original transition');
   await instance.evaluate(({ app }) => app.emit('activate'));
   await page.locator('.original-menu').waitFor({ state: 'visible' });
   assert.deepEqual(errors, []);

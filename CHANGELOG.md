@@ -1,5 +1,16 @@
 # Release notes
 
+## 0.1.2 — October 3, 2026
+
+- Use the user's selected 1080p anime Link Start source, original Japanese voice/effects, sensor checks and animated login/entry transitions. Startup covers the entire native display with no outer borders; the previous Integral Factor movie and low-resolution login still are removed.
+- Align real account fields with the source login card, pause for authentication, resume entry after success, and support offline continuation, sound off and Reduced Motion. HP stays hidden before login and after logout.
+- Add the original SAO HP widget anchored at the top left, with live CPU/RAM headroom and original 500ms bar/count animation.
+- Follow monitor refresh for cursor sampling and isolated browser painting. GPU mesh rendering and bounded raw BGRA delivery replace CPU curvature and PNG/base64 streaming.
+- Add a live 20°–100° browser FOV control with aligned input, a 45° reset and restart persistence.
+- Compare Cad-noob, Asakitan and Akilar's community recreations with the selected source; document their sequence differences.
+- Verify real local two-account registration, friendship, direct messages, unread/read state, encrypted credential restoration and logout. Public Cloudflare hosting remains pending.
+- Include the independently merged webcam hand-gesture controls. Camera tracking remains opt-in.
+
 ## 0.1.1 — October 3, 2026
 
 - Root buttons and submenu rows keep their hover artwork and background during native click-through handoffs. Desktop hover uses the global cursor stream; delayed DOM movement no longer overrides it.

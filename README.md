@@ -33,9 +33,15 @@ Quit an existing instance before starting another build. Renderer changes reload
 - Party opens Social with friends, requests and profiles; Message opens direct conversations with accepted friends. The online account service is not deployed yet; favioon.com on the user’s Cloudflare account is the selected destination. Kirito's Windows defaults map to local folders and Finder/TextEdit/Calculator/Terminal/Console/Activity Monitor/Disk Utility.
 - **Settings → Option** opens the reimplemented preferences. Its Launcher tab adds apps, folders and web links under **Navigation → Quick access**. **Settings → Exit** quits.
 
+## Link Start and HP display
+
+A foreground launch plays the user-selected [1080p anime sequence](https://www.youtube.com/watch?v=cCfJvBgAd3E), including the Japanese voice, rainbow tunnel, sensor checks and animated login transition, edge to edge across the display. The source's empty blue login card becomes the real account form. Set an account-service URL and sign in, or continue offline; successful login resumes the source's entry animation. Startup does not replay on menu invocation or renderer reload. Sound off and Reduced Motion are respected. The persistent SAO HP widget stays at the screen's top left after successful login and disappears on logout; offline continuation leaves it hidden. Its source preset reports CPU/RAM headroom rather than invented game stats.
+
+[Community reference comparisons](docs/startup-references.md) cover Cad-noob, Asakitan and Akilar. Source video retains its approximately 24fps cadence; interactive UI and GPU browser follow display refresh. Native timing on this 120Hz Mac measured a median 8.3ms animation interval with no missed intervals in the two-second sample. Source fidelity does not establish full app parity or guarantee frame rates on all hardware.
+
 ## Browser and media
 
-Navigation links open in the built-in browser. **Settings → Option → Web Browser**, the tray, and the native **File** menu also open a browser. Its original tab, close, reload/stop and address artwork curve with the actual page. Click, type and scroll normally; **Command/Control+L** changes the address. Right-click for history, reload and opening in your default browser. Remote pages run in an isolated process without the local desktop bridge.
+Navigation links open in the built-in browser. **Settings → Option → Web Browser**, the tray, and the native **File** menu also open a browser. Its original tab, close, reload/stop and address artwork curve with the actual page. Click, type and scroll normally; **Command/Control+L** changes the address. Right-click for history, reload, opening in your default browser and **Field of view** (20°–100°, default 45°). The FOV slider updates the curve and perspective together, keeps clicks aligned and remembers your choice after restarting. Remote pages run in an isolated process without the local desktop bridge.
 
 Choose **Images / Video** in Options, or **File → Preview images and videos**, and select one or several local files. Browsing media through the launcher opens the same previews. Images, animated GIFs and looping videos stay visible when the launcher hides. Right-click for Fit/Crop, Auto Resize, Reset Size, Change Image/Video, Mute and Close. Click a video to pause/resume; the title's external-viewer icon opens the selected file in its default application. Supported extensions include PNG/JPEG/GIF/WebP/AVIF/BMP and MP4/WebM/M4V/MOV/OGV; actual video codecs depend on Electron.
 
@@ -56,14 +62,16 @@ npm test
 npm run test:desktop
 npm run test:hover
 npm run test:surfaces
+npm run test:startup
+npm run test:social
 npm run package:mac
 ```
 
 The desktop test checks actual Electron menus, sprite geometry/fonts, native launch, persistence, migration, bridge isolation and hide/reopen. The surface test checks native curved-page clicks, typed input, navigation, simultaneous PNG/GIF/video previews and dismissal channels. It needs `ffmpeg` on PATH (or `FFMPEG_PATH`) to generate a disposable video fixture. Both use temporary settings; the desktop test launches Calculator on macOS. `dist-desktop/gesture-helper --self-test` checks 23 gesture cases without injecting input; physical cross-app invocation still requires permission/session acceptance.
 
-The current Apple Silicon test artifacts are `release/mac-arm64/SAO Utils 2.app` and `release/SAO Utils 2-0.1.1-arm64.zip`. Quit the running app via Exit before opening this build. DMG creation could not access a disk image device in the sandbox. Local builds are unsigned and not notarized. Windows/Linux adapters and packaging scripts exist but are not runtime-verified on those systems.
+The current Apple Silicon test artifacts are `release/mac-arm64/SAO Utils 2.app` and `release/SAO Utils 2-0.1.2-arm64.zip`. Quit the running app via Exit before opening this build. DMG creation could not access a disk image device in the sandbox. Local builds are unsigned and not notarized. Windows/Linux adapters and packaging scripts exist but are not runtime-verified on those systems.
 
-Git tracks source, plans, release notes and package checksums from version 0.1.1 onward. The `v0.1.1` tag identifies this test release. Build outputs, dependencies, imported Steam assets and local account data are excluded. See [release notes](CHANGELOG.md).
+Git tracks source, plans, release notes and package checksums from version 0.1.1 onward. The `v0.1.2` tag identifies this test release. Build outputs, dependencies, imported Steam assets and local account data are excluded. See [release notes](CHANGELOG.md).
 
 `npm run dev:web` opens the same renderer in a browser with separate local-storage settings. Native launching, directory browsing, metrics, global input, tray/login behavior and file import/export require the desktop host.
 

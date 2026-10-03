@@ -12,6 +12,7 @@ const api: SurfaceAPI = {
   command: command => ipcRenderer.invoke('sao:surface:command', command),
   dropFiles: files => ipcRenderer.invoke('sao:surface:drop', files.map(file => webUtils.getPathForFile(file))),
   setPresentation: presentation => ipcRenderer.invoke('sao:surface:presentation', presentation),
+  setFieldOfView: degrees => ipcRenderer.invoke('sao:surface:fov', degrees),
   setGallery: settings => ipcRenderer.invoke('sao:surface:gallery', settings),
   input: input => ipcRenderer.invoke('sao:surface:input', input),
   resize: (width, height) => ipcRenderer.invoke('sao:surface:resize', width, height),
