@@ -28,6 +28,13 @@ const GESTURE_COOLDOWN_MS = 800;
 const CURSOR_GAIN = 1.5;
 const ANCHOR_RESET_MS = 500;
 const CENTRE: Point = { x: 0.5, y: 0.5 };
+/*
+ * A real index finger hovers around the "extended" threshold and MediaPipe
+ * drops single frames, so per-frame visibility flickers. Once pointing, a
+ * slightly bent index still counts, and the cursor survives non-pointing or
+ * empty frames for CURSOR_GRACE_MS before hiding.
+ */
+const CURSOR_GRACE_MS = 250;
 const CURSOR_FILTER: OneEuroParams = { minCutoff: 1.2, beta: 7, dCutoff: 1 };
 const PUSH_WINDOW_MS = 300;
 const PUSH_SCALE_RATIO = 1.12;
@@ -64,6 +71,7 @@ export interface RecognizerState {
   readonly hold: { readonly until: number; readonly point: Point } | null;
   readonly anchor: CursorAnchor | null;
   readonly anchorSeenAt: number;
+  readonly lastPointingAt: number;
   /** Last cursor position, kept while hidden so the hand can re-anchor to it. */
   readonly cursor: Point;
   /** Origin of the current menu session; null while the menu is closed. */
@@ -73,7 +81,7 @@ export interface RecognizerState {
 export function initialRecognizerState(): RecognizerState {
   return {
     summon: [], swipe: [], push: [], filter: null, cursorVisible: false, gestureReadyAt: -Infinity, clickReadyAt: -Infinity,
-    hold: null, anchor: null, anchorSeenAt: -Infinity, cursor: CENTRE, origin: null,
+    hold: null, anchor: null, anchorSeenAt: -Infinity, lastPointingAt: -Infinity, cursor: CENTRE, origin: null,
   };
 }
 
@@ -141,6 +149,18 @@ function stepSwipe({ state, events }: Step, input: RecognizerInput, hand: HandFr
   return { state: { ...state, swipe: [], gestureReadyAt: input.t + GESTURE_COOLDOWN_MS }, events: [...events, { kind: 'dismiss' }] };
 }
 
+/** Pointing continues while the index is not curled and no other finger is extended. */
+function isStillPointing(hand: HandFrame): boolean {
+  return fingerState(hand, 'index') !== 'curled'
+    && (['middle', 'ring', 'pinky'] as const).every(finger => fingerState(hand, finger) !== 'extended');
+}
+
+/** Hides the cursor unless it was pointing within the grace period; brief misses keep it in place. */
+function loseCursor(step: Step, t: number, menuOpen: boolean): Step {
+  const isWithinGrace = menuOpen && step.state.cursorVisible && t - step.state.lastPointingAt <= CURSOR_GRACE_MS;
+  return isWithinGrace ? { state: { ...step.state, push: [] }, events: step.events } : hideCursor(step);
+}
+
 function hideCursor({ state, events }: Step): Step {
   const hidden = { ...state, filter: null, push: [], cursorVisible: false };
   if (!state.cursorVisible) return { state: hidden, events };
@@ -162,13 +182,15 @@ function stepPush(state: RecognizerState, input: RecognizerInput, hand: HandFram
 }
 
 function stepCursor(step: Step, input: RecognizerInput, hand: HandFrame, pose: Pose): Step {
-  if (!input.menuOpen || (pose !== 'point' && pose !== 'summon')) return hideCursor(step);
+  if (!input.menuOpen) return hideCursor(step);
+  const isContinuing = pose !== 'summon' && pose !== 'point' && step.state.cursorVisible && isStillPointing(hand);
+  if (pose !== 'point' && pose !== 'summon' && !isContinuing) return loseCursor(step, input.t, input.menuOpen);
   const landmark = hand.landmarks[LANDMARK.INDEX_TIP];
   const tip = { x: landmark.x, y: landmark.y };
   const { target, anchor } = anchoredTarget(step.state, tip, input.t);
   const filtered = filterPoint(step.state.filter, target, input.t, CURSOR_FILTER);
-  const base = { ...step.state, filter: filtered.state, cursorVisible: true, anchor, anchorSeenAt: input.t, cursor: filtered.value };
-  const pushed = pose === 'point'
+  const base = { ...step.state, filter: filtered.state, cursorVisible: true, anchor, anchorSeenAt: input.t, lastPointingAt: input.t, cursor: filtered.value };
+  const pushed = pose === 'point' || isContinuing
     ? stepPush(base, input, hand, tip, filtered.value)
     : { state: { ...base, push: [] }, click: null };
   const hold = pushed.state.hold && input.t < pushed.state.hold.until ? pushed.state.hold : null;
@@ -184,8 +206,8 @@ export function recognize(previous: RecognizerState, input: RecognizerInput): { 
   if (!input.hand) {
     const summon = input.menuOpen ? [] : within(state.summon, input.t, SUMMON_WINDOW_MS);
     const swipe = input.menuOpen ? within(state.swipe, input.t, SWIPE_WINDOW_MS) : [];
-    const cleared = hideCursor({ state: { ...state, summon, swipe }, events: [] });
-    return { state: { ...cleared.state, hold: null }, events: cleared.events };
+    const cleared = loseCursor({ state: { ...state, summon, swipe }, events: [] }, input.t, input.menuOpen);
+    return { state: cleared.state.cursorVisible ? cleared.state : { ...cleared.state, hold: null }, events: cleared.events };
   }
   const pose = classifyPose(input.hand);
   const summoned = stepSummon({ state, events: [] }, input, input.hand, pose);

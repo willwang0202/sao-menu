@@ -81,12 +81,47 @@ test('does not dismiss when closed, too short, too vertical or pointing', () => 
   assert.deepEqual(run(motion(SHAPES.point, [0.3, 0.5], [0.65, 0.5], 300, true)).kinds, []);
 });
 
-test('streams a visible cursor while pointing and hides it when the hand drops', () => {
-  const steps = [...motion(SHAPES.point, [0.5, 0.5], [0.5, 0.5], 99, true), { t: 200, hand: null, menuOpen: true }, { t: 233, hand: null, menuOpen: true }];
+test('streams a visible cursor while pointing and hides it once the hand has been gone for the grace period', () => {
+  const steps = [...motion(SHAPES.point, [0.5, 0.5], [0.5, 0.5], 99, true), { t: 200, hand: null, menuOpen: true }, { t: 400, hand: null, menuOpen: true }, { t: 433, hand: null, menuOpen: true }];
   const cursors = run(steps).events.filter(event => event.kind === 'cursor');
   assert.equal(cursors.length, 5);
   assert.ok(cursors.slice(0, 4).every(event => event.kind === 'cursor' && event.visible));
   assert.ok(cursors[4].kind === 'cursor' && !cursors[4].visible);
+});
+
+const bentIndex = { index: 'bent', middle: 'curled', ring: 'curled', pinky: 'curled' } as const;
+const hides = (events: RecognizerEvent[]) => events.filter(event => event.kind === 'cursor' && !event.visible).length;
+
+test('keeps pointing through a frame where the index finger reads slightly bent (recorded flicker)', () => {
+  const steps = [
+    { t: 0, menuOpen: true, hand: makeHand(SHAPES.point, 0.5, 0.5) },
+    { t: 33, menuOpen: true, hand: makeHand(bentIndex, 0.52, 0.5) },
+    { t: 66, menuOpen: true, hand: makeHand(SHAPES.point, 0.52, 0.5) },
+  ];
+  const { events } = run(steps);
+  assert.equal(hides(events), 0);
+  assert.equal(events.filter(event => event.kind === 'cursor' && event.visible).length, 3, 'the bent frame still moves the cursor');
+});
+
+test('a bent index finger alone does not start pointing', () => {
+  assert.equal(run([{ t: 0, menuOpen: true, hand: makeHand(bentIndex) }]).events.length, 0);
+});
+
+test('keeps the cursor through brief curled-finger and no-hand frames', () => {
+  const steps = [
+    { t: 0, menuOpen: true, hand: makeHand(SHAPES.point) },
+    { t: 33, menuOpen: true, hand: makeHand(SHAPES.fist) },
+    { t: 66, menuOpen: true, hand: null },
+    { t: 99, menuOpen: true, hand: makeHand(SHAPES.point) },
+  ];
+  assert.equal(hides(run(steps).events), 0);
+});
+
+test('hides after the grace period without pointing, and at once when the menu closes', () => {
+  const lost = run([{ t: 0, menuOpen: true, hand: makeHand(SHAPES.point) }, { t: 100, menuOpen: true, hand: makeHand(SHAPES.fist) }, { t: 300, menuOpen: true, hand: makeHand(SHAPES.fist) }]);
+  assert.equal(hides(lost.events), 1);
+  const closed = run([{ t: 0, menuOpen: true, hand: makeHand(SHAPES.point) }, { t: 33, menuOpen: false, hand: makeHand(SHAPES.point) }]);
+  assert.equal(hides(closed.events), 1);
 });
 
 /** A pointing frame whose index tip sits at (tipX, tipY); makeHand puts the tip at cx - 0.06, cy - 0.22. */

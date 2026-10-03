@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { classifyPose } from '../src/shared/hand/pose';
+import { classifyPose, fingerState } from '../src/shared/hand/pose';
 import { fromMediaPipe, palmScale, LANDMARK } from '../src/shared/hand/landmarks';
 import { makeHand, SHAPES } from './fixtures/hand';
 
@@ -24,6 +24,12 @@ test('classifies a fist and a missing hand as other', () => {
 test('pose does not depend on hand size, position or camera aspect', () => {
   assert.equal(classifyPose(makeHand(SHAPES.summon, 0.2, 0.8, 0.08, 0.75)), 'summon');
   assert.equal(classifyPose(makeHand(SHAPES.open, 0.7, 0.3, 0.35, 0.5625)), 'open');
+});
+
+test('a slightly bent index finger is neutral, not extended or curled', () => {
+  const hand = makeHand({ index: 'bent', middle: 'curled', ring: 'curled', pinky: 'curled' });
+  assert.equal(fingerState(hand, 'index'), 'neutral');
+  assert.equal(classifyPose(hand), 'other');
 });
 
 test('three extended fingers are not mistaken for summon or open', () => {

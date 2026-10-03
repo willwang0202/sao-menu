@@ -1,6 +1,7 @@
 import type { HandFrame, Point3 } from '../../src/shared/hand/landmarks';
 
-export type FingerState = 'extended' | 'curled';
+/** 'bent' is a slightly hooked finger: not straight enough to be extended, tip still beyond the PIP joint. */
+export type FingerState = 'extended' | 'curled' | 'bent';
 export interface HandShape { index: FingerState; middle: FingerState; ring: FingerState; pinky: FingerState }
 
 export const SHAPES = {
@@ -14,9 +15,9 @@ const MCP_OFFSETS: readonly [number, number][] = [[-0.3, -0.3], [-0.1, -0.35], [
 
 function finger(mcp: [number, number], state: FingerState): [number, number][] {
   const [x, y] = mcp;
-  return state === 'extended'
-    ? [[x, y], [x, y - 0.35], [x, y - 0.6], [x, y - 0.8]]
-    : [[x, y], [x, y - 0.25], [x, y - 0.1], [x, y + 0.1]];
+  if (state === 'extended') return [[x, y], [x, y - 0.35], [x, y - 0.6], [x, y - 0.8]];
+  if (state === 'bent') return [[x, y], [x, y - 0.35], [x + 0.25, y - 0.35], [x + 0.25, y - 0.55]];
+  return [[x, y], [x, y - 0.25], [x, y - 0.1], [x, y + 0.1]];
 }
 
 /**
