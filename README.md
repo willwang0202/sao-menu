@@ -33,6 +33,19 @@ Quit an existing instance before starting another build. Renderer changes reload
 - Party opens Social with friends, requests and profiles; Message opens direct conversations with accepted friends. The online account service is not deployed yet; favioon.com on the user’s Cloudflare account is the selected destination. Kirito's Windows defaults map to local folders and Finder/TextEdit/Calculator/Terminal/Console/Activity Monitor/Disk Utility.
 - **Settings → Option** opens the reimplemented preferences. Its Launcher tab adds apps, folders and web links under **Navigation → Quick access**. **Settings → Exit** quits.
 
+## Hand gestures
+
+The launcher can also be controlled with the built-in webcam. In **Settings → Option**, under **Hand gestures**, turn on **Camera hand gestures**; macOS asks for camera access once. It is off by default, and the camera indicator stays lit while it is on.
+
+- **Open:** hold the index and middle fingers straight with the ring and pinky curled, then swipe down. The other fingers may relax during the swipe.
+- **Aim:** point with the index finger. An orange reticle starts on the menu wherever your hand is and follows your fingertip; items highlight under it.
+- **Select:** push the pointing hand toward the screen. The click lands where the reticle was just before the push.
+- **Close:** swipe an open hand left or right.
+
+The mouse, shortcut and tray keep working alongside it. Place the camera centered in front of the monitor you point at: seen from the side, a forward push looks like sideways motion and clicks miss. **Camera debug view** in the same section shows the camera with hand landmarks, the detected pose and each finger's state; closing that window turns the view off.
+
+Tracking uses [MediaPipe Hand Landmarker](https://ai.google.dev/edge/mediapipe/solutions/vision/hand_landmarker) in a hidden, sandboxed window, about 10 fps while the launcher is closed and 30 fps while it is open. The first `npm run dev` or `npm run build` downloads the model once and checks its SHA-256; after that tracking runs offline. Only that window may use the camera, video only, and only derived gesture events leave it: no frames or hand data are recorded or stored. Thresholds and design notes are in [gesture documentation](docs/gesture.md#camera-hand-gestures) and the [hand-tracking design](docs/superpowers/specs/2026-10-03-hand-tracking-design.md).
+
 ## Link Start and HP display
 
 A foreground launch plays the user-selected [1080p anime sequence](https://www.youtube.com/watch?v=cCfJvBgAd3E), including the Japanese voice, rainbow tunnel, sensor checks and animated login transition, edge to edge across the display. The source's empty blue login card becomes the real account form. Set an account-service URL and sign in, or continue offline; successful login resumes the source's entry animation. Startup does not replay on menu invocation or renderer reload. Sound off and Reduced Motion are respected. The persistent SAO HP widget stays at the screen's top left after successful login and disappears on logout; offline continuation leaves it hidden. Its source preset reports CPU/RAM headroom rather than invented game stats.
@@ -64,10 +77,11 @@ npm run test:hover
 npm run test:surfaces
 npm run test:startup
 npm run test:social
+npm run test:hand
 npm run package:mac
 ```
 
-The desktop test checks actual Electron menus, sprite geometry/fonts, native launch, persistence, migration, bridge isolation and hide/reopen. The surface test checks native curved-page clicks, typed input, navigation, simultaneous PNG/GIF/video previews and dismissal channels. It needs `ffmpeg` on PATH (or `FFMPEG_PATH`) to generate a disposable video fixture. Both use temporary settings; the desktop test launches Calculator on macOS. `dist-desktop/gesture-helper --self-test` checks 23 gesture cases without injecting input; physical cross-app invocation still requires permission/session acceptance.
+The desktop test checks actual Electron menus, sprite geometry/fonts, native launch, persistence, migration, bridge isolation and hide/reopen. The surface test checks native curved-page clicks, typed input, navigation, simultaneous PNG/GIF/video previews and dismissal channels. It needs `ffmpeg` on PATH (or `FFMPEG_PATH`) to generate a disposable video fixture. Both use temporary settings; the desktop test launches Calculator on macOS. `dist-desktop/gesture-helper --self-test` checks 23 gesture cases without injecting input; physical cross-app invocation still requires permission/session acceptance. The hand test feeds Chromium's synthetic camera through MediaPipe to the reticle without using the real webcam; gesture thresholds are unit-tested against recorded webcam frames, but real-hand accuracy still needs a person in front of the camera.
 
 The current Apple Silicon test artifacts are `release/mac-arm64/SAO Utils 2.app` and `release/SAO Utils 2-0.1.2-arm64.zip`. Quit the running app via Exit before opening this build. DMG creation could not access a disk image device in the sandbox. Local builds are unsigned and not notarized. Windows/Linux adapters and packaging scripts exist but are not runtime-verified on those systems.
 
