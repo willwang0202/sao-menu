@@ -19,6 +19,7 @@ import { SurfaceLayoutStore } from './surface-store';
 import { SocialClient } from './social';
 import { HpDisplay } from './hud';
 import { DesktopWidgets } from './widgets';
+import { MapLocation } from './location';
 import { LAUNCHER_LEVEL } from '../shared/widgets';
 import { pointerInterval } from '../shared/refresh';
 import { HandTrackingController } from './hand-tracking';
@@ -62,6 +63,10 @@ function refreshPointerRate(): void {
   pointerTimer.unref();
 }
 let catalogueOperation: Promise<LauncherItem[]> | null = null;
+const mapLocation = new MapLocation(
+  app.isPackaged ? path.join(process.resourcesPath, 'location-helper') : path.join(__dirname, 'location-helper'),
+  () => settings.mapHome, app.getVersion(),
+);
 const gesture = new GestureController(
   app.isPackaged ? path.join(process.resourcesPath, 'gesture-helper') : path.join(__dirname, 'gesture-helper'),
   point => summonAt(point),
@@ -470,6 +475,8 @@ function installHandlers(): void {
   handler('sao:media:drop', paths => surfaces.dropFiles(paths));
   handler('sao:browser:open', () => surfaces.openBrowser());
   handler('sao:media:open', () => window ? surfaces.pickMedia(window) : undefined);
+  handler('sao:map:position', () => mapLocation.position());
+  handler('sao:map:search', query => mapLocation.search(query));
   handler('sao:runtime', () => ({ platform, version: app.getVersion(), desktop: true, shortcutRegistered, startup }));
   handler('sao:startup:complete', () => {
     const wasStarting = startup; startup = false;

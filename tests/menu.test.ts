@@ -70,3 +70,17 @@ test('Settings → Help opens the official support page', () => {
   // The original menu.xml Help has no action; saved and imported menus gain the link.
   expectHelp(resolveNativeMenu([{ id: 'settings', name: 'Settings', kind: 'menu', children: [{ id: 'settings.help', name: 'Help', kind: 'unsupported', reason: 'The original configuration has no action assigned.' }] }], 'darwin', []));
 });
+
+test('Navigation opens with the SAO Field Map, also in saved menus', () => {
+  const fieldMap = (menu: MenuEntry[]) => menu.find(root => root.id === 'navigation')?.children?.[0];
+  for (const menu of [buildDefaultMenu('darwin', [], []), resolveNativeMenu([{ id: 'navigation', name: 'Navigation', kind: 'menu', children: [{ id: 'navigation.favorite', name: 'Favorite', kind: 'menu', children: [] }] }], 'darwin', [])]) {
+    const entry = fieldMap(menu);
+    assert.equal(entry?.id, 'navigation.fieldmap'); assert.equal(entry?.name, 'Field Map'); assert.equal(entry?.view, 'map');
+  }
+  assert.equal(resolveNativeMenu(buildDefaultMenu('darwin', [], []), 'darwin', []).find(root => root.id === 'navigation')!.children!.filter(entry => entry.view === 'map').length, 1);
+});
+
+test('stored menus keep the map view marker and drop unknown views', () => {
+  const next = normalizeSettings({ menu: [{ id: 'm', name: 'Field Map', kind: 'menu', view: 'map', children: [] }, { id: 'x', name: 'X', kind: 'menu', view: 'hack', children: [] }] }, 'darwin');
+  assert.equal(next.menu![0].view, 'map'); assert.equal(next.menu![1].view, undefined);
+});

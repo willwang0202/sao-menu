@@ -10,7 +10,7 @@ const userData = await mkdtemp(path.join(tmpdir(), 'sao-desktop-smoke-'));
 const output = path.resolve('output/playwright');
 await mkdir(output, { recursive: true });
 const env = Object.fromEntries(Object.entries(process.env).filter(([key, value]) => value !== undefined && !['ELECTRON_RUN_AS_NODE', 'SAO_DEV_URL'].includes(key)));
-const instance = await electron.launch({ executablePath: electronPath, args: ['.'], cwd: process.cwd(), env: { ...env, SAO_USER_DATA: userData }, timeout: 30000 });
+const instance = await electron.launch({ executablePath: electronPath, args: ['.'], cwd: process.cwd(), env: { ...env, SAO_USER_DATA: userData, SAO_TEST_NO_DEVICE_LOCATION: '1' }, timeout: 30000 });
 const errors = [];
 try {
   const page = await instance.firstWindow();
@@ -221,5 +221,15 @@ try {
   await instance.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find(window => new URL(window.webContents.getURL()).searchParams.get('widget') === 'message').webContents.executeJavaScript('window.saoWidget.openMessages()'));
   await page.waitForFunction(() => document.querySelector('.root-button.selected')?.getAttribute('aria-label') === 'Message', null, { timeout: 5000 });
   assert.equal(await instance.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find(window => window.webContents.getURL().endsWith('/index.html')).isVisible()), true, 'Message button summons the launcher');
-  console.log(JSON.stringify({ platform: runtime.platform, applications: applications.length, memoryTotal: stats.memoryTotal, shortcutRegistered: runtime.shortcutRegistered, storage, gesture, geometry, fonts, categorySwitch: { selfAnchor, optionsAnchor, railUnchanged: true }, assertions: 'original assets and geometry, clock and message widgets, Message button opens Message, anchored category switching, cascading menus, native launch, pointer passthrough, bridge isolation, IPC owner, settings, import/export, hotkey dismissal, hide/reopen, reload', screenshot: path.join(output, 'original-menu.png'), userData }, null, 2));
+  // Navigation → Field Map opens the SAO map window; without device location it centres on the saved home.
+  await page.evaluate(async () => { const current = await window.sao.getSettings(); await window.sao.saveSettings({ ...current, mapHome: { label: 'Taipei City Hall', latitude: 25.0375, longitude: 121.5637 } }); });
+  await page.getByRole('menuitem', { name: 'Navigation', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Field Map', exact: true }).click();
+  await page.waitForSelector('.field-map .maplibregl-canvas');
+  await page.waitForFunction(() => document.querySelector('.field-map-title span')?.textContent === 'Taipei City Hall', null, { timeout: 15000 });
+  assert.match(await page.locator('.field-map-footer span').first().textContent(), /^N 25\.0375°\s+E 121\.5637°/);
+  assert.ok(!errors.some(error => /worker/i.test(error)), `Map worker failed: ${errors.join('; ')}`);
+  await page.waitForTimeout(4000);
+  await page.screenshot({ path: path.join(output, 'field-map.png') });
+  console.log(JSON.stringify({ platform: runtime.platform, applications: applications.length, memoryTotal: stats.memoryTotal, shortcutRegistered: runtime.shortcutRegistered, storage, gesture, geometry, fonts, categorySwitch: { selfAnchor, optionsAnchor, railUnchanged: true }, assertions: 'original assets and geometry, clock and message widgets, Message button opens Message, Field Map, anchored category switching, cascading menus, native launch, pointer passthrough, bridge isolation, IPC owner, settings, import/export, hotkey dismissal, hide/reopen, reload', screenshot: path.join(output, 'original-menu.png'), userData }, null, 2));
 } finally { await instance.close(); await rm(userData, { recursive: true, force: true }); }

@@ -1,5 +1,6 @@
 import type { DesktopAPI, LauncherItem, Settings, SystemStats } from './contracts';
 import { defaultSettings, normalizeSettings, validateLauncher, parseConfiguration } from './settings';
+import { resolveMapPosition, type HelperLocation } from './map';
 
 const KEY = 'sao-desktop.settings.v1';
 let startup = true;
@@ -30,6 +31,17 @@ const browserAPI: DesktopAPI = {
   },
   saveSettings: async (value: Settings) => { const next = normalizeSettings(value, 'web'); localStorage.setItem(KEY, JSON.stringify(next)); return next; },
   getSystemStats: async () => previewStats,
+  // Browser preview: the browser's own geolocation, else the saved home.
+  getMapPosition: async () => {
+    const home = normalizeSettings(JSON.parse(localStorage.getItem(KEY) ?? '{}'), 'web').mapHome;
+    const location = await new Promise<HelperLocation>(resolve => {
+      if (!navigator.geolocation) { resolve({ ok: false, error: 'unsupported' }); return; }
+      navigator.geolocation.getCurrentPosition(fix => resolve({ ok: true, latitude: fix.coords.latitude, longitude: fix.coords.longitude, accuracy: fix.coords.accuracy }),
+        failure => resolve({ ok: false, error: failure.code === failure.PERMISSION_DENIED ? 'denied' : failure.code === failure.TIMEOUT ? 'timeout' : 'unavailable' }), { timeout: 15000, maximumAge: 300000 });
+    });
+    return resolveMapPosition(location, home);
+  },
+  searchMapPlace: unavailable,
   listApplications: async () => [],
   listDirectory: unavailable,
   launch: async (raw: LauncherItem) => {

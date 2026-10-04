@@ -3,6 +3,7 @@ import type { ImportResult, LauncherItem, MenuEntry, Platform, Settings } from '
 import { normalizeMenu, originalIcon } from './menu';
 import { isThemeId } from './themes';
 import { isStartupLanguageSetting } from './startup-language';
+import { normalizeMapHome } from './map';
 
 export const MAX_CONFIGURATION_BYTES = 2 * 1024 * 1024;
 const MAX_FAVORITES = 200;
@@ -56,6 +57,7 @@ export function normalizeSettings(value: unknown, platform: Platform): Settings 
     shortcut: text(input.shortcut, defaults.shortcut, 100) || defaults.shortcut,
     theme: isThemeId(input.theme) ? input.theme : defaults.theme,
     startupLanguage: isStartupLanguageSetting(input.startupLanguage) ? input.startupLanguage : defaults.startupLanguage,
+    mapHome: normalizeMapHome(input.mapHome),
     showClock: bool(input.showClock, defaults.showClock), showMessageButton: bool(input.showMessageButton, defaults.showMessageButton),
     favorites,
     menu: normalizeMenu(input.menu, platform, validateLauncher),

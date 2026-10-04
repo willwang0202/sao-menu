@@ -5,7 +5,7 @@ const itemIcons: Record<string, string> = {
   'user.items': 'item/items.png', 'user.skills': 'item/skills.png', 'user.equipment': 'item/equipment.png',
   'user.documents': 'item/Other/favs2.png', 'user.music': 'item/Media/iTunes.png', 'user.pictures': 'item/Media/landskape.png', 'user.videos': 'item/Media/YT2.png',
   'user.explorer': 'item/System/windows.png', 'user.notepad': 'item/Other/book.png', 'user.calculator': 'item/Other/calculator.png', 'user.cmd': 'item/System/sett-big.png',
-  'navigation.search': 'item/Network/search.png', 'navigation.favorite': 'item/Other/Favs1.png', 'navigation.bilibili': 'item/Media/WMP.png',
+  'navigation.search': 'item/Network/search.png', 'navigation.fieldmap': 'item/Navigate/navigation.png', 'navigation.favorite': 'item/Other/Favs1.png', 'navigation.bilibili': 'item/Media/WMP.png',
   'settings.option': 'item/option.png', 'settings.help': 'item/help.png', 'settings.exit': 'item/logout.png',
 };
 /** Kirito → Equipment: everyday apps, with original SAO item icons. Skills stays empty for the user to fill. */
@@ -29,6 +29,9 @@ function equipmentEntries(platform: Platform, applications: LauncherItem[]): Men
 }
 export const SUPPORT_URL = 'https://sao-menu.favioon.com/support';
 const helpLauncher: LauncherItem = { id: 'settings.help', name: 'Help', kind: 'url', target: SUPPORT_URL };
+/** Navigation → Field Map: the anime's map entry, showing the real world. */
+const fieldMapEntry = (): MenuEntry => ({ id: 'navigation.fieldmap', name: 'Field Map', kind: 'menu', view: 'map', children: [], icon: 'item/Navigate/navigation.png', infoPanel: false });
+const withFieldMap = (children: MenuEntry[] = []): MenuEntry[] => [fieldMapEntry(), ...children.filter(child => child.view !== 'map' && child.id !== 'navigation.fieldmap')];
 export function originalIcon(id: string): string { return rootIcons[id] ?? itemIcons[id] ?? 'symbol/help.png'; }
 
 const macApplications: Record<string, string> = {
@@ -42,6 +45,7 @@ const windowsNames: Record<string, string[]> = { explorer: ['Explorer', 'File Ex
 export function resolveNativeMenu(menu: MenuEntry[], platform: Platform, applications: LauncherItem[], home?: string): MenuEntry[] {
   return menu.map(original => {
     const item = { ...original, children: original.children ? resolveNativeMenu(original.children, platform, applications, home) : undefined };
+    if (item.id === 'navigation') return { ...item, children: withFieldMap(item.children) };
     if (item.id === 'settings.help') return { ...item, kind: 'launcher' as const, launcher: helpLauncher, reason: undefined };
     if (item.id === 'user.skills') return { ...item, kind: 'menu' as const, children: [] };
     if (item.id === 'user.equipment') return { ...item, kind: 'menu' as const, children: equipmentEntries(platform, applications) };
@@ -95,6 +99,7 @@ export function normalizeMenu(value: unknown, platform: Platform, validate: (inp
       const item: MenuEntry = { id: data.id.slice(0, 200), name: data.name.slice(0, 100), kind: data.kind as MenuEntry['kind'], icon: asset(data.icon), image: asset(data.image), infoPanel: data.infoPanel === true,
         description: typeof data.description === 'string' ? data.description.slice(0, 2000) : undefined, reason: typeof data.reason === 'string' ? data.reason.slice(0, 500) : undefined,
         nativeTarget: typeof data.nativeTarget === 'string' && /^(?:app:(?:explorer|notepad|calculator|cmd|events|services|management)|home:(?:Documents|Music|Pictures|Movies|Videos|Desktop)|applications)$/.test(data.nativeTarget) ? data.nativeTarget : undefined,
+        view: data.view === 'map' ? 'map' : undefined,
         directory: typeof data.directory === 'string' && data.directory.length <= 4096 && !/[\u0000-\u001f]/.test(data.directory) && (platform === 'win32' ? /^[A-Za-z]:[\\/]/.test(data.directory) : data.directory.startsWith('/')) ? data.directory : undefined };
       if (item.kind === 'menu') item.children = walk(Array.isArray(data.children) ? data.children : [], depth + 1);
       if (item.kind === 'launcher') {

@@ -20,15 +20,15 @@ async function files(folder) {
   }
   return result;
 }
+const NATIVE_HELPERS = ['gesture-helper', 'location-helper'];
 const renderer = await files('dist');
-const built = [...renderer, ...(await files('dist-desktop')).filter(file => path.basename(file) !== 'gesture-helper'), 'resources/icon.png'];
+const built = [...renderer, ...(await files('dist-desktop')).filter(file => !NATIVE_HELPERS.includes(path.basename(file))), 'resources/icon.png'];
 for (const file of built) assert.deepEqual(asar.extractFile(archive, file.split(path.sep).join('/')), await readFile(file), `Packaged file differs: ${file}`);
 const packagedRenderer = asar.listPackage(archive).filter(file => file.startsWith('/dist/') && !asar.statFile(archive, file.slice(1)).files);
 assert.equal(packagedRenderer.length, renderer.length, 'Archive contains obsolete renderer files');
 // Signing rewrites the helper's signature, so compare its machine code and strings per architecture instead of raw bytes.
-const helper = path.join(resources, 'gesture-helper');
 const sections = file => ['arm64', 'x86_64'].flatMap(arch => [['-t'], ['-s', '__TEXT', '__cstring']].map(args => execFileSync('otool', ['-arch', arch, ...args, file]).toString().split('\n').slice(1).join('\n')));
-assert.deepEqual(sections(helper), sections('dist-desktop/gesture-helper'), 'Packaged gesture helper code differs');
+for (const name of NATIVE_HELPERS) assert.deepEqual(sections(path.join(resources, name)), sections(`dist-desktop/${name}`), `Packaged ${name} code differs`);
 execFileSync('codesign', ['--verify', '--deep', '--strict', app]);
 // codesign -d reports on stderr; an ad-hoc or missing identity is recorded as unsigned.
 const authority = spawnSync('codesign', ['-dvv', app], { encoding: 'utf8' }).stderr.match(/^Authority=(Developer ID Application: .*)$/m)?.[1] ?? null;

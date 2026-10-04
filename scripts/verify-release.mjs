@@ -27,7 +27,7 @@ async function files(folder) {
   }
   return result;
 }
-const built = [...await files('dist'), ...await files('dist-desktop')].filter(file => path.basename(file) !== 'gesture-helper');
+const built = [...await files('dist'), ...await files('dist-desktop')].filter(file => !['gesture-helper', 'location-helper'].includes(path.basename(file)));
 // ASAR's directory reader splits on the host path separator, including on Windows.
 for (const file of [...built, 'resources/icon.png']) assert.deepEqual(asar.extractFile(archive, path.normalize(file)), await readFile(file), `Packaged bytes differ: ${file}`);
 const os = platform === 'darwin' ? 'mac' : platform === 'win32' ? 'windows' : 'linux';
