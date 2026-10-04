@@ -7,8 +7,7 @@ import { api } from '../shared/bridge';
 import { MAP_STYLE_URL, type MapPosition } from '../shared/map';
 import { saoMapStyle } from '../shared/map-style';
 
-/** Portrait card like the anime's Dungeon Map window. */
-export const FIELD_MAP_SIZE = { width: 380, height: 500 } as const;
+import { FIELD_MAP_SIZE } from './field-map-size';
 // Vite bundles MapLibre's worker so it loads from the app itself in dev and production builds.
 maplibregl.setWorkerUrl(mapWorkerUrl);
 const STREET_ZOOM = 15;

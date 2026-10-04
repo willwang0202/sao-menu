@@ -14,7 +14,9 @@ import { DesktopWidgetWindow } from './widgets';
 import { LinkStart } from './startup';
 import { HandReticle, HandTrackingStatusLine, useHandPointer } from './hand-pointer';
 import { menuArtwork } from './menu-art';
-import { FieldMap, FIELD_MAP_SIZE } from './field-map';
+import { FIELD_MAP_SIZE } from './field-map-size';
+// MapLibre loads only when the Field Map opens.
+const FieldMap = React.lazy(() => import('./field-map').then(module => ({ default: module.FieldMap })));
 import { MapHomeField } from './map-home';
 /** Keeps the map window clear of the selected Field Map row. */
 const FIELD_MAP_GAP = 14;
@@ -400,7 +402,7 @@ function App() {
       </div>
       {rootOpened && !isGgo && columns.length > 0 && <MenuIndicator x={339} y={rootCenter} itemCount={columns[0].parent.children?.length ?? 0} hidden={!!columns[0].selected} />}
       {rootOpened && columns.map(({ parent, selected }, depth) => <Submenu key={depth} parent={parent} selected={selected} hoveredButton={hoveredButton} depth={depth} x={layout.menuLeft(depth)} y={menuTops[depth]} layout={submenuLayout(theme)} onSelectedTop={top => reportRowTop(depth, top)} onPress={() => sound()} onPopup={() => sound('popupMenu')} onBrowse={() => setPath(current => current.slice(0, depth))} onSelect={entry => selectEntry(entry, depth)} />)}
-      {rootOpened && mapDepth !== null && <FieldMap x={layout.menuLeft(mapDepth) + FIELD_MAP_GAP} y={Math.max(0, Math.min(groupHeight - FIELD_MAP_SIZE.height, rootCenter - FIELD_MAP_SIZE.height / 2))} motion={motion} />}
+      {rootOpened && mapDepth !== null && <React.Suspense fallback={null}><FieldMap x={layout.menuLeft(mapDepth) + FIELD_MAP_GAP} y={Math.max(0, Math.min(groupHeight - FIELD_MAP_SIZE.height, rootCenter - FIELD_MAP_SIZE.height / 2))} motion={motion} /></React.Suspense>}
       {rootOpened && activeRoot?.social && <SocialPanel mode={activeRoot.social} x={layout.menuLeft(0)} y={rootCenter - 155} onPress={() => sound()} />}
       </div>
     </main>}
