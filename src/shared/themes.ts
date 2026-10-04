@@ -10,7 +10,12 @@ const SAO_SOUNDS: Record<SoundEvent, string> = {
   popupPanel: 'Popup.SAO.Panel.wav', dismissLauncher: 'Dismiss.SAO.Launcher.wav', ready: 'Ready.SAO.Welcome.wav',
 };
 /** Per-theme overrides; unlisted events use the SAO sound, as the original SFX presets do. */
-const THEME_SOUNDS: Record<ThemeId, Partial<Record<SoundEvent, string>>> = { sao: {}, alo: {}, ggo: {} };
+const THEME_SOUNDS: Record<ThemeId, Partial<Record<SoundEvent, string>>> = {
+  sao: {},
+  // com.gpbeta.theme.sao/Presets/sfx-alo.json: panel and menu popups keep the SAO sounds.
+  alo: { click: 'Feedback.ALO.Click.wav', popupLauncher: 'Popup.ALO.Launcher.wav', dismissLauncher: 'Dismiss.ALO.Launcher.wav', ready: 'Ready.ALO.Welcome.wav' },
+  ggo: {},
+};
 export function themeSound(theme: ThemeId, event: SoundEvent): string {
   return THEME_SOUNDS[theme][event] ?? SAO_SOUNDS[event];
 }

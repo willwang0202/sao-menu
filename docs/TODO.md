@@ -12,7 +12,7 @@ Branch: `feat/themes-and-widgets`.
 - [x] Importer copies GGO theme images/presets, HP-bar ALO artwork and SAO theme presets
 
 ## Themes (subagents, own worktrees)
-- [ ] ALO theme: ALO SFX preset (`sfx-alo.json`) and ALO HP-bar style (`HPBar/alo-*.png`, `BarALO.qml`/`StyleALO.qml`)
+- [x] ALO theme: ALO SFX preset (`sfx-alo.json`) and ALO HP-bar style (`HPBar/alo-*.png`, `BarALO.qml`/`StyleALO.qml`)
 - [ ] GGO theme: launcher skin from `com.gpbeta.theme.ggo` QML/images (buttons, items, panel bars, dialog)
 
 ## Widgets (main session)

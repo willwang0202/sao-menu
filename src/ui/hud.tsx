@@ -1,13 +1,16 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { hpBattery, hpHeight, hpNameWidth, hpWidgetWidth, hpLevel, type HpState } from '../shared/hud';
+import { AloHud } from './hud-alo';
 import './hud.css';
 const IMAGE = './sao-original/Images/etc/';
 export function HpHudWindow() {
-  const [state, setState] = useState<HpState>({ playerName: 'Kirito', reducedMotion: false, stats: null, partyMembers: [] });
+  const [state, setState] = useState<HpState>({ theme: 'sao', playerName: 'Kirito', reducedMotion: false, stats: null, partyMembers: [] });
   useEffect(() => { const api = window.saoHP!; const detach = api.onState(setState); void api.getState().then(setState); return detach; }, []);
   return <HpHud state={state} onWidth={width => { void window.saoHP!.setWidth(width).catch(() => {}); }} />;
 }
-export function HpHud({ state, onWidth }: { state: HpState; onWidth?: (width: number) => void }) {
+type HudProps = { state: HpState; onWidth?: (width: number) => void };
+export const HpHud = (props: HudProps) => props.state.theme === 'alo' ? <AloHud {...props} /> : <SaoHud {...props} />;
+function SaoHud({ state, onWidth }: HudProps) {
   const element = useRef<HTMLElement>(null);
   const [textWidths, setTextWidths] = useState<number[]>([]);
   const names = JSON.stringify([state.playerName, ...state.partyMembers.map(member => member.displayName)]);

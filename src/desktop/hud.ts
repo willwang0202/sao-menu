@@ -9,7 +9,7 @@ import { getSystemStats } from './system';
 export class HpDisplay {
   private window: BrowserWindow | null = null;
   private timer: ReturnType<typeof setInterval> | null = null;
-  private state: HpState = { playerName: 'Kirito', reducedMotion: false, stats: null, partyMembers: [] };
+  private state: HpState = { theme: 'sao', playerName: 'Kirito', reducedMotion: false, stats: null, partyMembers: [] };
   private sampling = false;
   private width = 358;
   constructor(private readonly renderer: string, private readonly settings: () => Settings, private readonly snapshot: () => SocialSnapshot | null) {}
@@ -36,7 +36,7 @@ export class HpDisplay {
       owner(event);
       if (typeof width !== 'number' || !Number.isFinite(width) || width < 358 || width > 2048) throw new Error('Invalid HP display width.');
       this.width = Math.ceil(width);
-      window.setSize(this.width, hpHeight(this.state.partyMembers.length));
+      window.setSize(this.width, hpHeight(this.state.partyMembers.length, this.state.theme));
     });
     screen.on('display-metrics-changed', this.position);
     screen.on('display-added', this.position); screen.on('display-removed', this.position);
@@ -48,7 +48,7 @@ export class HpDisplay {
   update(): void {
     this.state = hpState(this.settings(), this.state.stats, this.snapshot());
     if (this.window && !this.window.isDestroyed()) {
-      const height = hpHeight(this.state.partyMembers.length);
+      const height = hpHeight(this.state.partyMembers.length, this.state.theme);
       if (this.window.getSize()[1] !== height) this.window.setSize(this.width, height);
       this.window.webContents.send('sao:hp:update', this.state);
     }
