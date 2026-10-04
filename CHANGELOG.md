@@ -2,7 +2,11 @@
 
 ## Unreleased
 
-## 0.1.5 — October 3, 2026
+## 0.1.6 — October 3, 2026
+
+- Complete native packaging verification on Windows by using its path separators when reading ASAR entries. This release includes the account, battery and party changes prepared for 0.1.5.
+
+## 0.1.5 — unpublished build preparation
 
 - Pin the production account service to sao-menu.favioon.com; remove address controls and allow account creation from the animated launch screen.
 - Use the account display name in the menu and HP widget. HP now represents battery percentage on macOS, Windows and Linux, with 100% when no battery is present.

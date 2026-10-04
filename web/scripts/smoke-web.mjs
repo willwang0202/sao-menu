@@ -31,7 +31,7 @@ try {
   await page.screenshot({ path: path.join(output, 'landing-hero.png') });
   await page.screenshot({ path: path.join(output, 'landing-full.png'), fullPage: true });
   assert.match(await page.getByRole('link', { name: /Download for Mac/ }).getAttribute('href'), /\.dmg$/);
-  assert.match(await page.getByRole('link', { name: /Download for Windows/ }).getAttribute('href'), /sao-menu\/releases\/download\/v0\.1\.5\/.*windows-x64\.exe$/);
+  assert.match(await page.getByRole('link', { name: /Download for Windows/ }).getAttribute('href'), /sao-menu\/releases\/download\/v0\.1\.6\/.*windows-x64\.exe$/);
   assert.match(await page.getByRole('link', { name: /Download for Linux/ }).getAttribute('href'), /linux-x86_64\.AppImage$/);
   await page.getByRole('link', { name: 'Support', exact: true }).click();
   await page.getByRole('heading', { name: 'Report a bug' }).waitFor();
@@ -65,6 +65,17 @@ try {
   const seen = (await api(`messages?peer=${(await api('state', undefined, asuna.data.token)).data.friends[0].id}`, undefined, asuna.data.token)).data.messages;
   assert.equal(seen.at(-1).text, 'Link Start!', 'web messages reach the app protocol');
   assert.equal((await api('state', undefined, asuna.data.token)).data.conversations[0].unread, 1);
+  const signedIn = await api('login', { username: player.username, password: player.password });
+  assert.equal(signedIn.status, 200);
+  assert.equal((await api('party/invite', { peer: signedIn.data.profile.id }, asuna.data.token)).status, 200);
+  const invitation = (await api('state', undefined, signedIn.data.token)).data.partyInvites[0];
+  assert.equal((await api('party/resolve', { id: invitation.id, action: 'accept' }, signedIn.data.token)).status, 200);
+  assert.equal((await api('presence', { batteryPercent: 43 }, asuna.data.token)).status, 200);
+  const party = (await api('state', undefined, signedIn.data.token)).data.party;
+  assert.equal(party.members.length, 2);
+  assert.equal(party.members.find(member => member.id === asuna.data.profile.id).batteryPercent, 43);
+  assert.equal((await api('party/leave', {}, signedIn.data.token)).status, 200);
+  assert.equal((await api('state', undefined, signedIn.data.token)).data.party, null);
   await page.screenshot({ path: path.join(output, 'account.png'), fullPage: true });
 
   const mobile = await browser.newPage({ viewport: { width: 390, height: 844 } });

@@ -1,4 +1,4 @@
-SAO Menu 0.1.5 carries forward the real-time Link Start, original menu artwork, curved browser/media previews, saved browser FOV, login-gated HP display and merged webcam hand gestures.
+SAO Menu 0.1.6 carries forward the real-time Link Start, original menu artwork, curved browser/media previews, saved browser FOV, login-gated HP display and merged webcam hand gestures.
 
 - The project and repository are now **sao-menu**.
 - The website and fixed account service are **https://sao-menu.favioon.com**. No address configuration is shown, and the launch screen offers Create account. Friends, presence and direct messages use the same account on the website and desktop. The previous sao.favioon.com hostname remains available for older clients.

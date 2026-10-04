@@ -1,6 +1,6 @@
 # Current test release verification
 
-## 0.1.5 release preparation
+## 0.1.6 release preparation
 
 The renamed `sao-menu` source passed 102/102 unit/protocol tests, the desktop production build and the website TypeScript/Next.js production build. The local browser acceptance test passed registration, friendship, direct-message round trips, logout, mobile layouts, platform download links and the GitHub issue-form/issue-list links. It used a disposable PGlite database. Native hand-gesture acceptance passed with Chromium's synthetic camera, carrying forward the already merged hand-tracking work.
 

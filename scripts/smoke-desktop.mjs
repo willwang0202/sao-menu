@@ -138,11 +138,10 @@ try {
   assert.equal(await page.getByRole('alert').count(), 0, 'unassigned original Help remains a no-op');
   assert.equal(await page.getByRole('dialog').count(), 0);
   await page.getByRole('menuitem', { name: 'Option', exact: true }).click();
-  await page.getByLabel('Player name').fill('Smoke Player');
-  for (let attempt = 0; attempt < 50; attempt++) {
-    if ((await page.evaluate(() => window.sao.getSettings())).playerName === 'Smoke Player') break;
-    await new Promise(resolve => setTimeout(resolve, 20));
-  }
+  assert.equal(await page.getByLabel('Account display name').inputValue(), 'Kirito');
+  assert.equal(await page.getByLabel('Account display name').getAttribute('readonly'), '');
+  // Old local preferences remain importable; the UI gets its identity from the account.
+  await page.evaluate(async () => { const settings = await window.sao.getSettings(); await window.sao.saveSettings({ ...settings, playerName: 'Smoke Player' }); });
   assert.equal((await page.evaluate(() => window.sao.getSettings())).playerName, 'Smoke Player');
   assert.equal(await page.getByRole('button', { name: 'Widgets', exact: true }).count(), 0);
   for (const obsolete of ['accent', 'widgets', 'positions', 'notes']) assert.equal(obsolete in await page.evaluate(() => window.sao.getSettings()), false);
