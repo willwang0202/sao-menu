@@ -14,11 +14,10 @@ const FEATURES = [
 ] as const;
 
 const BUILDS = [
-  { name: 'macOS', detail: 'Apple Silicon', format: '.dmg', href: RELEASE.dmg },
-  { name: 'macOS', detail: 'Intel', format: '.dmg', href: RELEASE.macIntel },
+  { name: 'macOS', detail: 'Universal · Apple Silicon + Intel', format: '.dmg', href: RELEASE.dmg },
   { name: 'Windows', detail: '64-bit installer', format: '.exe', href: RELEASE.windows },
   { name: 'Linux', detail: '64-bit AppImage', format: '.AppImage', href: RELEASE.linux },
-  { name: 'Debian / Ubuntu', detail: '64-bit package', format: '.deb', href: RELEASE.linuxDeb },
+  { name: 'Source', detail: 'Source code', format: '.zip', href: RELEASE.sourceArchive },
 ] as const;
 
 export default function Home() {
@@ -32,7 +31,7 @@ export default function Home() {
           <p className="hero-lede">A familiar interface.<br />A whole new way to use your desktop.</p>
           <p className="hero-description">Bring the SAO ring menu to your world. Launch your apps, open floating windows and stay close to your party.</p>
           <div className="hero-actions">
-            <a className="menu-button primary" href={RELEASE.dmg}><span className="disc"><Icon name="download" size={23} /></span><span>Download for Mac<small>Apple Silicon · v{RELEASE.version}</small></span></a>
+            <a className="menu-button primary" href={RELEASE.dmg}><span className="disc"><Icon name="download" size={23} /></span><span>Download for Mac<small>Universal · v{RELEASE.version}</small></span></a>
             <a className="hero-builds-link" href="#download">All downloads <Icon name="arrow" size={18} /></a>
           </div>
           <div className="hero-platforms">
@@ -40,7 +39,7 @@ export default function Home() {
             <span aria-hidden="true">/</span>
             <a href={RELEASE.linux} aria-label="Download for Linux">Linux</a>
             <span aria-hidden="true">/</span>
-            <a href={RELEASE.macIntel}>Intel Mac</a>
+            <a href={RELEASE.sourceArchive}>Source</a>
           </div>
           <p className="hero-fan-note">Free & open source. Made by a fan, for fans.</p>
         </div>

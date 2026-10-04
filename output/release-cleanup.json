@@ -1,0 +1,162 @@
+{
+  "version": "0.1.7",
+  "release": "https://github.com/willwang0202/sao-menu/releases/tag/v0.1.7",
+  "sourceCommit": "c97143c6cd35119af2ecadfc8259699691a02b56",
+  "verifiedAt": "2026-10-04T07:18:53.069Z",
+  "previousAssetCount": 19,
+  "publishedAssetCount": 7,
+  "removedAssets": [
+    "current-package.json",
+    "release-linux-x64.json",
+    "release-mac-arm64.json",
+    "release-mac-x64.json",
+    "release-status.json",
+    "release-windows-x64.json",
+    "sao-menu-0.1.7-linux-amd64.deb",
+    "sao-menu-0.1.7-mac-arm64.dmg",
+    "sao-menu-0.1.7-mac-arm64.zip",
+    "sao-menu-0.1.7-mac-x64.dmg",
+    "sao-menu-0.1.7-mac-x64.zip",
+    "sao-menu-0.1.7-windows-x64.zip",
+    "sao-menu-build-assets.tgz",
+    "SHA256SUMS"
+  ],
+  "backupDirectory": "release/cleanup-backup/v0.1.7",
+  "universalMac": {
+    "architectures": [
+      "arm64",
+      "x64"
+    ],
+    "launchChecksPassed": [
+      "arm64",
+      "x64"
+    ],
+    "signatureVerified": true,
+    "applicationContentMatchesOriginalRelease": true,
+    "publicUpdateChecksPassed": [
+      "arm64",
+      "x64"
+    ]
+  },
+  "artifacts": [
+    {
+      "name": "sao-menu-0.1.7-mac-universal.dmg",
+      "bytes": 279770323,
+      "sha256": "6f46db63e36e67b6a6f803a261e3683b5b48263ef9d98816960dde8974a7f380",
+      "sha512": "DVy9C3ykiYwVgPupW9lW7lxDNPGotmcuTfSu/jQO0hYvdnHJioA8fVZh6F8bx+RfTa6FfdwpWBzKew80DJSVIg=="
+    },
+    {
+      "name": "sao-menu-0.1.7-mac-universal.zip",
+      "bytes": 279440915,
+      "sha256": "c25a5e2b80af1a1f51de5ac9746205717b5d5877d222233211055d3cf1a94eb7",
+      "sha512": "cProuVFdugeMuE2daP7nez7bClHpQZRMaFObCNaydwKaRDMFwUOgCJTcmAYpBS1Zpav5A7bVmAeEnkEe99AmBA=="
+    },
+    {
+      "name": "sao-menu-0.1.7-windows-x64.exe",
+      "bytes": 153491130,
+      "sha256": "d677d2c4f9f456dcc49461cdce46c8f2c79e9b47692e9b19756aa925c1cdb81b",
+      "sha512": "H6uAX+UFyUbB8pI/8EeIjRFIQU6Xwf9S71aMg2N5JYGJHLJ7AI1zZqE1nCU7WtuoAMhonJjN8//gkwpftzaOoA=="
+    },
+    {
+      "name": "sao-menu-0.1.7-linux-x86_64.AppImage",
+      "bytes": 176894649,
+      "sha256": "911a5378893879a78a3242cfe4ed17590a6034cec64b9f11a7ccc7d5b6308549",
+      "sha512": "gCWB/C9TzBQUzYlKfoqBPiMPTenr5D3aZP3xv5EXznc+Omo+DVQWx1UpQeZ0UgYZZ9in0MyZlkqaKdBty7eakA=="
+    }
+  ],
+  "updateFeeds": [
+    "latest-mac.yml",
+    "latest.yml",
+    "latest-linux.yml"
+  ],
+  "assets": [
+    {
+      "name": "latest-linux.yml",
+      "label": "Automatic updates — Linux metadata",
+      "size": 394,
+      "digest": "sha256:a31db4a670e811160ce49f4f5e9f50c23fe51ce8720550a16d591c205c2cb8bc",
+      "url": "https://github.com/willwang0202/sao-menu/releases/download/v0.1.7/latest-linux.yml"
+    },
+    {
+      "name": "latest-mac.yml",
+      "label": "Automatic updates — macOS metadata",
+      "size": 580,
+      "digest": "sha256:5dcdc9e1d8208f37eedd85cba25c60e0033daeeb22865959bad386baa21ece8f",
+      "url": "https://github.com/willwang0202/sao-menu/releases/download/v0.1.7/latest-mac.yml"
+    },
+    {
+      "name": "latest.yml",
+      "label": "Automatic updates — Windows metadata",
+      "size": 382,
+      "digest": "sha256:acab645b49086d26ab51357bc149e2a33f91f0929a8bcfcc4a431bfa721e099a",
+      "url": "https://github.com/willwang0202/sao-menu/releases/download/v0.1.7/latest.yml"
+    },
+    {
+      "name": "sao-menu-0.1.7-linux-x86_64.AppImage",
+      "label": "Linux — 64-bit.AppImage",
+      "size": 176894649,
+      "digest": "sha256:911a5378893879a78a3242cfe4ed17590a6034cec64b9f11a7ccc7d5b6308549",
+      "url": "https://github.com/willwang0202/sao-menu/releases/download/v0.1.7/sao-menu-0.1.7-linux-x86_64.AppImage"
+    },
+    {
+      "name": "sao-menu-0.1.7-mac-universal.dmg",
+      "label": "macOS Universal — Apple Silicon + Intel.dmg",
+      "size": 279770323,
+      "digest": "sha256:6f46db63e36e67b6a6f803a261e3683b5b48263ef9d98816960dde8974a7f380",
+      "url": "https://github.com/willwang0202/sao-menu/releases/download/v0.1.7/sao-menu-0.1.7-mac-universal.dmg"
+    },
+    {
+      "name": "sao-menu-0.1.7-mac-universal.zip",
+      "label": "Automatic updates — Mac universal.zip",
+      "size": 279440915,
+      "digest": "sha256:c25a5e2b80af1a1f51de5ac9746205717b5d5877d222233211055d3cf1a94eb7",
+      "url": "https://github.com/willwang0202/sao-menu/releases/download/v0.1.7/sao-menu-0.1.7-mac-universal.zip"
+    },
+    {
+      "name": "sao-menu-0.1.7-windows-x64.exe",
+      "label": "Windows — 64-bit installer.exe",
+      "size": 153491130,
+      "digest": "sha256:d677d2c4f9f456dcc49461cdce46c8f2c79e9b47692e9b19756aa925c1cdb81b",
+      "url": "https://github.com/willwang0202/sao-menu/releases/download/v0.1.7/sao-menu-0.1.7-windows-x64.exe"
+    }
+  ],
+  "publicDownloadLinks": [
+    {
+      "url": "https://github.com/willwang0202/sao-menu/releases/download/v0.1.7/latest-linux.yml",
+      "status": 200
+    },
+    {
+      "url": "https://github.com/willwang0202/sao-menu/releases/download/v0.1.7/latest-mac.yml",
+      "status": 200
+    },
+    {
+      "url": "https://github.com/willwang0202/sao-menu/releases/download/v0.1.7/latest.yml",
+      "status": 200
+    },
+    {
+      "url": "https://github.com/willwang0202/sao-menu/releases/download/v0.1.7/sao-menu-0.1.7-linux-x86_64.AppImage",
+      "status": 200
+    },
+    {
+      "url": "https://github.com/willwang0202/sao-menu/releases/download/v0.1.7/sao-menu-0.1.7-mac-universal.dmg",
+      "status": 200
+    },
+    {
+      "url": "https://github.com/willwang0202/sao-menu/releases/download/v0.1.7/sao-menu-0.1.7-mac-universal.zip",
+      "status": 200
+    },
+    {
+      "url": "https://github.com/willwang0202/sao-menu/releases/download/v0.1.7/sao-menu-0.1.7-windows-x64.exe",
+      "status": 200
+    },
+    {
+      "url": "https://github.com/willwang0202/sao-menu/archive/refs/tags/v0.1.7.zip",
+      "status": 200
+    }
+  ],
+  "publicFeedChecksPassed": [
+    "latest-mac.yml",
+    "latest.yml",
+    "latest-linux.yml"
+  ]
+}
