@@ -23,6 +23,10 @@ try {
   assert.equal(runtime.version, pkg.version);
   assert.equal(runtime.platform, process.platform);
   assert.equal((await page.evaluate(() => window.sao.getSettings())).handTracking, false);
+  const update = await page.evaluate(() => window.sao.getUpdateStatus());
+  assert.equal(update.currentVersion, pkg.version); assert.notEqual(update.capability, 'unavailable');
+  assert.equal((await page.evaluate(() => window.sao.getSettings())).automaticUpdates, true);
+  await assert.rejects(page.evaluate(() => window.sao.installUpdate()), /Download and verify/);
   assert.equal((await page.evaluate(() => window.saoSocial.getState())).serviceURL, 'https://sao-menu.favioon.com');
   await page.getByRole('button', { name: 'Skip intro', exact: true }).click();
   await page.getByRole('form', { name: 'SAO account login', exact: true }).waitFor();

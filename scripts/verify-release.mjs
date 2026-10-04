@@ -6,10 +6,13 @@ import path from 'node:path';
 import asar from '@electron/asar';
 
 const platform = process.platform;
-const arch = process.arch;
+const arch = platform === 'darwin' && process.argv.includes('--x64') ? 'x64' : process.arch;
 const pkg = JSON.parse(await readFile('package.json', 'utf8'));
 const folder = platform === 'darwin' ? `release/${arch === 'arm64' ? 'mac-arm64' : 'mac'}/SAO Utils 2.app/Contents/Resources` : `release/${platform === 'win32' ? 'win-unpacked' : 'linux-unpacked'}/resources`;
 const archive = path.join(folder, 'app.asar');
+const updateConfig = await readFile(path.join(folder, 'app-update.yml'), 'utf8');
+assert.match(updateConfig, /owner: willwang0202/); assert.match(updateConfig, /repo: sao-menu/); assert.match(updateConfig, /provider: github/);
+assert.equal(JSON.parse(asar.extractFile(archive, path.normalize('node_modules/electron-updater/package.json')).toString()).version, '6.8.9');
 const embedded = JSON.parse(asar.extractFile(archive, 'package.json').toString());
 assert.equal(embedded.version, pkg.version);
 assert.equal(embedded.name, 'sao-menu');
@@ -34,7 +37,7 @@ for (const extension of required) {
   const name = `sao-menu-${pkg.version}-${os}-${artifactArch}.${extension}`;
   const bytes = await readFile(path.join('release', name));
   assert.ok(bytes.length > 1_000_000, `Installer is unexpectedly small: ${name}`);
-  artifacts.push({ name, bytes: bytes.length, sha256: createHash('sha256').update(bytes).digest('hex') });
+  artifacts.push({ name, bytes: bytes.length, sha256: createHash('sha256').update(bytes).digest('hex'), sha512: createHash('sha512').update(bytes).digest('base64') });
 }
 await mkdir('output', { recursive: true });
 const report = { version: pkg.version, platform, arch, verifiedAt: new Date().toISOString(), packagedFilesMatched: built.length + 1, artifacts };

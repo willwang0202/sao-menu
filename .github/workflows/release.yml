@@ -88,3 +88,23 @@ jobs:
             if [ -f "$file" ]; then gh release upload "$RELEASE_TAG" "$file" --repo "$GITHUB_REPOSITORY" --clobber; fi
           done
           gh release upload "$RELEASE_TAG" "output/release-${{ matrix.platform }}-${{ matrix.arch }}.json" --repo "$GITHUB_REPOSITORY" --clobber
+
+  update-feeds:
+    needs: package
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref_name }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Collect all final native reports
+        run: gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --pattern 'release-*.json' --dir output
+      - name: Generate architecture-aware update feeds
+        run: node scripts/update-feeds.mjs
+      - name: Upload update feeds to the draft release
+        run: gh release upload "$RELEASE_TAG" release/latest.yml release/latest-mac.yml release/latest-linux.yml --repo "$GITHUB_REPOSITORY" --clobber
