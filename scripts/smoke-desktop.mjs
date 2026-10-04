@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, readFile, writeFile, mkdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 import electronPath from 'electron';
 import { _electron as electron } from 'playwright';
 
@@ -127,8 +128,17 @@ try {
   await page.getByRole('menuitem', { name: 'Calculator', exact: true }).waitFor();
   assert.equal(await page.locator('.submenu-column').count(), 2);
   if (process.platform === 'darwin') {
+    const isCalculatorRunning = () => { try { execFileSync('pgrep', ['-x', 'Calculator']); return true; } catch { return false; } };
+    const wasCalculatorRunning = isCalculatorRunning();
     await page.getByRole('menuitem', { name: 'Calculator', exact: true }).click();
     await page.waitForFunction(() => !document.querySelector('.original-menu'));
+    // Quit the Calculator this test opened; leave one the user already had open.
+    if (!wasCalculatorRunning) {
+      const deadline = Date.now() + 10000;
+      while (!isCalculatorRunning() && Date.now() < deadline) await new Promise(resolve => setTimeout(resolve, 200));
+      assert.equal(isCalculatorRunning(), true, 'Equipment → Calculator launches Calculator');
+      execFileSync('osascript', ['-e', 'tell application "Calculator" to quit']);
+    }
     await instance.evaluate(({ app }) => app.emit('activate'));
     await page.getByRole('menuitem', { name: 'Kirito', exact: true }).waitFor();
   }
