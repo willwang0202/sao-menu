@@ -8,6 +8,25 @@ const itemIcons: Record<string, string> = {
   'navigation.search': 'item/Network/search.png', 'navigation.favorite': 'item/Other/Favs1.png', 'navigation.bilibili': 'item/Media/WMP.png',
   'settings.option': 'item/option.png', 'settings.help': 'item/help.png', 'settings.exit': 'item/logout.png',
 };
+/** Kirito → Equipment: everyday apps, with original SAO item icons. Skills stays empty for the user to fill. */
+const EQUIPMENT: { key: string; name: string; icon: string; mac: string; names: string[] }[] = [
+  { key: 'calendar', name: 'Calendar', icon: 'item/Communicate/calendar.png', mac: '/System/Applications/Calendar.app', names: ['Calendar', 'GNOME Calendar', 'Outlook'] },
+  { key: 'reminders', name: 'Reminders', icon: 'item/Communicate/tasks.png', mac: '/System/Applications/Reminders.app', names: ['Reminders', 'Microsoft To Do', 'To Do', 'Errands'] },
+  { key: 'notes', name: 'Notes', icon: 'item/Communicate/note1.png', mac: '/System/Applications/Notes.app', names: ['Notes', 'Sticky Notes', 'OneNote', 'Gnote'] },
+  { key: 'maps', name: 'Maps', icon: 'item/Navigate/gmaps.png', mac: '/System/Applications/Maps.app', names: ['Maps', 'GNOME Maps'] },
+  { key: 'calculator', name: 'Calculator', icon: 'item/Other/calculator.png', mac: '/System/Applications/Calculator.app', names: ['Calculator', 'calc', 'KCalc', 'Qalculate!'] },
+  { key: 'terminal', name: 'Terminal', icon: 'item/System/sett-big.png', mac: '/System/Applications/Utilities/Terminal.app', names: ['Terminal', 'Windows Terminal', 'Konsole', 'Command Prompt'] },
+  { key: 'finder', name: 'Finder', icon: 'item/System/Computer.png', mac: '/System/Library/CoreServices/Finder.app', names: ['File Explorer', 'Explorer', 'Files', 'Dolphin', 'Nautilus'] },
+  { key: 'mail', name: 'Mail', icon: 'item/Communicate/mail1.png', mac: '/System/Applications/Mail.app', names: ['Mail', 'Thunderbird', 'Outlook'] },
+];
+function equipmentEntries(platform: Platform, applications: LauncherItem[]): MenuEntry[] {
+  return EQUIPMENT.flatMap(({ key, name, icon, mac, names }) => {
+    const id = `user.equipment.${key}`;
+    const app = platform === 'darwin' ? { id: `mapped-${id}`, name, target: mac, kind: 'application' as const }
+      : applications.find(candidate => names.some(match => candidate.name.toLowerCase() === match.toLowerCase()));
+    return app ? [{ id, name, kind: 'launcher' as const, icon, launcher: { ...app, name } }] : [];
+  });
+}
 export function originalIcon(id: string): string { return rootIcons[id] ?? itemIcons[id] ?? 'symbol/help.png'; }
 
 const macApplications: Record<string, string> = {
@@ -21,6 +40,8 @@ const windowsNames: Record<string, string[]> = { explorer: ['Explorer', 'File Ex
 export function resolveNativeMenu(menu: MenuEntry[], platform: Platform, applications: LauncherItem[], home?: string): MenuEntry[] {
   return menu.map(original => {
     const item = { ...original, children: original.children ? resolveNativeMenu(original.children, platform, applications, home) : undefined };
+    if (item.id === 'user.skills') return { ...item, kind: 'menu' as const, children: [] };
+    if (item.id === 'user.equipment') return { ...item, kind: 'menu' as const, children: equipmentEntries(platform, applications) };
     if (item.id === 'party' || item.id === 'message') return { ...item, kind: 'menu' as const, social: item.id === 'party' ? 'friends' as const : 'messages' as const, children: [], nativeTarget: undefined, directory: undefined };
     if (item.nativeTarget?.startsWith('app:')) {
       const key = item.nativeTarget.slice(4);
@@ -43,8 +64,8 @@ export function buildDefaultMenu(platform: Platform, applications: LauncherItem[
   const roots = [
     { ...node('user', 'Kirito', [
       node('user.items', 'Items', ['Documents', 'Music', 'Pictures', 'Movies'].map((folder, index) => native(['user.documents', 'user.music', 'user.pictures', 'user.videos'][index], ['My Documents', 'My Music', 'My Pictures', 'My Videos'][index], `home:${folder}`))),
-      node('user.skills', 'Skills', [['explorer', 'Explorer'], ['notepad', 'Notepad'], ['calculator', 'Calculator'], ['cmd', 'CMD']].map(([key, name]) => native(`user.${key}`, name, `app:${key}`))),
-      node('user.equipment', 'Equipment', [['events', 'Events'], ['services', 'Services'], ['management', 'Management']].map(([key, name]) => native(`user.${key}`, name, `app:${key}`))),
+      node('user.skills', 'Skills', []),
+      node('user.equipment', 'Equipment', []),
     ], 'Welcome to Sword Art Online!'), image: 'etc/info.png', infoPanel: true },
     { ...node('party', 'Party', []), nativeTarget: 'applications' },
     node('message', 'Message', favorites.map(item => ({ id: item.id, name: item.name, kind: 'launcher', launcher: item, icon: 'item/file.png' }))),

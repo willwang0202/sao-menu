@@ -123,7 +123,7 @@ try {
   const selfAnchor = await expansionAnchor();
   assert.ok(Math.abs(selfAnchor.menuCenter - selfAnchor.buttonCenter) < 1);
   assert.ok(Math.abs(optionsAnchor.menuCenter - selfAnchor.menuCenter - 280) < 1, `expanded menus move by the category spacing: ${JSON.stringify({ optionsAnchor, selfAnchor })}`);
-  await page.getByRole('menuitem', { name: 'Skills', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Equipment', exact: true }).click();
   await page.getByRole('menuitem', { name: 'Calculator', exact: true }).waitFor();
   assert.equal(await page.locator('.submenu-column').count(), 2);
   if (process.platform === 'darwin') {
