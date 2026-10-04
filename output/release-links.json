@@ -1,0 +1,61 @@
+{
+  "version": "0.1.7",
+  "urls": [
+    {
+      "name": "sao-menu-0.1.7-linux-amd64.deb",
+      "url": "https://github.com/willwang0202/sao-menu/releases/download/v0.1.7/sao-menu-0.1.7-linux-amd64.deb",
+      "status": 200
+    },
+    {
+      "name": "sao-menu-0.1.7-linux-x86_64.AppImage",
+      "url": "https://github.com/willwang0202/sao-menu/releases/download/v0.1.7/sao-menu-0.1.7-linux-x86_64.AppImage",
+      "status": 200
+    },
+    {
+      "name": "sao-menu-0.1.7-mac-arm64.dmg",
+      "url": "https://github.com/willwang0202/sao-menu/releases/download/v0.1.7/sao-menu-0.1.7-mac-arm64.dmg",
+      "status": 200
+    },
+    {
+      "name": "sao-menu-0.1.7-mac-arm64.zip",
+      "url": "https://github.com/willwang0202/sao-menu/releases/download/v0.1.7/sao-menu-0.1.7-mac-arm64.zip",
+      "status": 200
+    },
+    {
+      "name": "sao-menu-0.1.7-mac-x64.dmg",
+      "url": "https://github.com/willwang0202/sao-menu/releases/download/v0.1.7/sao-menu-0.1.7-mac-x64.dmg",
+      "status": 200
+    },
+    {
+      "name": "sao-menu-0.1.7-mac-x64.zip",
+      "url": "https://github.com/willwang0202/sao-menu/releases/download/v0.1.7/sao-menu-0.1.7-mac-x64.zip",
+      "status": 200
+    },
+    {
+      "name": "sao-menu-0.1.7-windows-x64.exe",
+      "url": "https://github.com/willwang0202/sao-menu/releases/download/v0.1.7/sao-menu-0.1.7-windows-x64.exe",
+      "status": 200
+    },
+    {
+      "name": "sao-menu-0.1.7-windows-x64.zip",
+      "url": "https://github.com/willwang0202/sao-menu/releases/download/v0.1.7/sao-menu-0.1.7-windows-x64.zip",
+      "status": 200
+    },
+    {
+      "name": "latest-mac.yml",
+      "url": "https://github.com/willwang0202/sao-menu/releases/download/v0.1.7/latest-mac.yml",
+      "status": 200
+    },
+    {
+      "name": "latest.yml",
+      "url": "https://github.com/willwang0202/sao-menu/releases/download/v0.1.7/latest.yml",
+      "status": 200
+    },
+    {
+      "name": "latest-linux.yml",
+      "url": "https://github.com/willwang0202/sao-menu/releases/download/v0.1.7/latest-linux.yml",
+      "status": 200
+    }
+  ],
+  "verifiedAt": "2026-10-04T04:50:10.244Z"
+}

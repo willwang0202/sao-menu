@@ -1,5 +1,19 @@
 # Current test release verification
 
+## 0.1.7 release
+
+All 121 unit/protocol tests and the desktop/website production builds passed. Local Apple Silicon and Intel packages are Developer ID signed but not notarized. Strict package checks matched all 1,113 renderer/host/icon files; the packaged Apple Silicon app launched with the original font, fixed hosted account service and isolated profile. Local installer hashes are in `output/current-package.json` and `output/release-mac-*.json`.
+
+Native HP/preview acceptance measured “willwang22” at 64.23px with a 73px name box; a 202.16px party name received 211px. The native width matched 391px content width while the original battery bar stayed 258px. A two-day-old fixture showed LV 3. Fresh browser bounds were 1728×945px on a 1920×1050px work area, at 20° FOV; corner keyboard resize and FOV adjustment passed. The complete curved browser/media suite passed painting, mapped clicks/typing, history, isolation, simultaneous media, capability revocation/ranges and previews surviving menu dismissal.
+
+The actual packaged updater passed loopback current-version checks, rejection of an invalid SHA512, verified retry/download, persisted automatic preference and About controls. Delayed native Mac staging kept the launcher alive after close, retained configuration saved during preparation and retained the download after a staging error. This test substitutes native preparation after a real download and does not invoke the OS installer. Actual replacement/relaunch remains device acceptance. Both fresh review findings (stale tracked reports in CI and premature quit flags during Mac preparation) are fixed with regressions. The schedule no longer resets when unrelated preferences save.
+
+The account-age migration was applied to the live private Supabase schema before deploying the matching API. Existing accounts start at level 1 today as explicitly requested; new signup stores its exact timestamp. Production API source c97143c is READY on Vercel and `/health` returns 200. No account rows were read for deployment verification.
+
+All four native jobs in [release run 37177524084](https://github.com/willwang0202/sao-menu/actions/runs/37177524084) passed against v0.1.7 (source c97143c): Mac arm64, Mac x64, Windows x64 and Linux x64. Each ran the complete test suite, built both installers, verified their packaged contents and launched its packaged app. Both local signed Mac installer pairs replace the CI ad-hoc pairs before final feed publication.
+
+The final publication gate verified all eight installer sizes/SHA256 digests, uploaded native report bytes, tagged source, resource input and all three merged update feeds against GitHub. The published [0.1.7 release](https://github.com/willwang0202/sao-menu/releases/tag/v0.1.7) includes both signed Mac architectures. The isolated signed local app checked the real production GitHub feed and returned `current`, version `0.1.7`, with automatic-update capability. Evidence is in `output/release-status.json` and `output/public-update-acceptance.json`. All eight installer URLs and all three feed URLs return HTTP 200.
+
 ## 0.1.6 release
 
 The renamed `sao-menu` source passed 102/102 unit/protocol tests, the desktop production build and the website TypeScript/Next.js production build. The local browser acceptance test passed registration, friendship, direct-message round trips, logout, mobile layouts, platform download links and the GitHub issue-form/issue-list links. It used a disposable PGlite database. Native hand-gesture acceptance passed with Chromium's synthetic camera, carrying forward the already merged hand-tracking work.

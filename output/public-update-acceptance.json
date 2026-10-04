@@ -1,0 +1,11 @@
+{
+  "capability": "automatic",
+  "status": "current",
+  "currentVersion": "0.1.7",
+  "message": "You have the latest version.",
+  "latestVersion": "0.1.7",
+  "checkedAt": 1791089348842,
+  "productionFeed": "https://github.com/willwang0202/sao-menu",
+  "profileIsolated": true,
+  "verifiedAt": "2026-10-04T04:49:08.847Z"
+}
