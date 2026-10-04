@@ -1,5 +1,13 @@
 # Current test release verification
 
+## 0.1.4 release preparation
+
+The renamed `sao-menu` source passed 98/98 unit/protocol tests, the desktop production build and the website TypeScript/Next.js production build. The local browser acceptance test passed registration, friendship, direct-message round trips, logout, mobile layouts, platform download links and the GitHub issue-form/issue-list links. It used a disposable PGlite database. Native hand-gesture acceptance passed with Chromium's synthetic camera, carrying forward the already merged hand-tracking work.
+
+Native release CI verifies the tagged resource SHA-256, packaged renderer/host/icon bytes and installer presence, then launches the packaged binary on Apple Silicon macOS, Intel macOS, Windows x64 and Linux x64. Completion and installer checksums are recorded after those jobs finish; a queued build is not a runtime-verification result.
+
+## Earlier 0.1.3 release
+
 The Apple Silicon 0.1.3 app, ZIP and DMG were built and verified on October 3, 2026. The packaged native and JavaScript versions both report 0.1.3. All 1,111 packaged renderer, host and icon files match the final build, and no obsolete renderer files remain. electron-builder signed the app with the local Developer ID Application certificate; `codesign --verify --deep --strict` passes. The app is not notarized, so Gatekeeper reports "Unnotarized Developer ID". Signing rewrites the gesture helper's signature, so its machine code and strings are compared per architecture rather than byte for byte. Both match. ZIP and DMG integrity checks passed; checksums are in `output/current-package.json`. Windows/Linux runtime behavior remains unverified.
 
 - `npm test`: 94/94 passed, including the Link Start clock, audio follow, cover scaling, keyframes, scene order and the audio/reference checksums.

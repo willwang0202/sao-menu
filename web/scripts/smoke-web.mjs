@@ -1,4 +1,4 @@
-// End-to-end check of sao.favioon.com flows in a real browser.
+// End-to-end check of SAO Menu flows in a real browser.
 // Usage: node web/scripts/smoke-web.mjs <base-url>   (screenshots in output/web/)
 // Registers two disposable players; run against local or preview databases, not production.
 import assert from 'node:assert/strict';
@@ -31,6 +31,12 @@ try {
   await page.screenshot({ path: path.join(output, 'landing-hero.png') });
   await page.screenshot({ path: path.join(output, 'landing-full.png'), fullPage: true });
   assert.match(await page.getByRole('link', { name: /Download for Mac/ }).getAttribute('href'), /\.dmg$/);
+  assert.match(await page.getByRole('link', { name: /Download for Windows/ }).getAttribute('href'), /sao-menu\/releases\/download\/v0\.1\.4\/.*windows-x64\.exe$/);
+  assert.match(await page.getByRole('link', { name: /Download for Linux/ }).getAttribute('href'), /linux-x64\.AppImage$/);
+  await page.getByRole('link', { name: 'Support', exact: true }).click();
+  await page.getByRole('heading', { name: 'Report a bug' }).waitFor();
+  assert.equal(await page.getByRole('link', { name: /Report a bug/ }).getAttribute('href'), 'https://github.com/willwang0202/sao-menu/issues/new?template=bug_report.yml');
+  assert.equal(await page.getByRole('link', { name: /View issues/ }).getAttribute('href'), 'https://github.com/willwang0202/sao-menu/issues');
 
   await page.getByRole('link', { name: 'Create account' }).first().click();
   await page.getByLabel(':account').fill(player.username);
@@ -69,6 +75,9 @@ try {
   await mobile.screenshot({ path: path.join(output, 'landing-mobile.png'), fullPage: true });
   await mobile.goto(`${base}/login`);
   await mobile.screenshot({ path: path.join(output, 'login-mobile.png') });
+  await mobile.goto(`${base}/support`);
+  assert.equal(await mobile.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'support fits phones');
+  await mobile.getByRole('link', { name: /Report a bug/ }).waitFor();
 
   await page.getByRole('button', { name: 'Log out' }).click();
   await page.waitForURL(`${base}/`);

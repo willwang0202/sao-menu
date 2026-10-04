@@ -1,6 +1,6 @@
-# sao.favioon.com: website and hosted account service
+# sao-menu.favioon.com: website and hosted account service
 
-Status as of October 3, 2026. The site, account API and desktop download are **live** at https://sao.favioon.com. The Download button serves the public [v0.1.3 GitHub Release](https://github.com/willwang0202/sao-util-mac/releases/tag/v0.1.3).
+Status as of October 3, 2026. The site, account API and desktop download are **live** at https://sao-menu.favioon.com. The Download button serves the public [v0.1.3 GitHub Release](https://github.com/willwang0202/sao-menu/releases/tag/v0.1.3).
 
 ## What it is
 
@@ -11,7 +11,7 @@ Status as of October 3, 2026. The site, account API and desktop download are **l
 - **`/register` and `/login`**: sign-up and sign-in, drawn as the blue Link Start system card.
 - **`/account`**: profile, friends with presence, incoming requests (YES/NO), and conversations with sending.
 
-From commit `09c9b83`, the desktop app defaults to `https://sao.favioon.com` (`DEFAULT_SERVICE_URL` in `src/shared/social.ts`). Released 0.1.3 predates this, so its users enter the address once in **Account service** on the login card.
+In version 0.1.4, the desktop app defaults to `https://sao-menu.favioon.com` (`DEFAULT_SERVICE_URL` in `src/shared/social.ts`). Released 0.1.3 predates the default; its users enter the address once in **Account service** on the login card. The previous `sao.favioon.com` hostname remains attached to the same service so saved URLs and sessions keep working.
 
 ## Architecture
 
@@ -36,10 +36,10 @@ browser ── pages / Server Actions ──────┤
 
 | Piece | Where | Identifier |
 | --- | --- | --- |
-| Vercel project | Team `willwang22-6748s-projects` (Pro) | `sao-favioon` (`prj_DNCfmoJNbDPjAzCIP6LGLm67C1KM`); root directory `web`; Git-connected to `willwang0202/sao-util-mac`, so pushes to `main` deploy production |
+| Vercel project | Team `willwang22-6748s-projects` (Pro) | `sao-menu` (`prj_DNCfmoJNbDPjAzCIP6LGLm67C1KM`); root directory `web`; Git-connected to `willwang0202/sao-menu`, so pushes to `main` deploy production |
 | Database | Supabase, provisioned through the Vercel Marketplace | resource `sao-accounts`; env vars (`POSTGRES_URL`, `POSTGRES_URL_NON_POOLING`, `SUPABASE_*`) injected into all environments |
-| Domain | Vercel project domain | `sao.favioon.com`, verified |
-| DNS | Cloudflare zone `favioon.com` (Cloudflare nameservers) | `A sao.favioon.com 76.76.21.21`, **DNS only (not proxied)**, so Vercel issues TLS and sees real client IPs |
+| Domain | Vercel project domain | `sao-menu.favioon.com`, verified |
+| DNS | Cloudflare zone `favioon.com` (Cloudflare nameservers) | `A sao-menu.favioon.com 76.76.21.21`, **DNS only (not proxied)**, so Vercel issues TLS and sees real client IPs |
 
 `*.vercel.app` deployment URLs are behind Vercel Authentication; only the custom domain is public.
 
@@ -85,16 +85,16 @@ DELETE FROM sao.users WHERE username ~ '^(kirito|asuna)_[a-z0-9]{6,10}$';
 - Locally, the full protocol scenario passed over HTTP through `next start`, the `postgres` driver and Postgres. The browser end-to-end test passed (landing, sign-up, account, YES on a request, a message round trip, phone width, log-out), and the screenshots were reviewed.
 - Production:
   - The first Git deployment built in 20 s.
-  - `https://sao.favioon.com/health` returns `{"status":"ok","version":1}` over HTTP/2 with HSTS, and the landing page returns 200.
-  - `smoke-web.mjs` passed against `https://sao.favioon.com`.
+  - `https://sao-menu.favioon.com/health` returns `{"status":"ok","version":1}` over HTTP/2 with HSTS, and the landing page returns 200.
+  - `smoke-web.mjs` passed against `https://sao-menu.favioon.com`.
   - Its two test players were then deleted, leaving 0 users, sessions, friendships and messages.
 - Not yet verified: the packaged desktop app signing in to production. The app uses the same `/v1` HTTP calls that `smoke-web.mjs` exercised from Node, but no desktop run against the live service has been done.
 
 ## Open items
 
 1. **Download (resolved).** The v0.1.3 release is public, with the verified DMG and ZIP. The site's link returns 200, and the downloaded DMG's SHA-256 (`4dfdc1ab…8309`) matches `output/current-package.json`. The user chose public distribution, accepting that the build redistributes 1,108 assets imported from SAO Utils 2 on Steam and the anime's Link Start audio.
-2. **0.1.3 lacks the default service URL.** A 0.1.4 build from `main` would sign in to sao.favioon.com without configuration.
+2. **Default service URL (resolved in 0.1.4).** New installations use sao-menu.favioon.com without configuration.
 3. **No account deletion** in the protocol or on the site. It is needed before treating this as a public service; there is also no password reset.
 4. **The build is not notarized.** Gatekeeper reports "Unnotarized Developer ID". Notarization needs the owner's Apple credentials.
 5. **`sao.rate_limits` rows** are pruned only when a session is created (older than 24 h). That's fine at low volume; a scheduled cleanup would bound it under load.
-6. **Agent-skill files** (`.agents/`, `.claude/`, `skills-lock.json`), written to the repo by the Supabase integration install, are left untracked.
+6. **Agent-skill files** (`.agents/`, `.claude/`, `skills-lock.json`) are local integration tooling and ignored by Git.

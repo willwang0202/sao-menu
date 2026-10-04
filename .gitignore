@@ -22,3 +22,7 @@ public/sao-original/
 public/mediapipe/
 .vercel
 .env*
+.agents/
+.claude/
+skills-lock.json
+output/release-inputs/

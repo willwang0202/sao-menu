@@ -11,7 +11,7 @@ export type AccountResult<T> = { ok: true; data: T } | { ok: false; status: numb
 
 /** Calls the account protocol in-process, with this visitor's IP for rate limiting. */
 export async function callAccount<T>(route: string, body?: unknown, token?: string): Promise<AccountResult<T>> {
-  const request = new Request(`https://sao.favioon.com/v1/${route}`, {
+  const request = new Request(`https://sao-menu.favioon.com/v1/${route}`, {
     method: body === undefined ? 'GET' : 'POST',
     headers: { 'content-type': 'application/json', ...(token ? { authorization: `Bearer ${token}` } : {}) },
     body: body === undefined ? undefined : JSON.stringify(body),

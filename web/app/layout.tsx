@@ -7,10 +7,10 @@ const saira = Saira_Semi_Condensed({ subsets: ['latin'], weight: ['500', '600'],
 const source = Source_Sans_3({ subsets: ['latin'], weight: ['400', '600'], variable: '--font-source' });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://sao.favioon.com'),
-  title: { default: 'SAO Utils for macOS: Link Start', template: '%s · SAO Utils' },
-  description: 'The Sword Art Online ring-menu launcher, rebuilt for macOS. Real-time Link Start, curved browser, hand gestures, and an account for friends and messages.',
-  openGraph: { title: 'SAO Utils for macOS', description: 'Link Start on your Mac.', url: 'https://sao.favioon.com', siteName: 'SAO Utils' },
+  metadataBase: new URL('https://sao-menu.favioon.com'),
+  title: { default: 'SAO Menu: Link Start', template: '%s · SAO Menu' },
+  description: 'The Sword Art Online ring-menu launcher for macOS, Windows and Linux. Real-time Link Start, curved browser, hand gestures, friends and messages.',
+  openGraph: { title: 'SAO Menu', description: 'Link Start on your desktop.', url: 'https://sao-menu.favioon.com', siteName: 'SAO Menu' },
 };
 
 export const viewport: Viewport = { themeColor: '#ececec' };

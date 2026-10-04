@@ -1,6 +1,6 @@
-# SAO Utils 2 — macOS port
+# SAO Menu
 
-The current build ports the Steam package's SAO launcher using its original local images, sounds, fonts and menu hierarchy. It includes a curved, interactive web browser and independent image/GIF/video previews with cursor-responsive perspective. Its native host is reimplemented in Electron; original Windows executables and DLLs are not loaded. Full original parity remains incomplete: see [compatibility](docs/compatibility.md) for the preferences, widget and plug-in gaps.
+SAO Menu (`sao-menu`) ports the Steam package's SAO launcher using its original local images, sounds, fonts and menu hierarchy. It includes a curved, interactive web browser and independent image/GIF/video previews with cursor-responsive perspective. Its native host is reimplemented in Electron; original Windows executables and DLLs are not loaded. Full original parity remains incomplete: see [compatibility](docs/compatibility.md) for the preferences, widget and plug-in gaps.
 
 ## Setup and run
 
@@ -30,7 +30,7 @@ Quit an existing instance before starting another build. Renderer changes reload
 - On macOS, hold both mouse buttons and slide down to summon from another app. In **Settings → Option**, choose **Enable mouse gesture**, then grant the app/helper **Input Monitoring** in macOS Privacy & Security. The port uses a 64-point threshold; the original compiled threshold is unknown.
 - Click outside to dismiss. Holding both buttons and sliding upward also dismisses with the original launcher exit animation. Observing clicks outside the app requires Input Monitoring too.
 - The circular categories retain **Kirito**, **Party**, **Message**, **Navigation** and **Settings**. Selecting a category keeps the buttons in place and moves expanded surfaces alongside it. Scroll/drag stacks to browse. Arrow keys navigate; **Esc** goes back or hides.
-- Party opens Social with friends, requests and profiles; Message opens direct conversations with accepted friends. Accounts are hosted at [sao.favioon.com](https://sao.favioon.com); see [Website and accounts](#website-and-accounts). Kirito's Windows defaults map to local folders and Finder/TextEdit/Calculator/Terminal/Console/Activity Monitor/Disk Utility.
+- Party opens Social with friends, requests and profiles; Message opens direct conversations with accepted friends. Accounts are hosted at [sao-menu.favioon.com](https://sao-menu.favioon.com); see [Website and accounts](#website-and-accounts). Kirito's Windows defaults map to local folders and Finder/TextEdit/Calculator/Terminal/Console/Activity Monitor/Disk Utility.
 - **Settings → Option** opens the reimplemented preferences. Its Launcher tab adds apps, folders and web links under **Navigation → Quick access**. **Settings → Exit** quits.
 
 ## Hand gestures
@@ -54,7 +54,7 @@ Scene timing, positions and colours were measured frame by frame from the refere
 
 ## Website and accounts
 
-[sao.favioon.com](https://sao.favioon.com) runs `web/`, a Next.js app on Vercel with Supabase Postgres. It serves a landing page, web sign-up and sign-in, an account page for friends and messages, and the `/v1` account API the desktop app uses. Builds from `main` default to this service. In 0.1.3, enter `https://sao.favioon.com` once in **Account service** on the login card. The site's Download button serves the public [0.1.3 release](https://github.com/willwang0202/sao-util-mac/releases/tag/v0.1.3). Architecture, infrastructure, security model and runbook: [hosted service](docs/hosted-service.md).
+[sao-menu.favioon.com](https://sao-menu.favioon.com) runs `web/`, a Next.js app on Vercel with Supabase Postgres. It serves a landing page, web sign-up and sign-in, an account page for friends and messages, and the `/v1` account API the desktop app uses. Builds from `main` default to this service. Version 0.1.4 uses this service by default. Older builds can enter the address in **Account service** on the login card. The site's Download button serves the public [0.1.4 release](https://github.com/willwang0202/sao-menu/releases/tag/v0.1.4). Architecture, infrastructure, security model and runbook: [hosted service](docs/hosted-service.md).
 
 ## Verify and package
 
@@ -72,10 +72,18 @@ npm run package:mac
 
 The desktop test checks actual Electron menus, sprite geometry/fonts, native launch, persistence, migration, bridge isolation and hide/reopen. The surface test checks native curved-page clicks, typed input, navigation, simultaneous PNG/GIF/video previews and dismissal channels. It needs `ffmpeg` on PATH (or `FFMPEG_PATH`) to generate a disposable video fixture. Both use temporary settings; the desktop test launches Calculator on macOS. `dist-desktop/gesture-helper --self-test` checks 23 gesture cases without injecting input; physical cross-app invocation still requires permission/session acceptance. The hand test feeds Chromium's synthetic camera through MediaPipe to the reticle without using the real webcam; gesture thresholds are unit-tested against recorded webcam frames, but real-hand accuracy still needs a person in front of the camera.
 
-The current Apple Silicon test artifacts are `release/mac-arm64/SAO Utils 2.app` and `release/SAO Utils 2-0.1.3-arm64.zip`. Quit the running app via Exit before opening this build. `release/SAO Utils 2-0.1.3-arm64.dmg` is also built. Builds are signed with the local Developer ID certificate when one is installed, but they are not notarized, so Gatekeeper may warn on other Macs. Windows/Linux adapters and packaging scripts exist but are not runtime-verified on those systems.
+The Apple Silicon app is `release/mac-arm64/SAO Utils 2.app`; installers use the `sao-menu-0.1.4-<platform>-<architecture>` prefix. GitHub Releases provide macOS DMG/ZIP for Apple Silicon and Intel, Windows x64 installer/ZIP, and Linux x64 AppImage/DEB. Quit the running app via Exit before opening this build. `release/sao-menu-0.1.4-mac-arm64.dmg` is also built. Builds are signed with the local Developer ID certificate when one is installed, but they are not notarized, so Gatekeeper may warn on other Macs. Release CI launches the packaged app on each operating system. Global both-mouse-button gestures are currently macOS-only; Windows/Linux use Alt+S, the tray and camera gestures. Physical camera accuracy and full desktop integration still need testing on each system.
 
-Git tracks source, plans, release notes and package checksums from version 0.1.1 onward. The `v0.1.3` tag identifies this test release. Build outputs, dependencies, imported Steam assets and local account data are excluded. See [release notes](CHANGELOG.md).
+Git tracks source, plans, release notes and package checksums from version 0.1.1 onward. The `v0.1.4` tag identifies this release. Build outputs, dependencies, imported Steam assets and local account data are excluded. See [release notes](CHANGELOG.md).
 
 `npm run dev:web` opens the same renderer in a browser with separate local-storage settings. Native launching, directory browsing, metrics, global input, tray/login behavior and file import/export require the desktop host.
 
 See the [verification results](docs/verification.md), [implementation plan](docs/superpowers/plans/2026-10-02-sao-desktop.md), [bundle audit](docs/package-audit.md), [original design measurements](docs/original-design.md), and [compatibility](docs/compatibility.md). Original resources keep their creators' notices; the local personal build does not establish general redistribution rights.
+
+## Bug reports
+
+Use [Report a bug](https://sao-menu.favioon.com/support) or [GitHub Issues](https://github.com/willwang0202/sao-menu/issues/new?template=bug_report.yml). The form asks for app version, OS, steps and expected behavior. Sign in to GitHub to submit or follow a report.
+
+## Release builds
+
+Stage the imported artwork/model with `node scripts/stage-release-assets.mjs`. Upload `release/sao-menu-build-assets.tgz` to a draft GitHub Release for the matching version, then push its tag. The native matrix in `.github/workflows/release.yml` verifies the committed SHA-256, tests, packages, verifies ASAR contents and launches each packaged app. Publish after every platform succeeds and the combined checksums are attached. Imported artwork remains outside Git. The desktop product name and application ID remain stable so existing settings and credentials continue to work.

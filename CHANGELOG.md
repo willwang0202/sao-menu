@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## 0.1.4 — October 3, 2026
+
+- Rename the project and GitHub repository to `sao-menu`, and the website to SAO Menu at `sao-menu.favioon.com`. The old account-service hostname remains available for existing installations.
+- Use the hosted account service by default, carrying forward the shared SQLite/Postgres protocol, friends, presence and direct messages.
+- Add native release builds for Apple Silicon and Intel macOS, Windows x64 (installer and ZIP), and Linux x64 (AppImage and DEB). Tagged builds restore a checksum-verified resource bundle, run the test suite and launch the packaged app before uploading installers.
+- Add platform download links, a Support page and a structured GitHub bug report form. Reporting requires a GitHub login.
+- Retain the merged webcam hand-gesture controls, real-time Link Start, login-gated HP display, transparent menu and persisted browser FOV.
+
+### Hosted service work included since 0.1.3
+
 - Host the account service at https://sao.favioon.com: Next.js on Vercel (`web/`) with Supabase Postgres, provisioned through the Vercel Marketplace. The domain's DNS is in Cloudflare. The desktop app's `/v1` protocol is unchanged.
 - Add an SAO-styled website: a landing page with the real-time Link Start tunnel, Link Start–card sign-up and sign-in, and an account page with friends, requests and messages.
 - Split the account service into a shared protocol core behind an `AccountStore` repository, with SQLite (local) and Postgres (hosted) stores. The account tables live in a private `sao` schema with RLS on and no API-role grants. Rate limits are shared across serverless instances.

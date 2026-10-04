@@ -1,8 +1,8 @@
 {
-  "name": "sao-favioon-web",
+  "name": "sao-menu-web",
   "version": "0.1.0",
   "private": true,
-  "description": "sao.favioon.com: SAO Utils landing page and the hosted account service",
+  "description": "sao-menu.favioon.com: SAO Menu downloads and the hosted account service",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

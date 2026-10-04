@@ -1,6 +1,6 @@
 {
-  "name": "sao-utils-port",
-  "version": "0.1.3",
+  "name": "sao-menu",
+  "version": "0.1.4",
   "private": true,
   "description": "A local cross-platform port of the SAO Utils 2 launcher using its original theme resources",
   "type": "module",
@@ -53,6 +53,7 @@
     "icon": "resources/icon.png",
     "appId": "dev.sao-utils.port",
     "productName": "SAO Utils 2",
+    "artifactName": "sao-menu-${version}-${os}-${arch}.${ext}",
     "directories": {
       "output": "release"
     },
@@ -63,6 +64,7 @@
       "package.json"
     ],
     "mac": {
+      "artifactName": "sao-menu-${version}-mac-${arch}.${ext}",
       "icon": "resources/icon.icns",
       "extraResources": [
         {
@@ -73,7 +75,8 @@
       "category": "public.app-category.utilities",
       "target": [
         "dir",
-        "dmg"
+        "dmg",
+        "zip"
       ],
       "hardenedRuntime": true,
       "entitlements": "resources/entitlements.mac.plist",
@@ -83,11 +86,14 @@
       }
     },
     "win": {
+      "artifactName": "sao-menu-${version}-windows-${arch}.${ext}",
       "target": [
-        "nsis"
+        "nsis",
+        "zip"
       ]
     },
     "linux": {
+      "artifactName": "sao-menu-${version}-linux-${arch}.${ext}",
       "target": [
         "AppImage",
         "deb"

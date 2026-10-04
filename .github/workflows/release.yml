@@ -1,0 +1,90 @@
+name: Release packages
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag to build
+        required: true
+        type: string
+permissions:
+  contents: write
+concurrency:
+  group: release-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+jobs:
+  package:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-15
+            platform: mac
+            arch: arm64
+          - os: macos-15-intel
+            platform: mac
+            arch: x64
+          - os: windows-latest
+            platform: windows
+            arch: x64
+          - os: ubuntu-latest
+            platform: linux
+            arch: x64
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+    env:
+      RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+      GH_TOKEN: ${{ github.token }}
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref_name }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Download the tagged resource bundle
+        run: gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --pattern sao-menu-build-assets.tgz --dir output/release-inputs
+      - run: node scripts/restore-release-assets.mjs
+      - run: npm test
+      - run: npm run build
+      - name: Package macOS
+        if: matrix.platform == 'mac'
+        run: npx electron-builder --mac dmg zip --${{ matrix.arch }} --publish never
+      - name: Package Windows
+        if: matrix.platform == 'windows'
+        run: npx electron-builder --win nsis zip --x64 --publish never
+      - name: Package Linux
+        if: matrix.platform == 'linux'
+        run: npx electron-builder --linux AppImage deb --x64 --publish never
+      - run: node scripts/verify-release.mjs
+      - name: Launch packaged Linux app
+        if: matrix.platform == 'linux'
+        run: xvfb-run -a node scripts/smoke-release.mjs
+      - name: Launch packaged Mac or Windows app
+        if: matrix.platform != 'linux'
+        run: node scripts/smoke-release.mjs
+      - name: Keep installer and verification evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ matrix.platform }}-${{ matrix.arch }}
+          path: |
+            release/sao-menu-*-*.dmg
+            release/sao-menu-*-*.zip
+            release/sao-menu-*-*.exe
+            release/sao-menu-*-*.AppImage
+            release/sao-menu-*-*.deb
+            output/release-*.json
+          if-no-files-found: error
+      - name: Upload verified packages to the draft release
+        run: |
+          for file in release/sao-menu-*-*.{dmg,zip,exe,AppImage,deb}; do
+            if [ -f "$file" ]; then gh release upload "$RELEASE_TAG" "$file" --repo "$GITHUB_REPOSITORY" --clobber; fi
+          done
+          gh release upload "$RELEASE_TAG" "output/release-${{ matrix.platform }}-${{ matrix.arch }}.json" --repo "$GITHUB_REPOSITORY" --clobber

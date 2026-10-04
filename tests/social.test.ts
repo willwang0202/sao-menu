@@ -13,8 +13,8 @@ test('the online service requires HTTPS outside loopback development', () => {
   for (const url of ['http://example.com', 'file:///x', 'https://user:pass@example.com', 'https://example.com/?token=abc']) assert.throws(() => serviceURL(url));
 });
 
-test('new installs use the hosted account service at sao.favioon.com', () => {
-  assert.equal(DEFAULT_SERVICE_URL, 'https://sao.favioon.com');
+test('new installs use the hosted account service at sao-menu.favioon.com', () => {
+  assert.equal(DEFAULT_SERVICE_URL, 'https://sao-menu.favioon.com');
   assert.equal(serviceURL(DEFAULT_SERVICE_URL), DEFAULT_SERVICE_URL, 'the default passes the HTTPS validation');
 });
 
