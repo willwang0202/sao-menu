@@ -2,7 +2,7 @@ import { BrowserWindow, ipcMain, screen } from 'electron';
 import path from 'node:path';
 import type { Settings } from '../shared/contracts';
 import type { SocialSnapshot } from '../shared/social';
-import { CLOCK_SIZE, MESSAGE_BUTTON_SIZE, unreadMessages, widgetPositions, type WidgetState } from '../shared/widgets';
+import { CLOCK_SIZE, MESSAGE_BUTTON_SIZE, unreadMessages, widgetPositions, widgetStacking, type WidgetState } from '../shared/widgets';
 
 type WidgetKind = 'clock' | 'message';
 const SIZES: Record<WidgetKind, { width: number; height: number }> = { clock: CLOCK_SIZE, message: { width: MESSAGE_BUTTON_SIZE, height: MESSAGE_BUTTON_SIZE } };
@@ -22,6 +22,7 @@ export class DesktopWidgets {
   }
   /** Widgets follow the HP display: shown after Link Start, hidden on hide. */
   show(): void { this.visible = true; this.refresh(); }
+  raise(): void { this.windows.forEach(window => { if (!window.isDestroyed() && window.isVisible()) window.moveTop(); }); }
   hide(): void { this.visible = false; this.windows.forEach(window => { if (!window.isDestroyed()) window.hide(); }); }
   update(): void {
     const state = this.state();
@@ -40,7 +41,8 @@ export class DesktopWidgets {
   private refresh(): void {
     this.windows.forEach((window, kind) => {
       if (window.isDestroyed()) return;
-      if (this.shouldShow(kind)) { if (!window.isVisible()) window.showInactive(); } else window.hide();
+      const stacking = widgetStacking(this.settings().alwaysOnTop); window.setAlwaysOnTop(stacking.isAlwaysOnTop, stacking.level);
+      if (this.shouldShow(kind)) { if (!window.isVisible()) { window.showInactive(); window.moveTop(); } } else window.hide();
     });
   }
   private state(): WidgetState { return { unread: unreadMessages(this.snapshot()), reducedMotion: this.settings().reducedMotion }; }
@@ -54,7 +56,7 @@ export class DesktopWidgets {
     const url = new URL(this.renderer); url.searchParams.set('widget', kind); this.urls.set(kind, url.href);
     const window = new BrowserWindow({
       ...SIZES[kind], show: false, frame: false, transparent: true, backgroundColor: '#00000000', hasShadow: false,
-      focusable: false, resizable: false, alwaysOnTop: true, skipTaskbar: true, title: kind === 'clock' ? 'SAO Clock' : 'SAO Message',
+      focusable: false, resizable: false, skipTaskbar: true, title: kind === 'clock' ? 'SAO Clock' : 'SAO Message',
       webPreferences: { preload: path.join(__dirname, 'widget-preload.cjs'), nodeIntegration: false, contextIsolation: true, sandbox: true, webSecurity: true },
     });
     // The clock is display-only; clicks pass to the desktop below it.

@@ -4,6 +4,7 @@ import { hpState, hpHeight, type HpState } from '../shared/hud';
 import type { SocialSnapshot } from '../shared/social';
 import type { Settings } from '../shared/contracts';
 import { getSystemStats } from './system';
+import { widgetStacking } from '../shared/widgets';
 
 /** Persistent source HP widget, independent of the summoned launcher. */
 export class HpDisplay {
@@ -11,6 +12,7 @@ export class HpDisplay {
   private timer: ReturnType<typeof setInterval> | null = null;
   private state: HpState = { theme: 'sao', playerName: 'Kirito', reducedMotion: false, stats: null, partyMembers: [] };
   private sampling = false;
+  private isAlwaysOnTop: boolean | null = null;
   private width = 358;
   constructor(private readonly renderer: string, private readonly settings: () => Settings, private readonly snapshot: () => SocialSnapshot | null) {}
   async create(): Promise<void> {
@@ -19,10 +21,11 @@ export class HpDisplay {
     const window = this.window = new BrowserWindow({
       x: area.x + 24, y: area.y + 24, width: 358, height: 62,
       show: false, frame: false, transparent: true, backgroundColor: '#00000000', hasShadow: false,
-      focusable: false, resizable: false, alwaysOnTop: true, skipTaskbar: true, title: 'SAO HP Display',
+      focusable: false, resizable: false, skipTaskbar: true, title: 'SAO HP Display',
       webPreferences: { preload: path.join(__dirname, 'hud-preload.cjs'), nodeIntegration: false, contextIsolation: true, sandbox: true, webSecurity: true },
     });
     window.setIgnoreMouseEvents(true);
+    this.applyStacking();
     if (process.platform === 'darwin') window.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
     window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
     window.on('page-title-updated', event => event.preventDefault());
@@ -43,10 +46,18 @@ export class HpDisplay {
     await this.sample(); await window.loadURL(url.href);
     this.timer = setInterval(() => { void this.sample(); }, 1000); this.timer.unref();
   }
-  show(): void { if (this.window && !this.window.isDestroyed()) this.window.showInactive(); }
+  show(): void { if (this.window && !this.window.isDestroyed()) { this.window.showInactive(); this.window.moveTop(); } }
+  raise(): void { if (this.window && !this.window.isDestroyed() && this.window.isVisible()) this.window.moveTop(); }
+  private applyStacking(): void {
+    if (!this.window || this.window.isDestroyed()) return;
+    const stacking = widgetStacking(this.settings().alwaysOnTop);
+    if (stacking.isAlwaysOnTop === this.isAlwaysOnTop) return;
+    this.isAlwaysOnTop = stacking.isAlwaysOnTop; this.window.setAlwaysOnTop(stacking.isAlwaysOnTop, stacking.level);
+  }
   hide(): void { if (this.window && !this.window.isDestroyed()) this.window.hide(); }
   update(): void {
     this.state = hpState(this.settings(), this.state.stats, this.snapshot());
+    this.applyStacking();
     if (this.window && !this.window.isDestroyed()) {
       const height = hpHeight(this.state.partyMembers.length, this.state.theme);
       if (this.window.getSize()[1] !== height) this.window.setSize(this.width, height);

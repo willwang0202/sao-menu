@@ -60,3 +60,13 @@ test('Equipment keeps only the common apps installed on other systems', () => {
   const apps = [{ id: 'calc', name: 'Calculator', kind: 'application' as const, target: 'C:\\Windows\\calc.exe' }];
   assert.deepEqual(childrenOf(buildDefaultMenu('win32', apps, []), 'user.equipment').map(entry => entry.name), ['Calculator']);
 });
+
+test('Settings → Help opens the official support page', () => {
+  const expectHelp = (menu: MenuEntry[]) => {
+    const help = menu.find(root => root.id === 'settings')?.children?.find(entry => entry.id === 'settings.help');
+    assert.equal(help?.kind, 'launcher'); assert.equal(help?.launcher?.kind, 'url'); assert.equal(help?.launcher?.target, 'https://sao-menu.favioon.com/support');
+  };
+  expectHelp(buildDefaultMenu('darwin', [], []));
+  // The original menu.xml Help has no action; saved and imported menus gain the link.
+  expectHelp(resolveNativeMenu([{ id: 'settings', name: 'Settings', kind: 'menu', children: [{ id: 'settings.help', name: 'Help', kind: 'unsupported', reason: 'The original configuration has no action assigned.' }] }], 'darwin', []));
+});

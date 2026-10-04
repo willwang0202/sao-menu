@@ -144,9 +144,8 @@ try {
   }
 
   await page.getByRole('menuitem', { name: 'Settings', exact: true }).click();
-  await page.getByRole('menuitem', { name: 'Help', exact: true }).click();
-  assert.equal(await page.getByRole('alert').count(), 0, 'unassigned original Help remains a no-op');
-  assert.equal(await page.getByRole('dialog').count(), 0);
+  // Help opens the support page in the default browser; unit tests cover its link, so it isn't clicked here.
+  await page.getByRole('menuitem', { name: 'Help', exact: true }).waitFor();
   await page.getByRole('menuitem', { name: 'Option', exact: true }).click();
   assert.equal(await page.getByLabel('Account display name').inputValue(), 'Kirito');
   assert.equal(await page.getByLabel('Account display name').getAttribute('readonly'), '');
@@ -192,12 +191,15 @@ try {
     const clock = find('clock'), message = find('message');
     const clockTime = clock ? await clock.webContents.executeJavaScript("document.querySelector('.sao-clock')?.getAttribute('aria-label') ?? ''") : '';
     const messageButton = message ? await message.webContents.executeJavaScript("!!document.querySelector('.sao-message-button')") : false;
-    return { clockSize: clock?.getSize(), messageSize: message?.getSize(), clockTime, messageButton, clockFocusable: clock?.isFocusable() };
+    const hp = BrowserWindow.getAllWindows().find(window => new URL(window.webContents.getURL()).searchParams.get('hp') === '1');
+    return { clockSize: clock?.getSize(), messageSize: message?.getSize(), clockTime, messageButton, clockFocusable: clock?.isFocusable(), stacking: [clock, message, hp].map(window => window?.isAlwaysOnTop()) };
   });
   assert.deepEqual(widgets.clockSize, [304, 80], 'original clock widget size');
   assert.deepEqual(widgets.messageSize, [56, 56], 'original mail button size');
   assert.match(widgets.clockTime, /^Time \d\d:\d\d$/, 'clock renders the original %H:%M time');
   assert.equal(widgets.messageButton, true, 'message button renders');
+  const alwaysOnTop = (await page.evaluate(() => window.sao.getSettings())).alwaysOnTop;
+  assert.deepEqual(widgets.stacking, [alwaysOnTop, alwaysOnTop, alwaysOnTop], 'HP and widgets follow the Always on top setting');
   await page.getByRole('button', { name: 'Close options', exact: true }).first().click();
   await page.reload();
   await page.waitForFunction(() => Boolean(document.querySelector('.original-menu')));

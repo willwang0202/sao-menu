@@ -34,3 +34,10 @@ export function widgetPositions(area: WorkArea): { messageButton: Position; cloc
 export interface WidgetState { unread: number; reducedMotion: boolean }
 export interface WidgetAPI { getState(): Promise<WidgetState>; onState(callback: (state: WidgetState) => void): () => void; openMessages(): Promise<void> }
 declare global { interface Window { saoWidget?: WidgetAPI } }
+
+/** Window level the launcher uses while open (outside Link Start). */
+export const LAUNCHER_LEVEL = 'floating';
+/** HP and desktop widgets sit one level above the launcher; the Always on top setting decides whether they also float over other apps. */
+export function widgetStacking(isAlwaysOnTop: boolean): { isAlwaysOnTop: boolean; level: 'status' } {
+  return { isAlwaysOnTop, level: 'status' };
+}

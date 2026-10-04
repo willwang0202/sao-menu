@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { clockAngles, clockText, unreadMessages, widgetPositions, CLOCK_SIZE, MESSAGE_BUTTON_SIZE } from '../src/shared/widgets';
+import { clockAngles, clockText, unreadMessages, widgetPositions, widgetStacking, CLOCK_SIZE, LAUNCHER_LEVEL, MESSAGE_BUTTON_SIZE } from '../src/shared/widgets';
 import type { SocialSnapshot } from '../src/shared/social';
 
 test('clock hands follow the original 12-hour and 60-minute meters', () => {
@@ -24,4 +24,10 @@ test('places the message button below the HP display and the clock at the top ri
   assert.deepEqual(positions.messageButton, { x: 52, y: 177 });
   assert.deepEqual(positions.clock, { x: 1440 - 24 - CLOCK_SIZE.width, y: 49 });
   assert.equal(MESSAGE_BUTTON_SIZE, 56);
+});
+
+test('desktop widgets stay above the launcher and follow the Always on top setting', () => {
+  assert.deepEqual(widgetStacking(true), { isAlwaysOnTop: true, level: 'status' });
+  assert.deepEqual(widgetStacking(false), { isAlwaysOnTop: false, level: 'status' });
+  assert.notEqual(widgetStacking(true).level, LAUNCHER_LEVEL);
 });

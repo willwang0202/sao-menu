@@ -19,6 +19,7 @@ import { SurfaceLayoutStore } from './surface-store';
 import { SocialClient } from './social';
 import { HpDisplay } from './hud';
 import { DesktopWidgets } from './widgets';
+import { LAUNCHER_LEVEL } from '../shared/widgets';
 import { pointerInterval } from '../shared/refresh';
 import { HandTrackingController } from './hand-tracking';
 import { accountServiceEndpoint } from '../shared/social';
@@ -217,7 +218,7 @@ function summonAt(point: Position, category?: string): void {
   if (startup && platform === 'darwin' && !window.isSimpleFullScreen()) window.setSimpleFullScreen(true);
   window.setMinimumSize(Math.min(720, width), Math.min(540, height));
   window.setBounds({ x, y, width, height });
-  window.setAlwaysOnTop(startup || settings.alwaysOnTop, startup ? 'screen-saver' : 'floating');
+  window.setAlwaysOnTop(startup || settings.alwaysOnTop, startup ? 'screen-saver' : LAUNCHER_LEVEL);
   refreshPointerRate();
   const minimumX = Math.min(300, width / 2);
   const minimumY = Math.min(200, height / 2);
@@ -228,8 +229,12 @@ function summonAt(point: Position, category?: string): void {
   handTracking.setMenuOpen(true, { x: menuAnchor.x / width, y: menuAnchor.y / height });
   window.show();
   window.focus();
+  if (!startup) raiseWidgets();
   window.webContents.send('sao:menu:toggle', true, menuAnchor, category);
 }
+
+/** HP and desktop widgets always stay in front of the opened launcher. */
+function raiseWidgets(): void { hpDisplay?.raise(); desktopWidgets?.raise(); }
 
 function toggleMenu(): void {
   if (!window?.isVisible() || window.isMinimized()) reveal();
@@ -265,7 +270,7 @@ async function applySettings(input: unknown): Promise<Settings> {
     }
     try {
       if (next.launchAtLogin !== previous.launchAtLogin) configureLogin(next.launchAtLogin);
-      window?.setAlwaysOnTop(next.alwaysOnTop, 'floating');
+      window?.setAlwaysOnTop(next.alwaysOnTop, LAUNCHER_LEVEL);
       if (handTrackingChanged) await (next.handTracking ? handTracking.enable(true) : handTracking.disable());
       if (next.handDebugView !== previous.handDebugView) handTracking.setDebugView(next.handDebugView);
       await atomicWrite(settingsPath(), next);
@@ -273,7 +278,7 @@ async function applySettings(input: unknown): Promise<Settings> {
       if (handTrackingChanged) await restoreHandTracking(previous.handTracking);
       handTracking.setDebugView(previous.handDebugView);
       if (newShortcutRegistered) globalShortcut.unregister(next.shortcut);
-      window?.setAlwaysOnTop(previous.alwaysOnTop, 'floating');
+      window?.setAlwaysOnTop(previous.alwaysOnTop, LAUNCHER_LEVEL);
       try { if (next.launchAtLogin !== previous.launchAtLogin) configureLogin(previous.launchAtLogin); } catch { /* Preserve the original failure. */ }
       throw error;
     }
@@ -471,7 +476,7 @@ function installHandlers(): void {
     if (wasStarting && window) {
       if (platform === 'darwin' && window.isSimpleFullScreen()) window.setSimpleFullScreen(false);
       const area = screen.getDisplayMatching(window.getBounds()).workArea;
-      window.setBounds(area); window.setAlwaysOnTop(settings.alwaysOnTop,'floating'); refreshPointerRate();
+      window.setBounds(area); window.setAlwaysOnTop(settings.alwaysOnTop, LAUNCHER_LEVEL); raiseWidgets(); refreshPointerRate();
     }
     if (social?.getState().snapshot) hpDisplay?.show();
     desktopWidgets?.show();

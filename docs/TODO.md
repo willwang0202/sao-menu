@@ -24,8 +24,11 @@ Branch: `feat/themes-and-widgets`.
 
 ## Parity checks
 - [x] Screen-edge accommodation: already implemented (`.original-menu` 400 ms InOutQuad `left` transition plus clamping in `main.tsx`); confirm in the desktop app
-- [ ] HP widget's launcher-open position from `theme-widget.json` (`launcher: x200 y128 z100 anchor 2`): confirm meaning of anchor before changing
-- [ ] Settings → Help: decide target (README or support page)
+- [x] HP bar placement (user decision): stays top left, appears after Link Start, always in front of the launcher; follows the Always on top setting toward other apps (clock and Message button too)
+- [x] Settings → Help opens https://sao-menu.favioon.com/support
+
+## Link Start
+- [ ] Link Start text follows the system language and can be changed in Options
 
 ## Later (new anime-only features from the darkblackswords vector pack)
 - [ ] "Congratulations!!" banner when account level increases

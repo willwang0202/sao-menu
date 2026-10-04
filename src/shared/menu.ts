@@ -27,6 +27,8 @@ function equipmentEntries(platform: Platform, applications: LauncherItem[]): Men
     return app ? [{ id, name, kind: 'launcher' as const, icon, launcher: { ...app, name } }] : [];
   });
 }
+export const SUPPORT_URL = 'https://sao-menu.favioon.com/support';
+const helpLauncher: LauncherItem = { id: 'settings.help', name: 'Help', kind: 'url', target: SUPPORT_URL };
 export function originalIcon(id: string): string { return rootIcons[id] ?? itemIcons[id] ?? 'symbol/help.png'; }
 
 const macApplications: Record<string, string> = {
@@ -40,6 +42,7 @@ const windowsNames: Record<string, string[]> = { explorer: ['Explorer', 'File Ex
 export function resolveNativeMenu(menu: MenuEntry[], platform: Platform, applications: LauncherItem[], home?: string): MenuEntry[] {
   return menu.map(original => {
     const item = { ...original, children: original.children ? resolveNativeMenu(original.children, platform, applications, home) : undefined };
+    if (item.id === 'settings.help') return { ...item, kind: 'launcher' as const, launcher: helpLauncher, reason: undefined };
     if (item.id === 'user.skills') return { ...item, kind: 'menu' as const, children: [] };
     if (item.id === 'user.equipment') return { ...item, kind: 'menu' as const, children: equipmentEntries(platform, applications) };
     if (item.id === 'party' || item.id === 'message') return { ...item, kind: 'menu' as const, social: item.id === 'party' ? 'friends' as const : 'messages' as const, children: [], nativeTarget: undefined, directory: undefined };
@@ -72,7 +75,7 @@ export function buildDefaultMenu(platform: Platform, applications: LauncherItem[
     node('navigation', 'Navigation', [node('navigation.favorite', 'Favorite', favorites.filter(item => item.kind === 'url').map(item => ({ id: item.id, name: item.name, kind: 'launcher', launcher: item, icon: originalIcon(item.id) })))]),
     { ...node('settings', 'Settings', [
       { id: 'settings.option', name: 'Option', kind: 'settings', icon: originalIcon('settings.option') },
-      { id: 'settings.help', name: 'Help', kind: 'settings', icon: originalIcon('settings.help') },
+      { id: 'settings.help', name: 'Help', kind: 'launcher', launcher: helpLauncher, icon: originalIcon('settings.help') },
       { id: 'settings.exit', name: 'Exit', kind: 'quit', icon: originalIcon('settings.exit') },
     ]), infoPanel: true },
   ];

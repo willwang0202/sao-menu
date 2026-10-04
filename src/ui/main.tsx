@@ -27,10 +27,7 @@ const iconPath = (entry: MenuEntry, root = false, index = 0) => {
 };
 const hoveredPath = (path: string) => path.replace(/\.png$/i, '-hovered.png');
 function fallbackMenu(platform: RuntimeInfo['platform'], apps: LauncherItem[], favorites: LauncherItem[]): MenuEntry[] {
-  return buildDefaultMenu(platform, apps, favorites).map(root => root.id === 'settings' ? {
-    ...root,
-    children: root.children?.map(entry => entry.id === 'settings.help' ? { ...entry, kind: 'unsupported', reason: 'The original configuration has no action assigned.' } : entry),
-  } : root);
+  return buildDefaultMenu(platform, apps, favorites);
 }
 
 type Toast = { text: string; error?: boolean };
