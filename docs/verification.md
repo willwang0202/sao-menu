@@ -23,7 +23,7 @@ The Apple Silicon 0.1.2 app and ZIP were built and verified on October 3, 2026. 
 - Native gallery acceptance passed all 18 original shaders, pause/wheel controls, native file drops, replacement/token revocation and exact layout restoration after process restart.
 - Native two-account social acceptance passed: local registration, friend requests/acceptance, presence, Message Box, messages in both directions, unread/read state, rejected unknown recipients, persisted history, encrypted credential restoration and logout. Earlier failures came from asynchronous Playwright polling and ambiguous test locators; the fixtures now poll native state and select the intended log/textbox explicitly.
 
-The user physically confirmed global downward invocation, outside dismissal and upward dismissal with another app focused; this acceptance is retained. Cloudflare hosting at favioon.com remains authorized but undeployed. Account testing used disposable localhost identities. Complete original compositor parameters, preferences, remaining widgets and plug-ins remain parity work; see [compatibility](compatibility.md).
+The user physically confirmed global downward invocation, outside dismissal and upward dismissal with another app focused; this acceptance is retained. Account testing for 0.1.3 used disposable localhost identities. The hosted service at sao.favioon.com was deployed afterwards; its verification is recorded in [hosted service](hosted-service.md). Complete original compositor parameters, preferences, remaining widgets and plug-ins remain parity work; see [compatibility](compatibility.md).
 
 ## Earlier 0.1.1 baseline
 

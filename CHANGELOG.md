@@ -1,5 +1,13 @@
 # Release notes
 
+## Unreleased
+
+- Host the account service at https://sao.favioon.com: Next.js on Vercel (`web/`) with Supabase Postgres, provisioned through the Vercel Marketplace. The domain's DNS is in Cloudflare. The desktop app's `/v1` protocol is unchanged.
+- Add an SAO-styled website: a landing page with the real-time Link Start tunnel, Link Start–card sign-up and sign-in, and an account page with friends, requests and messages.
+- Split the account service into a shared protocol core behind an `AccountStore` repository, with SQLite (local) and Postgres (hosted) stores. The account tables live in a private `sao` schema with RLS on and no API-role grants. Rate limits are shared across serverless instances.
+- The desktop app defaults to the hosted service.
+- Publish the 0.1.3 DMG and ZIP as a public GitHub Release; the site's Download button links to it.
+
 ## 0.1.3 — October 3, 2026
 
 - Replace the Link Start video with a real-time reconstruction drawn every display refresh: rainbow tunnel, five sensor dials, language/login/registration cards, welcome text and blue dive, timed frame by frame to the reference. The reference's audio track (stream-copied, not re-encoded) supplies the voice and effects, and the picture follows it.
