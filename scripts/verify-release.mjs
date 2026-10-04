@@ -9,7 +9,7 @@ const platform = process.platform;
 // Mac and Windows publish one universal package; Linux publishes x86_64.
 const arch = platform === 'linux' ? process.arch : 'universal';
 const pkg = JSON.parse(await readFile('package.json', 'utf8'));
-const folder = platform === 'darwin' ? 'release/mac-universal/SAO Utils 2.app/Contents/Resources' : `release/${platform === 'win32' ? 'win-unpacked' : 'linux-unpacked'}/resources`;
+const folder = platform === 'darwin' ? 'release/mac-universal/SAO Menu.app/Contents/Resources' : `release/${platform === 'win32' ? 'win-unpacked' : 'linux-unpacked'}/resources`;
 const archive = path.join(folder, 'app.asar');
 const updateConfig = await readFile(path.join(folder, 'app-update.yml'), 'utf8');
 assert.match(updateConfig, /owner: willwang0202/); assert.match(updateConfig, /repo: sao-menu/); assert.match(updateConfig, /provider: github/);

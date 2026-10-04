@@ -2,7 +2,7 @@
   "name": "sao-menu",
   "version": "0.1.8",
   "private": true,
-  "description": "A local cross-platform port of the SAO Utils 2 launcher using its original theme resources",
+  "description": "SAO Menu: a cross-platform port of the SAO Utils 2 launcher using its original theme resources",
   "homepage": "https://sao-menu.favioon.com",
   "author": {
     "name": "Will Wang",
@@ -60,7 +60,7 @@
   "build": {
     "icon": "resources/icon.png",
     "appId": "dev.sao-utils.port",
-    "productName": "SAO Utils 2",
+    "productName": "SAO Menu",
     "artifactName": "sao-menu-${version}-${os}-${arch}.${ext}",
     "directories": {
       "output": "release"
@@ -94,9 +94,9 @@
       "entitlements": "resources/entitlements.mac.plist",
       "entitlementsInherit": "resources/entitlements.mac.plist",
       "extendInfo": {
-        "NSCameraUsageDescription": "SAO Utils 2 uses the camera only when you turn on hand gestures, to recognise your hand on this Mac. Video is never recorded or sent anywhere.",
-        "NSLocationUsageDescription": "SAO Utils 2 uses your location only to centre the Field Map on where you are. It is never stored or sent anywhere except to load map tiles for that area.",
-        "NSLocationWhenInUseUsageDescription": "SAO Utils 2 uses your location only to centre the Field Map on where you are. It is never stored or sent anywhere except to load map tiles for that area."
+        "NSCameraUsageDescription": "SAO Menu uses the camera only when you turn on hand gestures, to recognise your hand on this Mac. Video is never recorded or sent anywhere.",
+        "NSLocationUsageDescription": "SAO Menu uses your location only to centre the Field Map on where you are. It is never stored or sent anywhere except to load map tiles for that area.",
+        "NSLocationWhenInUseUsageDescription": "SAO Menu uses your location only to centre the Field Map on where you are. It is never stored or sent anywhere except to load map tiles for that area."
       }
     },
     "win": {

@@ -7,8 +7,8 @@ import { _electron as electron } from 'playwright';
 
 const pkg = JSON.parse(await readFile('package.json', 'utf8'));
 const executablePath = process.env.SAO_RELEASE_EXE ?? path.resolve(process.platform === 'darwin'
-  ? 'release/mac-universal/SAO Utils 2.app/Contents/MacOS/SAO Utils 2'
-  : process.platform === 'win32' ? 'release/win-unpacked/SAO Utils 2.exe' : 'release/linux-unpacked/sao-menu');
+  ? 'release/mac-universal/SAO Menu.app/Contents/MacOS/SAO Menu'
+  : process.platform === 'win32' ? 'release/win-unpacked/SAO Menu.exe' : 'release/linux-unpacked/sao-menu');
 const userData = await mkdtemp(path.join(tmpdir(), 'sao-release-'));
 const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !['ELECTRON_RUN_AS_NODE', 'SAO_DEV_URL'].includes(key)));
 const instance = await electron.launch({ executablePath, args: [`--sao-profile=${userData}`, ...(process.platform === 'linux' ? ['--no-sandbox'] : [])], env, timeout: 60_000 });

@@ -59,7 +59,7 @@ try {
   const target = await page.locator('.root-button').nth(1).boundingBox();
   const centre = { x: target.x + target.width / 2, y: target.y + target.height / 2 };
   await instance.evaluate(({ BrowserWindow }, point) => {
-    BrowserWindow.getAllWindows().find(window => window.getTitle() === 'SAO Utils 2').webContents.send('sao:hand:cursor', { ...point, visible: true });
+    BrowserWindow.getAllWindows().find(window => window.getTitle() === 'SAO Menu').webContents.send('sao:hand:cursor', { ...point, visible: true });
   }, centre);
   await page.locator('.hand-reticle').waitFor();
   await page.waitForFunction(() => document.querySelector('.root-button.hovered') !== null);
@@ -70,7 +70,7 @@ try {
     setTimeout(() => resolve(null), 2000);
   }), centre);
   await instance.evaluate(({ BrowserWindow }, point) => {
-    BrowserWindow.getAllWindows().find(window => window.getTitle() === 'SAO Utils 2').webContents.send('sao:hand:click', point);
+    BrowserWindow.getAllWindows().find(window => window.getTitle() === 'SAO Menu').webContents.send('sao:hand:click', point);
   }, centre);
   assert.equal(await received, label, 'push-click activates the control under the reticle');
 

@@ -16,7 +16,7 @@ const WORLD_ZOOM = 1.4;
 const FLY_MS = 900;
 
 const HINTS: Record<string, string> = {
-  denied: 'Location access is off. Allow SAO Utils 2 in System Settings → Privacy & Security → Location Services, or set a home location in Options.',
+  denied: 'Location access is off. Allow SAO Menu in System Settings → Privacy & Security → Location Services, or set a home location in Options.',
   disabled: 'Location Services are turned off in System Settings. You can set a home location in Options.',
   unsupported: 'Device location is available on macOS. Set a home location in Options to centre the map.',
   timeout: 'Your position could not be found in time. Set a home location in Options, or try again.',

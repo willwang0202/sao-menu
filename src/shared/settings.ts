@@ -154,9 +154,9 @@ export function parseConfiguration(source: string, current: Settings, platform: 
   if (new TextEncoder().encode(source).byteLength > MAX_CONFIGURATION_BYTES) throw new Error('Configuration files must be smaller than 2 MB.');
   if (source.trimStart().startsWith('<')) return importOriginalXML(source, current, platform);
   let parsed: unknown;
-  try { parsed = JSON.parse(source); } catch { throw new Error('Choose a valid SAO Utils 2 JSON file or an original launcher XML file.'); }
+  try { parsed = JSON.parse(source); } catch { throw new Error('Choose a valid SAO Menu JSON file or an original launcher XML file.'); }
   const data = record(parsed);
-  if (data.version !== 1 || !Array.isArray(data.favorites)) throw new Error('This is not a supported SAO Utils 2 version 1 configuration.');
+  if (data.version !== 1 || !Array.isArray(data.favorites)) throw new Error('This is not a supported SAO Menu version 1 configuration.');
   const warnings: string[] = [];
   const favorites = portableFavorites(data.favorites, platform, warnings);
   // Native login, shortcut and camera settings are device-specific and never activated by an imported file.

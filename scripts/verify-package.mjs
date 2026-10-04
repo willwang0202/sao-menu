@@ -5,7 +5,7 @@ import { createHash } from 'node:crypto';
 import { execFileSync, spawnSync } from 'node:child_process';
 import asar from '@electron/asar';
 
-const app = path.resolve('release/mac-arm64/SAO Utils 2.app');
+const app = path.resolve('release/mac-arm64/SAO Menu.app');
 const resources = path.join(app, 'Contents/Resources');
 const archive = path.join(resources, 'app.asar');
 const packageInfo = JSON.parse(await readFile('package.json', 'utf8'));
