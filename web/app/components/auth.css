@@ -1,0 +1,2 @@
+.auth-room { min-height: calc(100svh - 61px); display: grid; place-items: center; padding: 32px 16px 64px; }
+.auth-note { margin: 18px auto 0; max-width: 46ch; text-align: center; color: var(--ink-soft); font-size: 15px; }

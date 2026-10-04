@@ -7,6 +7,7 @@ release/
 test-results/
 output/playwright/
 output/startup-compare/
+output/web/
 public/sao-original/
 .DS_Store
 *.log
@@ -19,3 +20,5 @@ public/sao-original/
 *.sqlite-shm
 *.sqlite-wal
 public/mediapipe/
+.vercel
+.env*
