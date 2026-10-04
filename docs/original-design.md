@@ -134,3 +134,59 @@ The original HP preset binds the main Kirito bar to CPU load and extra Asuna bar
 The original clock preset is 304 × 80 using `clock-bg.png`, hour/minute pointer images of 5 × 16 and 5 × 22 px, and 62 px SAO UI digital time. It samples time every 5,000 ms. This original preset is not fully ported.
 
 The current native actions use macOS equivalents and local folders. The launcher adopts the original sprite geometry, category tree, fonts and sounds while approximating Qt PathView/compositor transitions in React/CSS. Full original preferences, HP/clock/widget presets and QML/native plug-in behavior remain incomplete. See [compatibility.md](compatibility.md) for the current implementation boundary.
+
+## GGO theme (com.gpbeta.theme.ggo)
+
+The Gun Gale Online launcher (package 1.0.3) is a second skin for the same menu tree, selected with Settings → Option → Interface → Theme. Its readable sources are `Packages/com.gpbeta.theme.ggo/qml/{ThemeLauncher,MainView,MainButton,MenuView,ItemButton,PanelView,PanelBarL,PanelBarS,ThemeText,ThemeDialog}.qml` and the per-item icon map `Configs/system/launcher/themes/launcher@ggo.theme.gpbeta.com.xml`. The importer copies its `Images`, `Presets` and `LICENSE.GPGPL` to `public/sao-original/GGO/`. The port keeps the SAO behaviour (selection, scrolling, actions) and swaps geometry, sprites and transitions; pure geometry lives in `src/shared/theme-geometry.ts`, icon lookup in `src/shared/theme-icons.ts`, GGO-only pieces in `src/ui/ggo.tsx`/`ggo.css`.
+
+Structural differences from SAO: the root buttons sit on a dark vertical tray instead of floating circles; each submenu is its own dark tray sized to its rows and centred on the checked button (rows do not recentre on selection); the information panel is a 434 × 462 "status card" left of the tray with a moving arrow indicator instead of the gold bracket; text is light on dark.
+
+| Element | GGO values (QML / PNG header) |
+| --- | --- |
+| Placement | `menuMouseOffset 68`: tray x = cursor x − 68, y = cursor y − 150; display margins top 50, bottom 500, left 450, right 350; `menuAlignHeight 400` |
+| Root tray | `MainView` 120 × 516, `btn-tray.png` 120 × 516 |
+| Root button | 94 × 78 (`implicitWidth` 96), `btnMargin −1`, centred ((120 − 94) / 2 = 13 px); icon 72 × 72; backgrounds none / `btn-hovered.png` / `btn-pressed.png` (94 × 78, pressed = checked or down) |
+| Root path | `pathItemCount 6`; snapped when count < 6 with paddingTop = 4 + (516 − contentHeight) / 2; otherwise the current item sits 68 px down; a button whose y ≥ 516 − 70 is disabled and its icon overlaid with `#666` |
+| Root mask | Vertical gradient: transparent 0–10 %, opaque 15–86 %, transparent from 88 % |
+| Submenu tray | `MenuView` 200 px wide, height clamp(contentHeight + 16, 50, 314); `item-tray.png` 200 × 314 as a border image (top 34, bottom 16); `item-tray-indicator.png` 21 × 33 vertically centred at the left edge with `item-tray-shadow.png` (21 × 1) tiled 14 px from top/bottom |
+| Submenu rows | `pathItemCount 8`; 172 × 46 rows, `btnMargin −4` (42 px pitch) at x 18, y 8; mask `item-mask.png` 172 × 298 centred |
+| Submenu placement | First: x = tray x + 120 − 9, centred on the checked root button; nested: x = parent x + 200 − 8, y = parent y + row y + 23 − height / 2 + 7 |
+| Item button | Padding left 15 / right 16, icon 26 × 26, text gap 8; backgrounds none / `item-hovered.png` / `item-pressed.png` (172 × 46) |
+| Typography | `ThemeText`: Source Han Sans 14 px, outline at alpha 0.125, wrap, 2 lines × 16 px in rows |
+| Information panel | `panel.png` 434 × 462 at x = tray x − 434 + 7, y = tray y + 34; collapsed clip height 106; `icon/info.png` (28 × 28) at 38,30; `panel-text.png` (75 × 10) at 88,71; label at 72,31, 96 px wide, 17 px medium; image area 30,148, 200 × 264 (default `etc/info.png`, 106 × 264); indicator `panel-indicator.png` 20 × 32 at x 415 with `panel-shadow.png` (10 × 1) above/below, 18 px shadow padding |
+| Panel bars | `PanelBarL` (`panel-bar-l.png` 21 × 25, borders 10) at 217,27 → 190 px and 217,45 → 60 px; `PanelBarS` (`panel-bar-s.png` 17 × 18, borders 8) at 218,186/191/244/249/302/307/351 and 306,307 → 54/40/28/22/54/28/40/28 px |
+| Message box | `ThemeDialog`: `dialog.png` 368 × 256, `message.png` 368 × 224, top padding 58, bottom 88 (modal) / 62, title 14 px medium uppercase `#66FFFFFF` with `#33FFFFFF` glow, content `#99FFFFFF`, `icon/ok.png` / `cancel.png` 40 × 40 with hovered/disabled faces, button spacing 58, offset 25 |
+
+Colours, translated from `#AARRGGBB`: row text `#88FFFFFF` → `rgba(255,255,255,.533)` normal and hovered, `#AAFFFFFF` → `.667` checked/pressed; panel label `#99FFFFFF` → `.6`. The tray/dialog body samples as `rgba(49–51,49–51,49–51,.9)`, the pressed sprite as `rgba(77,166,255,.8)` and the hovered sprite as `rgba(82,132,181,.8)`; the port uses these for the Preferences, toast and social controls that have no GGO original.
+
+| Event | GGO transition |
+| --- | --- |
+| Launcher entrance | A white silhouette of the tray is revealed by `btn-mask.png` (120 × 574) sliding from y −574 to 0 over 600 ms; at 500 ms buttons fade in (200 ms each, index × 100 ms stagger); after (min(visible, 5) + 1) × 100 ms the first root is checked and the white silhouette fades out while the tray fades in (400 ms) |
+| Launcher exit | Content opacity → 0 over 400 ms (plus the shared template's −500 px x shift) |
+| Submenu show | Opacity 0 → 1 over 300 ms and x offset −100 → 0 over 300 ms OutCubic; rows fade in after 200 ms over 200 ms, then the PopupMenu sound |
+| Submenu hide | Opacity → 0 over 400 ms OutQuad, offset → −100 and scale → 0.1 over 200 ms (the port unmounts immediately, as for SAO) |
+| Panel show | Opacity 300 ms InQuad, x offset 100 → 0 over 400 ms OutCubic; after 200 ms the clip unfolds 106 → 462 px over 600 ms OutCubic; then icon/status fade (200 ms) and the bars grow (L 400 ms, S 200 ms OutQuad); finally label/image fade in (250 ms) |
+| Panel change / hide | Label and image crossfade 250 ms; indicator moves 400 ms OutQuad; hide fades 300 ms InQuad |
+
+Sounds: the GGO QML only plays the generic `NVG.SFX` events (FeedbackClick, PopupMenu, PopupPanel) and the package ships no SFX preset, so the port keeps the SAO sound set for GGO. `Sounds/LinkStart.GGO.*` and `Startup.GGO.AmuSphere.wav` belong to the core startup presets, not to the launcher theme.
+
+### GGO icon mapping
+
+Root and item icons come from `GGO/Images/symbol` and `GGO/Images/item`, which mirror the SAO folders. `launcher@ggo.theme.gpbeta.com.xml` assigns:
+
+| Entry | SAO icon | GGO icon |
+| --- | --- | --- |
+| `user` | `symbol/info.png` | `symbol/info.png` |
+| `party` | `symbol/party.png` | `symbol/stats.png` |
+| `message` | `symbol/msg.png` | `symbol/msg.png` |
+| `navigation` | `symbol/navi.png` | `symbol/navi.png` |
+| `settings` | `symbol/setting.png` | `symbol/setting.png` |
+| `user.items` / `user.skills` | `item/items.png` / `item/skills.png` | same names |
+| `user.equipment` | `item/equipment.png` | `item/equipments.png` |
+| `user.documents`, `music`, `pictures`, `videos` | `item/Other/favs2.png`, `item/Media/iTunes.png`, `item/Media/landskape.png`, `item/Media/YT2.png` | same names |
+| `user.explorer`, `notepad`, `calculator`, `cmd` | `item/System/windows.png`, `item/Other/book.png`, `item/Other/calculator.png`, `item/System/sett-big.png` | same names |
+| `navigation.search`, `favorite`, `bilibili` | `item/Network/search.png`, `item/Other/Favs1.png`, `item/Media/WMP.png` | same names |
+| `settings.option`, `help`, `exit` | `item/option.png`, `item/help.png`, `item/logout.png` | same names |
+| Folder / file / unknown defaults (`utils.js`) | `item/folder.png`, `item/file.png`, `item/help.png` | same names; root default `symbol/help.png` |
+
+The GGO set has no `-hovered` faces (state is shown by the background sprite), so hover never swaps the icon. `symbol/Media/Camera.png` and `Champions_League.png` are lower-case in GGO. SAO-only files (`symbol/Network/b-bing.png`, `icon/default*`, `icon/next*`, `icon/prev*`) fall back to the SAO art, then to the GGO help icon. The darkblackswords vector overrides in `src/ui/menu-art.ts` are SAO artwork and are never used by the GGO theme. The GGO `user` entry has no `image`, so its panel shows the default `etc/info.png` soldier.
