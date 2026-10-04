@@ -1,0 +1,139 @@
+/* GGO launcher skin from com.gpbeta.theme.ggo. Every rule is scoped to the GGO
+   theme or to GGO-only elements, so the SAO look is unchanged.
+   QML #AARRGGBB colours: text #88FFFFFF / #AAFFFFFF, panel label #99FFFFFF,
+   dialog title #66FFFFFF with #33FFFFFF glow. Tray/accent RGB sampled from the PNGs. */
+[data-theme="ggo"]{--ggo-text:rgba(255,255,255,.533);--ggo-text-active:rgba(255,255,255,.667);--ggo-text-dim:rgba(255,255,255,.4);--ggo-line:rgba(255,255,255,.14);--ggo-tray:rgba(49,49,49,.9);--ggo-field:rgba(0,0,0,.28);--ggo-accent:rgb(77,166,255);--ggo-accent-fill:rgba(77,166,255,.8);--ggo-hover-fill:rgba(82,132,181,.8);--ggo-font:'Source Han Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+[data-theme="ggo"] .original-menu,[data-theme="ggo"] .sao-dialog,[data-theme="ggo"] .sao-notification{font-family:var(--ggo-font)}
+[data-theme="ggo"] button:focus-visible{outline-color:var(--ggo-accent)}
+[data-theme="ggo"] ::selection{background:rgba(77,166,255,.45)}
+
+/* MainView.qml: 120x516 btn-tray.png; a white silhouette wipes down (btn-mask.png, 600 ms),
+   then fades out while the tray fades in over 400 ms once the first root is checked. */
+.ggo-rail{position:absolute;width:120px;height:516px;z-index:2;pointer-events:none}
+.ggo-rail-tray,.ggo-rail-flash,.ggo-rail-wipe{position:absolute;inset:0}
+.ggo-rail-tray{background:url('../../public/sao-original/GGO/Images/background/btn-tray.png') 0 0/120px 516px no-repeat;animation:ggo-fade-in 400ms linear var(--ggo-open-delay,1100ms) backwards}
+.ggo-rail-flash{opacity:0;animation:ggo-fade-out 400ms linear var(--ggo-open-delay,1100ms) backwards}
+.ggo-rail-wipe{background:#fff;-webkit-mask-image:url('../../public/sao-original/GGO/Images/background/btn-mask.png'),url('../../public/sao-original/GGO/Images/background/btn-tray.png');mask-image:url('../../public/sao-original/GGO/Images/background/btn-mask.png'),url('../../public/sao-original/GGO/Images/background/btn-tray.png');mask-size:120px 574px,120px 516px;mask-repeat:no-repeat;mask-position:0 0,0 0;-webkit-mask-composite:source-in;mask-composite:intersect;animation:ggo-wipe 600ms linear backwards}
+
+/* PathView: 94x78 buttons centred in the 120 px rail; gradient mask 10/15/86/88 %. */
+[data-theme="ggo"] .root-path,[data-theme="ggo"] .root-path.unselected{width:120px;height:516px;-webkit-mask-image:linear-gradient(transparent 10%,#000 15%,#000 86%,transparent 88%);mask-image:linear-gradient(transparent 10%,#000 15%,#000 86%,transparent 88%);mask-size:100% 100%}
+[data-theme="ggo"] .root-button{left:13px;width:94px;height:78px;padding:3px 11px;animation:ggo-fade-in 200ms linear backwards}
+[data-theme="ggo"] .root-button:before{background-image:none;background-size:94px 78px;opacity:1}
+[data-theme="ggo"] .root-button.hovered:before,[data-theme="ggo"] .root-button:focus-visible:before{background-image:url('../../public/sao-original/GGO/Images/background/btn-hovered.png')}
+[data-theme="ggo"] .root-button:active:before,[data-theme="ggo"] .root-button.selected:before{background-image:url('../../public/sao-original/GGO/Images/background/btn-pressed.png')}
+[data-theme="ggo"] .root-button .original-icon-stack{width:72px;height:72px}
+[data-theme="ggo"] .root-button:focus-visible{border-radius:0;outline-offset:-3px}
+/* A bottom-clipped button is disabled and its icon is overlaid with #666. */
+[data-theme="ggo"] .root-button:disabled{opacity:1;cursor:default}
+[data-theme="ggo"] .root-button:disabled .original-icon{filter:brightness(0) invert(.4)}
+
+/* MenuView.qml: 200 px tray, 300 ms fade + 100 px slide (OutCubic); items fade in after 200 ms. */
+[data-theme="ggo"] .submenu-column{width:200px;animation:ggo-fade-in 300ms linear,ggo-slide-right 300ms cubic-bezier(.215,.61,.355,1)}
+[data-theme="ggo"] .submenu-mask{position:absolute;left:18px;top:8px;width:172px;height:calc(100% - 16px);-webkit-mask-image:url('../../public/sao-original/GGO/Images/background/item-mask.png');mask-image:url('../../public/sao-original/GGO/Images/background/item-mask.png');mask-size:172px 298px;mask-position:center;mask-repeat:no-repeat;animation:ggo-fade-in 200ms linear 200ms backwards}
+.ggo-menu-tray,.ggo-menu-frame{position:absolute;inset:0;pointer-events:none}
+.ggo-menu-frame{border:solid transparent;border-width:34px 0 16px;border-image:url('../../public/sao-original/GGO/Images/background/item-tray.png') 34 0 16 fill stretch}
+.ggo-menu-edge{position:absolute;left:0;top:14px;bottom:14px;width:21px;display:flex;flex-direction:column}
+.ggo-menu-edge>i{flex:1;background:url('../../public/sao-original/GGO/Images/background/item-tray-shadow.png') 0 0/21px 1px repeat-y}
+.ggo-menu-edge>b{flex:none;height:33px;background:url('../../public/sao-original/GGO/Images/background/item-tray-indicator.png') 0 0/21px 33px no-repeat}
+
+/* ItemButton.qml: 172x46, padding 15/16, 26 px icon, 8 px gap, Source Han Sans 14 px. */
+[data-theme="ggo"] .item-button{width:172px;padding:0 16px 0 15px;gap:8px;font-size:14px;font-weight:400;color:var(--ggo-text)}
+[data-theme="ggo"] .item-button>span{text-shadow:0 0 1px rgba(255,255,255,.125)}
+[data-theme="ggo"] .item-button:before{background-image:none;background-size:172px 46px;opacity:1}
+[data-theme="ggo"] .item-button.hovered:before,[data-theme="ggo"] .item-button:focus-visible:before{background-image:url('../../public/sao-original/GGO/Images/background/item-hovered.png')}
+[data-theme="ggo"] .item-button:active:before,[data-theme="ggo"] .item-button.selected:before{background-image:url('../../public/sao-original/GGO/Images/background/item-pressed.png')}
+[data-theme="ggo"] .item-button.hovered,[data-theme="ggo"] .item-button:focus-visible{color:var(--ggo-text)}
+[data-theme="ggo"] .item-button:active,[data-theme="ggo"] .item-button.selected{color:var(--ggo-text-active)}
+
+/* MainView exit only fades the content (400 ms); the template still shifts x by -500. */
+[data-theme="ggo"] .dismissing .root-path,[data-theme="ggo"] .dismissing .submenu-mask{animation:none}
+
+/* PanelView.qml: 434x462 panel left of the rail; opacity 300 ms InQuad, slide 100 px 400 ms OutCubic,
+   unfold 106 -> 462 px after 200 ms over 600 ms, then icon/status/bars, then label and image. */
+.ggo-panel.info-panel{width:434px;height:462px;overflow:visible;animation:ggo-fade-in 300ms cubic-bezier(.55,.085,.68,.53),ggo-slide-left 400ms cubic-bezier(.215,.61,.355,1)}
+.ggo-panel-clip{position:relative;width:434px;height:462px;overflow:hidden;animation:ggo-unfold 600ms cubic-bezier(.215,.61,.355,1) 200ms backwards}
+.ggo-panel-art{position:absolute;left:0;top:0;width:434px;height:462px;background:url('../../public/sao-original/GGO/Images/etc/panel.png') 0 0/434px 462px no-repeat}
+.ggo-panel-icon,.ggo-panel-status{position:absolute;animation:ggo-fade-in 200ms linear 800ms backwards}
+.ggo-panel-icon{left:38px;top:30px;width:28px;height:28px}
+.ggo-panel-status{left:88px;top:71px;width:75px;height:10px}
+.ggo-panel-bar{position:absolute;width:var(--bar-width);border:solid transparent;animation:ggo-bar-grow 200ms cubic-bezier(.25,.46,.45,.94) 800ms backwards}
+.ggo-panel-bar.l{height:25px;border-width:0 10px;border-image:url('../../public/sao-original/GGO/Images/etc/panel-bar-l.png') 0 10 fill stretch;animation-duration:400ms}
+.ggo-panel-bar.s{height:18px;border-width:0 8px;border-image:url('../../public/sao-original/GGO/Images/etc/panel-bar-s.png') 0 8 fill stretch}
+.ggo-panel-label{position:absolute;left:72px;top:31px;width:96px;margin:0;font:500 17px/1.25 var(--ggo-font,'Source Han Sans',sans-serif);color:rgba(255,255,255,.6);text-shadow:0 0 1px rgba(255,255,255,.125);overflow:hidden;overflow-wrap:anywhere;text-overflow:ellipsis}
+.ggo-panel-image{position:absolute;left:30px;top:148px;width:200px;height:264px;display:flex;align-items:center;justify-content:center}
+.ggo-panel-image>img{max-width:100%;max-height:100%;object-fit:contain}
+.ggo-panel-content{animation:ggo-fade-in 250ms linear backwards}
+.ggo-panel-content.intro{animation-delay:1200ms}
+.ggo-panel-shadow{position:absolute;left:415px;width:10px;background:url('../../public/sao-original/GGO/Images/etc/panel-shadow.png') 0 0/10px 1px repeat-y;transition:top 400ms cubic-bezier(.25,.46,.45,.94),height 400ms cubic-bezier(.25,.46,.45,.94)}
+.ggo-panel-shadow.lower{bottom:18px}
+.ggo-panel-indicator{position:absolute;left:415px;width:20px;height:32px;transition:top 400ms cubic-bezier(.25,.46,.45,.94)}
+
+/* ThemeDialog.qml: dialog.png (368x256) with topPadding 58 and modal bottomPadding 88;
+   uppercase 14 px title, #99FFFFFF content, GGO ok icon. Controls are dark equivalents. */
+/* dialog.png is 90 % opaque; an inner backing (inside its 15 px shadow) keeps the long Options form legible. */
+[data-theme="ggo"] .sao-dialog{background:linear-gradient(rgba(30,30,30,.72),rgba(30,30,30,.72)) center/calc(100% - 30px) calc(100% - 30px) no-repeat;border:0 solid transparent;border-image:url('../../public/sao-original/GGO/Images/background/dialog.png') 58 20 88 fill/58px 20px 88px stretch;padding:5px 26px 12px;filter:none;color:rgba(255,255,255,.6)}
+[data-theme="ggo"] .dialog-title h2{flex:1;margin:0 0 0 32px;text-align:center;font-size:14px;font-weight:500;text-transform:uppercase;letter-spacing:.04em;color:rgba(255,255,255,.4);text-shadow:0 0 6px rgba(255,255,255,.2)}
+[data-theme="ggo"] .dialog-close{color:var(--ggo-text-dim)}
+[data-theme="ggo"] .dialog-close:hover{color:var(--ggo-accent)}
+[data-theme="ggo"] .dialog-tabs{border-bottom-color:var(--ggo-line);margin-top:8px}
+[data-theme="ggo"] .dialog-tabs button{color:var(--ggo-text)}
+[data-theme="ggo"] .dialog-tabs button.active{color:#fff;background:var(--ggo-accent-fill);border:0;border-radius:0;box-shadow:none}
+[data-theme="ggo"] .dialog-tabs button:hover:not(.active){background:var(--ggo-hover-fill);color:#fff}
+[data-theme="ggo"] .dialog-content h3{color:var(--ggo-text-active)}
+[data-theme="ggo"] .options-grid>section+section{border-color:var(--ggo-line)}
+[data-theme="ggo"] .preference-row p,[data-theme="ggo"] .preference-description,[data-theme="ggo"] .preference-field small,[data-theme="ggo"] .editor-empty,[data-theme="ggo"] .editor-add>span,[data-theme="ggo"] .about-options p,[data-theme="ggo"] .reset-menu{color:var(--ggo-text-dim)}
+[data-theme="ggo"] .preview-explanation{color:rgba(140,195,250,.75)}
+[data-theme="ggo"] .theme-select,[data-theme="ggo"] .preference-field input,[data-theme="ggo"] .link-dialog input,[data-theme="ggo"] .editor-search,[data-theme="ggo"] .editor-search input{background:var(--ggo-field);border-color:rgba(255,255,255,.2);color:rgba(255,255,255,.8)}
+[data-theme="ggo"] .editor-search input{background:none}
+[data-theme="ggo"] .theme-select option{background:#313131;color:#ddd}
+[data-theme="ggo"] .preference-toggle{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.25)}
+[data-theme="ggo"] .preference-toggle.checked{background:var(--ggo-accent-fill);border-color:var(--ggo-accent)}
+[data-theme="ggo"] .preference-toggle>span{background:#e8e8e8}
+[data-theme="ggo"] .dialog-button{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.22);color:rgba(255,255,255,.72);box-shadow:none}
+[data-theme="ggo"] .dialog-button:hover:not(:disabled),[data-theme="ggo"] .dialog-button.orange{background:var(--ggo-accent-fill);border-color:var(--ggo-accent);color:#fff}
+[data-theme="ggo"] .reset-menu:hover{color:var(--ggo-accent)}
+[data-theme="ggo"] .gesture-status>.ready-dot{background:var(--ggo-accent)}
+[data-theme="ggo"] .dialog-footer{color:var(--ggo-text-dim)}
+[data-theme="ggo"] .original-confirm,[data-theme="ggo"] .original-confirm img{width:40px;height:40px}
+[data-theme="ggo"] .original-confirm img{content:url('../../public/sao-original/GGO/Images/icon/ok.png')}
+[data-theme="ggo"] .original-confirm:hover img{content:url('../../public/sao-original/GGO/Images/icon/ok-hovered.png')}
+[data-theme="ggo"] .editor-tabs button{color:var(--ggo-text)}
+[data-theme="ggo"] .editor-tabs button.active{color:#fff;border-bottom-color:var(--ggo-accent)}
+[data-theme="ggo"] .editor-list{background:var(--ggo-field);border-color:var(--ggo-line)}
+[data-theme="ggo"] .editor-item{border-bottom-color:var(--ggo-line)}
+[data-theme="ggo"] .editor-item:hover{background:rgba(82,132,181,.35)}
+[data-theme="ggo"] .editor-launch span{color:var(--ggo-text-dim)}
+[data-theme="ggo"] .editor-item-action{color:var(--ggo-text)}
+[data-theme="ggo"] .editor-item-action:hover{background:var(--ggo-accent-fill);border-color:var(--ggo-accent);color:#fff}
+[data-theme="ggo"] .about-options>img{content:url('../../public/sao-original/GGO/Images/etc/info.png')}
+[data-theme="ggo"] .update-options{border-top-color:var(--ggo-line)}
+[data-theme="ggo"] .link-scrim{background:rgba(0,0,0,.35)}
+[data-theme="ggo"] .link-dialog{background:var(--ggo-tray);border-color:var(--ggo-line);box-shadow:0 8px 25px rgba(0,0,0,.5);color:rgba(255,255,255,.6)}
+[data-theme="ggo"] .sao-dialog ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.25)}
+/* Port-only social panel (no GGO original): reuse GGO dialog.png and item sprites. */
+[data-theme="ggo"] .social-panel{font-family:var(--ggo-font);color:rgba(255,255,255,.6)}
+[data-theme="ggo"] .social-paper{background:none;border:0 solid transparent;border-image:url('../../public/sao-original/GGO/Images/background/dialog.png') 58 20 88 fill/58px 20px 88px stretch;filter:none}
+[data-theme="ggo"] .social-panel h2,[data-theme="ggo"] .social-panel h3{color:var(--ggo-text-active);border-color:var(--ggo-line)}
+[data-theme="ggo"] .social-panel nav{border-color:var(--ggo-line)}
+[data-theme="ggo"] .social-panel nav .active{color:#fff;border-bottom-color:var(--ggo-accent)}
+[data-theme="ggo"] .social-list{background:var(--ggo-tray);border-top-color:var(--ggo-accent);border-bottom-color:var(--ggo-line)}
+[data-theme="ggo"] .friend-ribbon{width:172px;background-image:none;color:var(--ggo-text)}
+[data-theme="ggo"] .friend-ribbon:hover,[data-theme="ggo"] .friend-ribbon:focus-visible{background:url('../../public/sao-original/GGO/Images/background/item-hovered.png') center/172px 46px no-repeat}
+[data-theme="ggo"] .friend-ribbon.selected{background:url('../../public/sao-original/GGO/Images/background/item-pressed.png') center/172px 46px no-repeat;color:var(--ggo-text-active)}
+[data-theme="ggo"] .social-empty,[data-theme="ggo"] .friend-request>span{color:var(--ggo-text-dim)}
+[data-theme="ggo"] .friend-request,[data-theme="ggo"] .friend-add{border-color:var(--ggo-line)}
+[data-theme="ggo"] .social-action{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.22);color:rgba(255,255,255,.72);box-shadow:none}
+[data-theme="ggo"] .social-action:hover:not(:disabled),[data-theme="ggo"] .social-action:focus-visible{background:var(--ggo-accent-fill);border-color:var(--ggo-accent);color:#fff}
+[data-theme="ggo"] .social-panel input,[data-theme="ggo"] .social-panel textarea{background:var(--ggo-field);border-color:rgba(255,255,255,.2);color:rgba(255,255,255,.8)}
+/* Toasts take the dark message.png body colour (approximation; message.png is a 368x224 box). */
+[data-theme="ggo"] .sao-notification{background:var(--ggo-tray);border-color:var(--ggo-line);box-shadow:0 5px 15px rgba(0,0,0,.3);color:rgba(255,255,255,.6)}
+[data-theme="ggo"] .sao-notification>svg{color:var(--ggo-accent)}
+[data-theme="ggo"] .sao-notification button{color:var(--ggo-text-dim)}
+
+@keyframes ggo-fade-in{from{opacity:0}to{opacity:1}}
+@keyframes ggo-fade-out{from{opacity:1}to{opacity:0}}
+@keyframes ggo-wipe{from{-webkit-mask-position:0 -574px,0 0;mask-position:0 -574px,0 0}to{-webkit-mask-position:0 0,0 0;mask-position:0 0,0 0}}
+@keyframes ggo-slide-right{from{transform:translateX(-100px)}to{transform:none}}
+@keyframes ggo-slide-left{from{transform:translateX(100px)}to{transform:none}}
+@keyframes ggo-unfold{from{height:106px}to{height:462px}}
+@keyframes ggo-bar-grow{from{width:0}}

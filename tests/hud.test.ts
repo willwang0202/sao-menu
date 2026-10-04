@@ -11,7 +11,7 @@ test('HP shows battery remaining and defaults to 100% without battery telemetry'
 test('account name overrides local preferences; companions require accepted membership', () => {
   const own = { id: 'self', username: 'kirito', displayName: 'My account name' };
   const friend = { id: 'friend', username: 'asuna', displayName: 'A real friend', online: true, batteryPercent: 37 };
-  const settings = { playerName: 'Old local name', reducedMotion: false };
+  const settings = { playerName: 'Old local name', reducedMotion: false, theme: 'sao' as const };
   const snapshot: SocialSnapshot = { profile: own, friends: [friend], requests: [], conversations: [], partyInvites: [{ id: 'invitation', partyId: 'party', from: friend, createdAt: 1 }] };
   assert.equal(hpState(settings, null, snapshot).playerName, own.displayName);
   assert.deepEqual(hpState(settings, null, snapshot).partyMembers, [], 'friends and invitations do not produce HP bars');

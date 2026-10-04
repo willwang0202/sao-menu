@@ -5,7 +5,7 @@ import './social.css';
 const empty: SocialState = { serviceURL: '', connected: false, error: '', snapshot: null };
 const errorText = (error: unknown) => error instanceof Error ? error.message : String(error);
 
-export function SocialPanel({ mode, y, onPress }: { mode: 'friends' | 'messages'; y: number; onPress: () => void }) {
+export function SocialPanel({ mode, x = 345, y, onPress }: { mode: 'friends' | 'messages'; x?: number; y: number; onPress: () => void }) {
   const api = window.saoSocial;
   const [state, setState] = useState(empty);
   const [tab, setTab] = useState<'friends' | 'requests' | 'party'>('friends');
@@ -30,7 +30,7 @@ export function SocialPanel({ mode, y, onPress }: { mode: 'friends' | 'messages'
     try { await action(); done?.(); } catch (e) { setError(errorText(e)); } finally { setBusy(false); }
   };
   const snapshot = state.snapshot;
-  return <section className="social-panel" style={{ left: 345, top: y }} role="region" aria-label={mode === 'friends' ? 'Social' : 'Direct messages'}>
+  return <section className="social-panel" style={{ left: x, top: y }} role="region" aria-label={mode === 'friends' ? 'Social' : 'Direct messages'}>
     {!api ? <div className="social-paper"><h2>{mode === 'friends' ? 'Social' : 'Message Box'}</h2><p>Open the desktop application to connect your online account.</p></div> : !snapshot ? <AccountForm api={api} state={state} onPress={onPress} /> : <>
       <div className="social-list">
         <header><h2>{mode === 'friends' ? 'Friend List' : 'Message Box'}</h2><span>{snapshot.profile.displayName}</span></header>

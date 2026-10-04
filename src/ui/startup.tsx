@@ -4,6 +4,7 @@ import type { SocialState } from '../shared/social';
 import { clockTime, followAudio, holdClock, resumeClock, shouldResyncAudio, startClock, type StartupClock } from './link-start/clock';
 import { renderFrame, type FrameOptions } from './link-start/render';
 import { STARTUP, sceneAt } from './link-start/timeline';
+import { resolveStartupLanguage, startupStrings } from '../shared/startup-language';
 import './startup.css';
 
 type Phase = 'playing' | 'login' | 'entering';
@@ -18,6 +19,8 @@ const MAX_PIXEL_RATIO = 2;
  */
 export function LinkStart({ settings, onComplete }: { settings: Settings; onComplete: () => void }) {
   const reduced = settings.reducedMotion || matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const strings = startupStrings(resolveStartupLanguage(settings.startupLanguage, navigator.languages[0] ?? navigator.language));
+  const stringsRef = useRef(strings); stringsRef.current = strings;
   const [phase, setPhase] = useState<Phase>(reduced ? 'login' : 'playing');
   const [state, setState] = useState<SocialState | null>(null);
   const [audioError, setAudioError] = useState('');
@@ -85,7 +88,7 @@ export function LinkStart({ settings, onComplete }: { settings: Settings; onComp
       }
       const time = clock.current ? clockTime(clock.current, now) : 0;
       if (time >= STARTUP.end) { complete(); return; }
-      renderFrame(ctx, time, view.width, view.height, { ...credentials.current, creatingAccount: currentPhase.current === 'login' && creatingAccount.current });
+      renderFrame(ctx, time, view.width, view.height, { ...credentials.current, creatingAccount: currentPhase.current === 'login' && creatingAccount.current, strings: stringsRef.current });
       const next = sceneAt(time);
       if (next !== scene && section.current) { scene = next; section.current.dataset.scene = next; }
       frame = requestAnimationFrame(tick);

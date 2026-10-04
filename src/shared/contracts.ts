@@ -1,3 +1,5 @@
+import type { ThemeId } from './themes';
+import type { StartupLanguageSetting } from './startup-language';
 export type Platform = 'darwin' | 'win32' | 'linux' | 'web';
 export interface Position { x: number; y: number }
 export interface GestureStatus { supported: boolean; permission: 'granted' | 'denied' | 'unknown'; running: boolean; message: string }
@@ -18,6 +20,14 @@ export interface Settings {
   /** Shows the tracker's camera view with landmarks, for tuning. */
   handDebugView: boolean;
   shortcut: string;
+  /** Launcher look: original SAO, ALO or GGO theme. */
+  theme: ThemeId;
+  /** Language of the Link Start blue cards; `system` follows the OS. */
+  startupLanguage: StartupLanguageSetting;
+  /** Original SAO clock widget on the desktop. */
+  showClock: boolean;
+  /** Original mail-style button that opens Message. */
+  showMessageButton: boolean;
   favorites: LauncherItem[];
   menu?: MenuEntry[];
 }
@@ -25,6 +35,8 @@ export interface SystemStats {
   platform: Platform; hostname: string; cpuPercent: number | null;
   memoryUsed: number | null; memoryTotal: number | null;
   uptime: number | null; batteryPercent: number | null;
+  /** External power with a battery present (the ALO HP bar's charging buff). */
+  isCharging?: boolean;
 }
 export interface RuntimeInfo { platform: Platform; version: string; desktop: boolean; shortcutRegistered: boolean; startup: boolean }
 export interface ImportResult { imported: number; warnings: string[]; settings: Settings }
@@ -59,7 +71,8 @@ export interface DesktopAPI {
   quit(): Promise<void>;
   completeStartup(): Promise<void>;
   onStartupComplete(callback: () => void): () => void;
-  onToggleMenu(callback: (open?: boolean, anchor?: Position) => void): () => void;
+  /** `category` selects a root category (e.g. `message`) when the menu opens. */
+  onToggleMenu(callback: (open?: boolean, anchor?: Position, category?: string) => void): () => void;
   onDismissMenu(callback: () => void): () => void;
   onGlobalPointerDown(callback: (point: Position) => void): () => void;
   onPointerMove(callback: (point: Position) => void): () => void;

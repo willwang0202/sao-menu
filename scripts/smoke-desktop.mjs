@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, readFile, writeFile, mkdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 import electronPath from 'electron';
 import { _electron as electron } from 'playwright';
 
@@ -123,20 +124,28 @@ try {
   const selfAnchor = await expansionAnchor();
   assert.ok(Math.abs(selfAnchor.menuCenter - selfAnchor.buttonCenter) < 1);
   assert.ok(Math.abs(optionsAnchor.menuCenter - selfAnchor.menuCenter - 280) < 1, `expanded menus move by the category spacing: ${JSON.stringify({ optionsAnchor, selfAnchor })}`);
-  await page.getByRole('menuitem', { name: 'Skills', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Equipment', exact: true }).click();
   await page.getByRole('menuitem', { name: 'Calculator', exact: true }).waitFor();
   assert.equal(await page.locator('.submenu-column').count(), 2);
   if (process.platform === 'darwin') {
+    const isCalculatorRunning = () => { try { execFileSync('pgrep', ['-x', 'Calculator']); return true; } catch { return false; } };
+    const wasCalculatorRunning = isCalculatorRunning();
     await page.getByRole('menuitem', { name: 'Calculator', exact: true }).click();
     await page.waitForFunction(() => !document.querySelector('.original-menu'));
+    // Quit the Calculator this test opened; leave one the user already had open.
+    if (!wasCalculatorRunning) {
+      const deadline = Date.now() + 10000;
+      while (!isCalculatorRunning() && Date.now() < deadline) await new Promise(resolve => setTimeout(resolve, 200));
+      assert.equal(isCalculatorRunning(), true, 'Equipment → Calculator launches Calculator');
+      execFileSync('osascript', ['-e', 'tell application "Calculator" to quit']);
+    }
     await instance.evaluate(({ app }) => app.emit('activate'));
     await page.getByRole('menuitem', { name: 'Kirito', exact: true }).waitFor();
   }
 
   await page.getByRole('menuitem', { name: 'Settings', exact: true }).click();
-  await page.getByRole('menuitem', { name: 'Help', exact: true }).click();
-  assert.equal(await page.getByRole('alert').count(), 0, 'unassigned original Help remains a no-op');
-  assert.equal(await page.getByRole('dialog').count(), 0);
+  // Help opens the support page in the default browser; unit tests cover its link, so it isn't clicked here.
+  await page.getByRole('menuitem', { name: 'Help', exact: true }).waitFor();
   await page.getByRole('menuitem', { name: 'Option', exact: true }).click();
   assert.equal(await page.getByLabel('Account display name').inputValue(), 'Kirito');
   assert.equal(await page.getByLabel('Account display name').getAttribute('readonly'), '');
@@ -177,6 +186,20 @@ try {
     try { return await other.webContents.executeJavaScript('window.sao ? window.sao.getSettings().then(() => false, () => true) : "missing-preload"'); } finally { other.destroy(); }
   }, path.resolve('dist-desktop/preload.cjs'));
   assert.equal(strayDenied, true, 'untrusted IPC sender rejected');
+  const widgets = await instance.evaluate(async ({ BrowserWindow }) => {
+    const find = kind => BrowserWindow.getAllWindows().find(window => new URL(window.webContents.getURL()).searchParams.get('widget') === kind);
+    const clock = find('clock'), message = find('message');
+    const clockTime = clock ? await clock.webContents.executeJavaScript("document.querySelector('.sao-clock')?.getAttribute('aria-label') ?? ''") : '';
+    const messageButton = message ? await message.webContents.executeJavaScript("!!document.querySelector('.sao-message-button')") : false;
+    const hp = BrowserWindow.getAllWindows().find(window => new URL(window.webContents.getURL()).searchParams.get('hp') === '1');
+    return { clockSize: clock?.getSize(), messageSize: message?.getSize(), clockTime, messageButton, clockFocusable: clock?.isFocusable(), stacking: [clock, message, hp].map(window => window?.isAlwaysOnTop()) };
+  });
+  assert.deepEqual(widgets.clockSize, [304, 80], 'original clock widget size');
+  assert.deepEqual(widgets.messageSize, [56, 56], 'original mail button size');
+  assert.match(widgets.clockTime, /^Time \d\d:\d\d$/, 'clock renders the original %H:%M time');
+  assert.equal(widgets.messageButton, true, 'message button renders');
+  const alwaysOnTop = (await page.evaluate(() => window.sao.getSettings())).alwaysOnTop;
+  assert.deepEqual(widgets.stacking, [alwaysOnTop, alwaysOnTop, alwaysOnTop], 'HP and widgets follow the Always on top setting');
   await page.getByRole('button', { name: 'Close options', exact: true }).first().click();
   await page.reload();
   await page.waitForFunction(() => Boolean(document.querySelector('.original-menu')));
@@ -192,5 +215,11 @@ try {
   await instance.evaluate(({ app }) => app.emit('activate'));
   await page.locator('.original-menu').waitFor({ state: 'visible' });
   assert.deepEqual(errors, []);
-  console.log(JSON.stringify({ platform: runtime.platform, applications: applications.length, memoryTotal: stats.memoryTotal, shortcutRegistered: runtime.shortcutRegistered, storage, gesture, geometry, fonts, categorySwitch: { selfAnchor, optionsAnchor, railUnchanged: true }, assertions: 'original assets and geometry, anchored category switching, cascading menus, native launch, pointer passthrough, bridge isolation, IPC owner, settings, import/export, hotkey dismissal, hide/reopen, reload', screenshot: path.join(output, 'original-menu.png'), userData }, null, 2));
+  // Earlier steps import a custom menu; restore the bundled hierarchy, which has Message.
+  await page.evaluate(async () => { const current = await window.sao.getSettings(); await window.sao.saveSettings({ ...current, menu: undefined }); });
+  await page.reload(); await page.waitForSelector('.sao-desktop');
+  await instance.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find(window => new URL(window.webContents.getURL()).searchParams.get('widget') === 'message').webContents.executeJavaScript('window.saoWidget.openMessages()'));
+  await page.waitForFunction(() => document.querySelector('.root-button.selected')?.getAttribute('aria-label') === 'Message', null, { timeout: 5000 });
+  assert.equal(await instance.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find(window => window.webContents.getURL().endsWith('/index.html')).isVisible()), true, 'Message button summons the launcher');
+  console.log(JSON.stringify({ platform: runtime.platform, applications: applications.length, memoryTotal: stats.memoryTotal, shortcutRegistered: runtime.shortcutRegistered, storage, gesture, geometry, fonts, categorySwitch: { selfAnchor, optionsAnchor, railUnchanged: true }, assertions: 'original assets and geometry, clock and message widgets, Message button opens Message, anchored category switching, cascading menus, native launch, pointer passthrough, bridge isolation, IPC owner, settings, import/export, hotkey dismissal, hide/reopen, reload', screenshot: path.join(output, 'original-menu.png'), userData }, null, 2));
 } finally { await instance.close(); await rm(userData, { recursive: true, force: true }); }

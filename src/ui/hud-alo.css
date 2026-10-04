@@ -1,0 +1,17 @@
+/* ALO HP-Bar style: geometry from the original StyleALO.qml, BarItemALO.qml and BarALO.qml. */
+.alo-display{position:relative;width:296px;pointer-events:none;overflow:hidden;font-family:'SAO UI','Source Han Sans',sans-serif;color:rgba(255,255,255,.8)}
+.alo-bar{position:absolute;left:0;width:296px;height:68px}
+.alo-background{position:absolute;left:0;top:0;width:296px;height:68px}
+/* Badge width is label + 26: 12px caps plus 1px padding per side. Name baseline at y 22; the level badge follows at max(name end, 90) + 16, 4px from the top. */
+.alo-label-row{position:absolute;left:58px;top:0;display:flex;align-items:baseline}
+.alo-label-row::before{content:'';display:block;width:0;height:22px}
+.alo-name{display:block;min-width:32px;max-width:100px;overflow:clip;overflow-clip-margin:4px;white-space:pre;font-size:16px;line-height:1;text-shadow:-1px -1px 4px rgba(0,0,0,.65)}
+.alo-status{align-self:flex-start;display:flex;margin:4px 0 0 16px}
+.alo-level{box-sizing:border-box;display:flex;align-items:center;justify-content:center;height:20px;padding:0 1px;font-size:11px;line-height:1;white-space:pre;border-style:solid;border-width:0 12px;border-image:url('../../public/sao-original/HPBar/alo-level.png') 0 12 fill / 0 12px repeat stretch}
+.alo-buff{width:30px;height:20px;margin-left:-8px}
+.alo-icon{position:absolute;left:0;top:19px;width:46px;height:46px}
+.alo-gauge{position:absolute;left:36px;height:24px}
+.alo-gauge-fill,.alo-gauge-cap{position:absolute;top:0;height:24px;background-repeat:no-repeat;background-position:0 0;transition:width 500ms cubic-bezier(.25,1,.5,1),left 500ms cubic-bezier(.25,1,.5,1)}
+.alo-gauge-fill{left:0}
+.alo-gauge-cap{width:7px;transform:scaleX(-1)}
+.alo-still .alo-gauge-fill,.alo-still .alo-gauge-cap{transition:none}

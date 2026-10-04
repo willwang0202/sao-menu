@@ -67,7 +67,7 @@ const api: DesktopAPI = {
     return () => ipcRenderer.removeListener('sao:hand:click', listener);
   },
   onToggleMenu: callback => {
-    const listener = (_event: Electron.IpcRendererEvent, open?: boolean, anchor?: Position) => callback(open, anchor);
+    const listener = (_event: Electron.IpcRendererEvent, open?: boolean, anchor?: Position, category?: string) => callback(open, anchor, category);
     ipcRenderer.on('sao:menu:toggle', listener);
     return () => ipcRenderer.removeListener('sao:menu:toggle', listener);
   },

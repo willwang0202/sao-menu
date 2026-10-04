@@ -6,12 +6,15 @@ import { drawSensors } from './sensors';
 import { drawLanguage, drawLogin, drawRegistration } from './panels';
 import { drawWelcome } from './welcome';
 import { drawWarp, whiteOverlay } from './warp';
+import { startupStrings, type StartupStrings } from '../../shared/startup-language';
 
 export type FrameOptions = Readonly<{
   /** Real credential lengths shown as the source's asterisks after authentication. */
   accountLength: number;
   passwordLength: number;
   creatingAccount?: boolean;
+  /** Blue-card text; defaults to the anime's Japanese cards. */
+  strings?: StartupStrings;
 }>;
 
 const TUNNEL_VISIBLE = [1.9, STARTUP.tunnelEnd] as const;
@@ -29,9 +32,10 @@ export function renderFrame(ctx: CanvasRenderingContext2D, t: number, width: num
   ctx.setTransform(cover.scale, 0, 0, cover.scale, cover.x, cover.y);
   if (t >= TUNNEL_VISIBLE[0] && t < TUNNEL_VISIBLE[1]) drawTunnel(ctx, t);
   if (t >= STARTUP.sensorsStart && t < STARTUP.sensorsEnd) drawSensors(ctx, t, cover.scale);
-  if (t >= STARTUP.languageStart && t < STARTUP.loginStart) drawLanguage(ctx, t);
-  if (t >= STARTUP.loginStart && t < STARTUP.registrationStart) drawLogin(ctx, t, options.accountLength, options.passwordLength, options.creatingAccount);
-  if (t >= STARTUP.registrationStart && t < STARTUP.grayStart) drawRegistration(ctx, t);
+  const strings = options.strings ?? startupStrings('ja');
+  if (t >= STARTUP.languageStart && t < STARTUP.loginStart) drawLanguage(ctx, t, strings);
+  if (t >= STARTUP.loginStart && t < STARTUP.registrationStart) drawLogin(ctx, t, strings, options.accountLength, options.passwordLength, options.creatingAccount);
+  if (t >= STARTUP.registrationStart && t < STARTUP.grayStart) drawRegistration(ctx, t, strings);
   if (t >= WARP_VISIBLE) drawWarp(ctx, t);
   if (t >= STARTUP.welcomeStart && t < STARTUP.warpStart + 0.1) drawWelcome(ctx, t);
 
