@@ -31,8 +31,8 @@ try {
   await page.screenshot({ path: path.join(output, 'landing-hero.png') });
   await page.screenshot({ path: path.join(output, 'landing-full.png'), fullPage: true });
   assert.match(await page.getByRole('link', { name: /Download for Mac/ }).getAttribute('href'), /\.dmg$/);
-  assert.match(await page.getByRole('link', { name: /Download for Windows/ }).getAttribute('href'), /sao-menu\/releases\/download\/v0\.1\.4\/.*windows-x64\.exe$/);
-  assert.match(await page.getByRole('link', { name: /Download for Linux/ }).getAttribute('href'), /linux-x64\.AppImage$/);
+  assert.match(await page.getByRole('link', { name: /Download for Windows/ }).getAttribute('href'), /sao-menu\/releases\/download\/v0\.1\.5\/.*windows-x64\.exe$/);
+  assert.match(await page.getByRole('link', { name: /Download for Linux/ }).getAttribute('href'), /linux-x86_64\.AppImage$/);
   await page.getByRole('link', { name: 'Support', exact: true }).click();
   await page.getByRole('heading', { name: 'Report a bug' }).waitFor();
   assert.equal(await page.getByRole('link', { name: /Report a bug/ }).getAttribute('href'), 'https://github.com/willwang0202/sao-menu/issues/new?template=bug_report.yml');

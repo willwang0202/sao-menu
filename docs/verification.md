@@ -1,8 +1,10 @@
 # Current test release verification
 
-## 0.1.4 release preparation
+## 0.1.5 release preparation
 
-The renamed `sao-menu` source passed 98/98 unit/protocol tests, the desktop production build and the website TypeScript/Next.js production build. The local browser acceptance test passed registration, friendship, direct-message round trips, logout, mobile layouts, platform download links and the GitHub issue-form/issue-list links. It used a disposable PGlite database. Native hand-gesture acceptance passed with Chromium's synthetic camera, carrying forward the already merged hand-tracking work.
+The renamed `sao-menu` source passed 102/102 unit/protocol tests, the desktop production build and the website TypeScript/Next.js production build. The local browser acceptance test passed registration, friendship, direct-message round trips, logout, mobile layouts, platform download links and the GitHub issue-form/issue-list links. It used a disposable PGlite database. Native hand-gesture acceptance passed with Chromium's synthetic camera, carrying forward the already merged hand-tracking work.
+
+Native signup/HUD acceptance passed real launch-screen registration, account-name override of old local preferences, battery percentage and solo gating. Two native accounts passed friendship-only/pending-invitation gating, party acceptance with correct companion names, persistence, leaving and resizing back to one bar. Login recovery passed portrait and ultrawide registration controls and rejected sessions. Both SQLite and Postgres tests enforce private battery presence, invite ownership, party persistence, leader succession and six-player capacity under simultaneous acceptance.
 
 Native release CI verifies the tagged resource SHA-256, packaged renderer/host/icon bytes and installer presence, then launches the packaged binary on Apple Silicon macOS, Intel macOS, Windows x64 and Linux x64. Completion and installer checksums are recorded after those jobs finish; a queued build is not a runtime-verification result.
 

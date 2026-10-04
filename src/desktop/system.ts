@@ -17,6 +17,11 @@ async function batteryPercent(): Promise<number | null> {
       const { stdout } = await run('/usr/bin/pmset', ['-g', 'batt'], { timeout: 2000, maxBuffer: 8192 });
       const match = stdout.match(/(\d+)%/);
       if (match) value = Number(match[1]);
+    } else if (platform === 'win32') {
+      const { stdout } = await run('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', 'ConvertTo-Json -Compress -InputObject @(Get-CimInstance Win32_Battery | Select-Object -ExpandProperty EstimatedChargeRemaining)'], { timeout: 2000, maxBuffer: 8192, windowsHide: true });
+      const readings: unknown = JSON.parse(stdout);
+      const valid = (Array.isArray(readings) ? readings : [readings]).filter((entry): entry is number => typeof entry === 'number' && Number.isFinite(entry) && entry >= 0 && entry <= 100);
+      if (valid.length) value = Math.round(valid.reduce((sum, entry) => sum + entry, 0) / valid.length);
     } else if (platform === 'linux') {
       const entries = await readdir('/sys/class/power_supply');
       const values = await Promise.all(entries.filter(entry => /^BAT/i.test(entry)).map(async entry => Number((await readFile(`/sys/class/power_supply/${entry}/capacity`, 'utf8')).trim())));

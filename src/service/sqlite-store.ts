@@ -1,8 +1,9 @@
 import { DatabaseSync } from 'node:sqlite';
 import type { DirectMessage } from '../shared/social';
 import type { AccountStore, StoredProfile, StoredUser } from './store';
+import { partyStore, type QueryClient, type TransactionClient } from './party-store';
 
-/** Local SQLite storage; the schema is unchanged from earlier releases so existing data keeps working. */
+/** Additive migrations preserve existing local accounts and sessions. */
 const SCHEMA = `PRAGMA foreign_keys=ON; PRAGMA journal_mode=WAL;
   CREATE TABLE IF NOT EXISTS users(id TEXT PRIMARY KEY,username TEXT UNIQUE COLLATE NOCASE,displayName TEXT NOT NULL,password TEXT NOT NULL,salt TEXT NOT NULL,last_seen INTEGER NOT NULL);
   CREATE TABLE IF NOT EXISTS sessions(hash TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id),expires INTEGER NOT NULL);
@@ -10,6 +11,13 @@ const SCHEMA = `PRAGMA foreign_keys=ON; PRAGMA journal_mode=WAL;
   CREATE TABLE IF NOT EXISTS messages(id TEXT PRIMARY KEY,"from" TEXT NOT NULL REFERENCES users(id),"to" TEXT NOT NULL REFERENCES users(id),text TEXT NOT NULL,createdAt INTEGER NOT NULL,readAt INTEGER);
   CREATE INDEX IF NOT EXISTS message_pair ON messages("from","to",createdAt);
   CREATE INDEX IF NOT EXISTS session_user ON sessions(user_id);`;
+const PARTY_SCHEMA = `
+  CREATE TABLE IF NOT EXISTS parties(id TEXT PRIMARY KEY,leader_id TEXT NOT NULL REFERENCES users(id),created_at INTEGER NOT NULL);
+  CREATE TABLE IF NOT EXISTS party_members(user_id TEXT PRIMARY KEY REFERENCES users(id),party_id TEXT NOT NULL REFERENCES parties(id) ON DELETE CASCADE,joined_at INTEGER NOT NULL);
+  CREATE INDEX IF NOT EXISTS party_member_party ON party_members(party_id);
+  CREATE TABLE IF NOT EXISTS party_invites(id TEXT PRIMARY KEY,party_id TEXT NOT NULL REFERENCES parties(id) ON DELETE CASCADE,from_id TEXT NOT NULL REFERENCES users(id),to_id TEXT NOT NULL REFERENCES users(id),created_at INTEGER NOT NULL,UNIQUE(party_id,to_id));
+  CREATE INDEX IF NOT EXISTS party_invite_recipient ON party_invites(to_id);
+  CREATE INDEX IF NOT EXISTS party_invite_sender ON party_invites(from_id);`;
 /** In-memory rate windows are fine for one local process; bound them so a flood cannot grow memory. */
 const MAX_RATE_KEYS = 2000;
 
@@ -21,15 +29,27 @@ const message = (row: Row): DirectMessage => ({ id: String(row.id), from: String
 export function createSqliteStore(file: string): AccountStore & { close(): void } {
   const db = new DatabaseSync(file);
   db.exec(SCHEMA);
+  if (!(db.prepare('PRAGMA table_info(users)').all() as Row[]).some(row => row.name === 'battery_percent')) db.exec('ALTER TABLE users ADD COLUMN battery_percent INTEGER NOT NULL DEFAULT 100 CHECK(battery_percent BETWEEN 0 AND 100)');
+  db.exec(PARTY_SCHEMA);
   const rates = new Map<string, { start: number; count: number }>();
   const one = (sql: string, ...params: (string | number | null)[]) => db.prepare(sql).get(...params) as Row | undefined;
   const all = (sql: string, ...params: (string | number | null)[]) => db.prepare(sql).all(...params) as Row[];
   const run = (sql: string, ...params: (string | number | null)[]) => db.prepare(sql).run(...params);
-  return {
-    close: () => db.close(),
+  const query: QueryClient['query'] = async (text, params = []) => {
+    const values: (string | number | null)[] = [];
+    const statement = text.replace(/sao\./g, '').replace(/display_name/g, 'displayName').replace(/ FOR UPDATE/g, '').replace(/\$(\d+)/g, (_, n) => { values.push(params[Number(n) - 1] as string | number | null); return '?'; });
+    return all(statement, ...values);
+  };
+  const sql: TransactionClient = { query, transaction: async work => {
+    db.exec('BEGIN IMMEDIATE');
+    try { const result = await work({ query }); db.exec('COMMIT'); return result; }
+    catch (error) { db.exec('ROLLBACK'); throw error; }
+  } };
+  const store: AccountStore = {
+    ...partyStore(sql),
     async findUserByName(name) { const row = one('SELECT * FROM users WHERE username=?', name); return row ? user(row) : null; },
     async insertUser(next) {
-      try { run('INSERT INTO users VALUES(?,?,?,?,?,?)', next.id, next.username, next.displayName, next.password, next.salt, next.lastSeen); return true; }
+      try { run('INSERT INTO users(id,username,displayName,password,salt,last_seen) VALUES(?,?,?,?,?,?)', next.id, next.username, next.displayName, next.password, next.salt, next.lastSeen); return true; }
       catch { return false; }
     },
     async touchUser(id, now) { run('UPDATE users SET last_seen=? WHERE id=?', now, id); },
@@ -83,4 +103,11 @@ export function createSqliteStore(file: string): AccountStore & { close(): void 
       return entry.count <= maximum && rates.size <= MAX_RATE_KEYS;
     },
   };
+  // A single SQLite connection must not interleave requests inside a party transaction.
+  let pending: Promise<unknown> = Promise.resolve();
+  const serialized = Object.fromEntries(Object.entries(store).map(([name, method]) => [name, (...args: unknown[]) => {
+    const result = pending.then(() => Reflect.apply(method, store, args));
+    pending = result.catch(() => {}); return result;
+  }])) as unknown as AccountStore;
+  return { ...serialized, close: () => db.close() };
 }

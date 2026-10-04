@@ -1,6 +1,7 @@
 import { BrowserWindow, ipcMain, screen } from 'electron';
 import path from 'node:path';
-import type { HpState } from '../shared/hud';
+import { hpState, hpHeight, type HpState } from '../shared/hud';
+import type { SocialSnapshot } from '../shared/social';
 import type { Settings } from '../shared/contracts';
 import { getSystemStats } from './system';
 
@@ -8,14 +9,14 @@ import { getSystemStats } from './system';
 export class HpDisplay {
   private window: BrowserWindow | null = null;
   private timer: ReturnType<typeof setInterval> | null = null;
-  private state: HpState = { playerName: 'Kirito', reducedMotion: false, stats: null };
+  private state: HpState = { playerName: 'Kirito', reducedMotion: false, stats: null, partyMembers: [] };
   private sampling = false;
-  constructor(private readonly renderer: string, private readonly settings: () => Settings) {}
+  constructor(private readonly renderer: string, private readonly settings: () => Settings, private readonly snapshot: () => SocialSnapshot | null) {}
   async create(): Promise<void> {
     const url = new URL(this.renderer); url.searchParams.set('hp', '1');
     const area = screen.getPrimaryDisplay().workArea;
     const window = this.window = new BrowserWindow({
-      x: area.x + 24, y: area.y + 24, width: 358, height: 89,
+      x: area.x + 24, y: area.y + 24, width: 358, height: 62,
       show: false, frame: false, transparent: true, backgroundColor: '#00000000', hasShadow: false,
       focusable: false, resizable: false, alwaysOnTop: true, skipTaskbar: true, title: 'SAO HP Display',
       webPreferences: { preload: path.join(__dirname, 'hud-preload.cjs'), nodeIntegration: false, contextIsolation: true, sandbox: true, webSecurity: true },
@@ -37,6 +38,14 @@ export class HpDisplay {
   }
   show(): void { if (this.window && !this.window.isDestroyed()) this.window.showInactive(); }
   hide(): void { if (this.window && !this.window.isDestroyed()) this.window.hide(); }
+  update(): void {
+    this.state = hpState(this.settings(), this.state.stats, this.snapshot());
+    if (this.window && !this.window.isDestroyed()) {
+      const height = hpHeight(this.state.partyMembers.length);
+      if (this.window.getSize()[1] !== height) this.window.setSize(358, height);
+      this.window.webContents.send('sao:hp:update', this.state);
+    }
+  }
   private position = () => {
     if (!this.window || this.window.isDestroyed()) return;
     const area = screen.getPrimaryDisplay().workArea; this.window.setPosition(area.x + 24, area.y + 24);
@@ -44,9 +53,7 @@ export class HpDisplay {
   private async sample(): Promise<void> {
     if (this.sampling) return; this.sampling = true;
     try {
-      const stats = await getSystemStats(), settings = this.settings();
-      this.state = { stats, playerName: settings.playerName, reducedMotion: settings.reducedMotion };
-      if (this.window && !this.window.isDestroyed()) this.window.webContents.send('sao:hp:update', this.state);
+      this.state.stats = await getSystemStats(); this.update();
     } catch (error) { console.warn('HP statistics unavailable', error); }
     finally { this.sampling = false; }
   }

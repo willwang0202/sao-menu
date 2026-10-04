@@ -5,6 +5,10 @@ export interface StoredUser extends SocialProfile { password: string; salt: stri
 export interface StoredProfile extends SocialProfile { lastSeen: number }
 export interface StoredFriendship { id: string; status: 'pending' | 'accepted'; createdAt: number; from: StoredProfile; to: StoredProfile }
 export interface StoredConversation { peerId: string; lastMessage: DirectMessage; unread: number }
+export interface StoredParty { id: string; leaderId: string; members: (StoredProfile & { batteryPercent: number })[] }
+export interface StoredPartyInvite { id: string; partyId: string; from: StoredProfile; createdAt: number }
+
+export class PartyError extends Error { constructor(readonly status: number, message: string) { super(message); } }
 
 export interface AccountStore {
   findUserByName(name: string): Promise<StoredUser | null>;
@@ -32,6 +36,12 @@ export interface AccountStore {
   messages(a: string, b: string, limit: number): Promise<DirectMessage[]>;
   insertMessage(message: DirectMessage): Promise<void>;
   markRead(from: string, to: string, now: number): Promise<void>;
+  setBattery(userId: string, percent: number): Promise<void>;
+  party(userId: string): Promise<StoredParty | null>;
+  partyInvites(userId: string): Promise<StoredPartyInvite[]>;
+  inviteParty(input: { from: string; to: string; partyId: string; inviteId: string; now: number }): Promise<void>;
+  resolveParty(userId: string, inviteId: string, accept: boolean, now: number): Promise<void>;
+  leaveParty(userId: string): Promise<void>;
   /** Counts a request against `key` in a fixed window; false once `maximum` is exceeded. */
   hit(key: string, maximum: number, windowMs: number, now: number): Promise<boolean>;
 }

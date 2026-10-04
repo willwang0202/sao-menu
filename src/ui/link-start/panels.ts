@@ -90,13 +90,13 @@ function stars(ctx: CanvasRenderingContext2D, [x, y, , h]: Box, count: number) {
   for (let i = 0; i < Math.min(count, MAX_STARS); i++) text(ctx, '*', x + 6 + i * STAR_STEP, y + h + 8, 50, '#3c3c3c');
 }
 
-export function drawLogin(ctx: CanvasRenderingContext2D, t: number, accountLength: number, passwordLength: number) {
+export function drawLogin(ctx: CanvasRenderingContext2D, t: number, accountLength: number, passwordLength: number, creatingAccount = false) {
   const alpha = clamp01((t - STARTUP.loginStart) / CARD_FADE) * (1 - progress(t, STARTUP.loginResume, STARTUP.registrationStart));
   if (alpha <= 0) return;
   ctx.save();
   ctx.globalAlpha = alpha;
   roundedBox(ctx, LOGIN_CARD, 22, CARD_BLUE);
-  text(ctx, 'Log in_::', 566, 472, 70, '#ffffff');
+  text(ctx, creatingAccount ? 'Sign up_::' : 'Log in_::', 566, 472, creatingAccount ? 60 : 70, '#ffffff');
   text(ctx, ':account', 979, 482, 46, '#ffffff');
   text(ctx, ':password', 979, 605, 46, '#ffffff');
   ctx.fillStyle = FIELD;

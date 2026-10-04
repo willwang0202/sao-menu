@@ -26,3 +26,5 @@ public/mediapipe/
 .claude/
 skills-lock.json
 output/release-inputs/
+
+web/supabase/.temp/

@@ -11,6 +11,7 @@ export type FrameOptions = Readonly<{
   /** Real credential lengths shown as the source's asterisks after authentication. */
   accountLength: number;
   passwordLength: number;
+  creatingAccount?: boolean;
 }>;
 
 const TUNNEL_VISIBLE = [1.9, STARTUP.tunnelEnd] as const;
@@ -29,7 +30,7 @@ export function renderFrame(ctx: CanvasRenderingContext2D, t: number, width: num
   if (t >= TUNNEL_VISIBLE[0] && t < TUNNEL_VISIBLE[1]) drawTunnel(ctx, t);
   if (t >= STARTUP.sensorsStart && t < STARTUP.sensorsEnd) drawSensors(ctx, t, cover.scale);
   if (t >= STARTUP.languageStart && t < STARTUP.loginStart) drawLanguage(ctx, t);
-  if (t >= STARTUP.loginStart && t < STARTUP.registrationStart) drawLogin(ctx, t, options.accountLength, options.passwordLength);
+  if (t >= STARTUP.loginStart && t < STARTUP.registrationStart) drawLogin(ctx, t, options.accountLength, options.passwordLength, options.creatingAccount);
   if (t >= STARTUP.registrationStart && t < STARTUP.grayStart) drawRegistration(ctx, t);
   if (t >= WARP_VISIBLE) drawWarp(ctx, t);
   if (t >= STARTUP.welcomeStart && t < STARTUP.warpStart + 0.1) drawWelcome(ctx, t);

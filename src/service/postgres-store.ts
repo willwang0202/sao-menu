@@ -1,11 +1,12 @@
 import type { DirectMessage } from '../shared/social';
 import type { AccountStore, StoredProfile, StoredUser } from './store';
+import { partyStore, type TransactionClient } from './party-store';
 
 /**
  * Postgres storage (Supabase in production) over the `sao` schema in
  * web/supabase/migrations. Every statement is parameterized.
  */
-export interface SqlClient { query(text: string, params?: readonly unknown[]): Promise<Record<string, unknown>[]> }
+export interface SqlClient extends TransactionClient {}
 
 /** Rate-limit rows older than this are pruned when sessions are created. */
 const RATE_ROW_RETENTION = 24 * 60 * 60 * 1000;
@@ -20,6 +21,7 @@ const message = (row: Row): DirectMessage => ({ id: String(row.id), from: String
 export function createPostgresStore(sql: SqlClient): AccountStore {
   const one = async (text: string, params: unknown[]) => (await sql.query(text, params))[0];
   return {
+    ...partyStore(sql),
     async findUserByName(name) { const row = await one('SELECT * FROM sao.users WHERE username=$1', [name]); return row ? user(row) : null; },
     async insertUser(next) {
       const rows = await sql.query('INSERT INTO sao.users(id,username,display_name,password,salt,last_seen) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT (username) DO NOTHING RETURNING id',

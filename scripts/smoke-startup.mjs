@@ -10,7 +10,7 @@ import { accountHTTPServer } from '../src/service/http.ts';
 const temporary=await mkdtemp(path.join(tmpdir(),'sao-startup-'));
 const output=path.resolve('output/playwright');await mkdir(output,{recursive:true});
 const env=Object.fromEntries(Object.entries(process.env).filter(([key,value])=>value!==undefined && !['ELECTRON_RUN_AS_NODE','SAO_DEV_URL'].includes(key)));
-const launch=profile=>electron.launch({executablePath:electronPath,args:['.'],cwd:process.cwd(),env:{...env,SAO_USER_DATA:profile}});
+const launch=profile=>electron.launch({executablePath:electronPath,args:['.'],cwd:process.cwd(),env:{...env,SAO_TEST_SERVICE_URL:serviceURL,SAO_USER_DATA:profile}});
 const mainWindow=async instance=>{const page=await instance.firstWindow();await page.waitForFunction(()=>!!window.sao);return page;};
 const quietInput=instance=>instance.evaluate(({BrowserWindow})=>{const main=BrowserWindow.getAllWindows().find(w=>w.getTitle()==='SAO Utils 2');const send=main.webContents.send.bind(main.webContents);main.webContents.send=(channel,...args)=>{if(!['sao:pointer:down','sao:menu:dismiss'].includes(channel))send(channel,...args);};});
 const mediaProbe=page=>page.addInitScript(()=>{window.testMedia=[];const play=HTMLMediaElement.prototype.play;HTMLMediaElement.prototype.play=function(){const entry={src:this.src,played:false};window.testMedia.push(entry);const result=play.call(this);void result.then(()=>{entry.played=true;});return result;};});
@@ -30,7 +30,7 @@ try {
   for(let i=0;i<40 && !instance.windows().some(p=>p.url().includes('hp=1'));i++)await new Promise(resolve=>setTimeout(resolve,50));
   const windows=await instance.evaluate(({BrowserWindow,screen})=>{const main=BrowserWindow.getAllWindows().find(w=>w.getTitle()==='SAO Utils 2');return {display:screen.getPrimaryDisplay(),launchDisplay:screen.getDisplayMatching(main.getBounds()),windows:BrowserWindow.getAllWindows().map(w=>({title:w.getTitle(),visible:w.isVisible(),bounds:w.getBounds(),shadow:w.hasShadow()}))};});
   const hp=windows.windows.find(w=>w.title==='SAO HP Display');assert.ok(hp,JSON.stringify(windows.windows));assert.equal(hp.visible,false);assert.equal(hp.shadow,false);
-  assert.equal(hp.bounds.x,windows.display.workArea.x+24);assert.equal(hp.bounds.y,windows.display.workArea.y+24);assert.equal(hp.bounds.width,358);assert.equal(hp.bounds.height,89);
+  assert.equal(hp.bounds.x,windows.display.workArea.x+24);assert.equal(hp.bounds.y,windows.display.workArea.y+24);assert.equal(hp.bounds.width,358);assert.equal(hp.bounds.height,62);
   assert.equal(windows.windows.find(w=>w.title==='SAO Utils 2').shadow,false);
   assert.deepEqual(windows.windows.find(w=>w.title==='SAO Utils 2').bounds,windows.launchDisplay.bounds,'launch covers its whole display, including menu and dock areas');
   const surface=await page.locator('.startup-canvas').evaluate(c=>({width:c.width,height:c.height,cssWidth:c.clientWidth,cssHeight:c.clientHeight,ratio:Math.min(2,devicePixelRatio),viewport:[innerWidth,innerHeight]}));
@@ -55,7 +55,7 @@ try {
   await page.getByRole('button',{name:'Continue offline',exact:true}).click();await page.getByRole('menuitem',{name:'Kirito',exact:true}).waitFor();
   assert.equal((await page.evaluate(()=>window.sao.getRuntime())).startup,false);
   assert.equal(await instance.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows().find(w=>w.getTitle()==='SAO HP Display').isVisible()),false,'offline continuation does not expose HP before login');
-  await page.evaluate(serviceURL=>window.saoSocial.authenticate({serviceURL,username:'kirito',password:'a long startup test password',register:false,displayName:''}),serviceURL);
+  await page.evaluate(()=>window.saoSocial.authenticate({username:'kirito',password:'a long startup test password',register:false,displayName:''}));
   assert.equal(await instance.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows().find(w=>w.getTitle()==='SAO HP Display').isVisible()),true,'successful login reveals HP');
   const hud=instance.windows().find(p=>p.url().includes('hp=1'));assert.ok(hud);await hud.locator('.hp-main').waitFor();
   const hpState=await hud.evaluate(()=>window.saoHP.getState());assert.ok(hpState.stats.memoryTotal>0 && hpState.stats.cpuPercent>=0);
@@ -69,10 +69,10 @@ try {
   // The blue form authenticates against the real service, not a decorative login.
   instance=await launch(path.join(temporary,'login'));page=await mainWindow(instance);page.on('pageerror',e=>errors.push(e.message));await quietInput(instance);
   await sceneProbe(page);await page.reload();
-  await page.getByRole('button',{name:'Skip intro'}).click();await page.getByRole('button',{name:'Account service',exact:true}).click();await page.getByLabel('Startup account service').fill(serviceURL);await page.getByLabel('Account',{exact:true}).fill('kirito');await page.getByLabel('Password',{exact:true}).fill('a long startup test password');await page.getByRole('button',{name:'Log in',exact:true}).click();await page.getByRole('menuitem',{name:'Kirito',exact:true}).waitFor();assert.equal((await page.evaluate(()=>window.saoSocial.getState())).snapshot.profile.username,'kirito');
+  await page.getByRole('button',{name:'Skip intro'}).click();assert.equal(await page.getByLabel('Startup account service').count(),0);await page.getByLabel('Account',{exact:true}).fill('kirito');await page.getByLabel('Password',{exact:true}).fill('a long startup test password');await page.getByRole('button',{name:'Log in',exact:true}).click();await page.getByRole('menuitem',{name:'Kirito',exact:true}).waitFor();assert.equal((await page.evaluate(()=>window.saoSocial.getState())).snapshot.profile.username,'kirito');
   const entryScenes=await sceneStats(page);assert.ok(entryScenes.warp?.frames>100,'the entry sequence plays through the warp after login');assertRefresh(entryScenes);Object.assign(timing.scenes,Object.fromEntries(Object.entries(entryScenes).filter(([scene])=>!['login'].includes(scene))));
   await instance.close();instance=null;
   const reduced=path.join(temporary,'reduced');await mkdir(reduced);await writeFile(path.join(reduced,'settings.json'),JSON.stringify({version:1,playerName:'Kirito',sound:false,reducedMotion:true,alwaysOnTop:true,launchAtLogin:false,shortcut:'CommandOrControl+Shift+Space',favorites:[]}));
   instance=await launch(reduced);page=await mainWindow(instance);await mediaProbe(page);await page.reload();await page.getByRole('form',{name:'SAO account login'}).waitFor();assert.equal(await page.locator('.link-start').getAttribute('data-scene'),'login','reduced motion shows the login card without animating');assert.deepEqual(await page.evaluate(()=>window.testMedia),[],'sound off plays no startup audio');await page.getByRole('button',{name:'Continue offline'}).click();await page.getByRole('menuitem',{name:'Kirito',exact:true}).waitFor();
-  assert.deepEqual(errors,[]);await writeFile(path.join(output,'startup-timing.json'),JSON.stringify(timing,null,2)+'\n');console.log(JSON.stringify({startup:'procedural Link Start at display refresh, JP voice/SFX track, edge-to-edge full display, real login/offline, entry sequence, no replay, reduced motion and sound off',hp:'original geometry, live CPU/RAM, anchored native window, persists, isolated bridge',timing},null,2));
+  assert.deepEqual(errors,[]);await writeFile(path.join(output,'startup-timing.json'),JSON.stringify(timing,null,2)+'\n');console.log(JSON.stringify({startup:'procedural Link Start at display refresh, JP voice/SFX track, edge-to-edge full display, real login/offline, entry sequence, no replay, reduced motion and sound off',hp:'original geometry, live battery percentage, solo/party gating, anchored native window, persists, isolated bridge',timing},null,2));
 } finally {if(instance)await instance.close();server.closeAllConnections();await new Promise(resolve=>server.close(resolve));service.close();await rm(temporary,{recursive:true,force:true});}

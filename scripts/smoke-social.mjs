@@ -26,18 +26,22 @@ try {
   const players = [];
   for (const name of ['Kirito', 'Asuna']) {
     const profile = path.join(temporary, name); await mkdir(profile);
-    const instance = await electron.launch({ executablePath: electronPath, args: ['.'], cwd: process.cwd(), env: { ...env, SAO_USER_DATA: profile } }); instances.push(instance);
+    const instance = await electron.launch({ executablePath: electronPath, args: ['.'], cwd: process.cwd(), env: { ...env, SAO_TEST_SERVICE_URL:address, SAO_USER_DATA: profile } }); instances.push(instance);
     const page = await instance.firstWindow();
     await page.waitForFunction(() => !!window.sao); await page.evaluate(() => window.sao.completeStartup()); page.on('pageerror', error => errors.push(error.message));
     await page.getByRole('menuitem', { name: 'Party', exact: true }).click();
     assert.equal(await page.getByRole('region', { name: 'Social', exact: true }).count(), 1, 'Party opens online social controls');
     await page.getByRole('button', { name: 'Create account', exact: true }).click();
-    await page.getByLabel('Account service').fill(address);
+    assert.equal(await page.getByLabel('Account service', { exact: true }).count(), 0);
     await page.getByLabel('Username', { exact: true }).fill(name.toLowerCase());
     await page.getByLabel('Display name', { exact: true }).fill(name);
     await page.getByLabel('Password', { exact: true }).fill(`a long ${name} test password`);
     await page.getByRole('button', { name: 'Register', exact: true }).click();
     await waitState(page,state=>state.snapshot?.profile.displayName===name);
+    await page.getByRole('menuitem', { name, exact: true }).waitFor();
+    const hud = instance.windows().find(page => page.url().includes('hp=1'));
+    await hud.waitForFunction(expected => document.querySelector('.hp-name')?.textContent === expected, name);
+    assert.equal(await hud.locator('.hp-extra').count(), 0, 'a solo player has no companion bars');
     const state = await page.evaluate(() => window.saoSocial.getState());
     assert.equal('token' in state, false); assert.equal('password' in state, false);
     players.push({ instance, page, state });
@@ -51,6 +55,18 @@ try {
   await asuna.page.getByRole('button', { name: 'Accept Kirito' }).click();
   await waitState(kirito.page,state=>state.snapshot?.friends.some(friend=>friend.username==='asuna'));
   await kirito.page.getByRole('button', { name: 'Asuna', exact: true }).click();
+  const kiritoHud = kirito.instance.windows().find(page => page.url().includes('hp=1'));
+  const asunaHud = asuna.instance.windows().find(page => page.url().includes('hp=1'));
+  assert.equal(await kiritoHud.locator('.hp-extra').count(), 0, 'an accepted friend alone does not create a companion HP bar');
+  await kirito.page.getByRole('button', { name: 'Invite to party', exact: true }).click();
+  await waitState(asuna.page, state => state.snapshot?.partyInvites?.length === 1);
+  assert.equal(await kiritoHud.locator('.hp-extra').count(), 0, 'a pending party invitation has no companion bar');
+  await asuna.page.getByRole('button', { name: /^Party \(/ }).click();
+  await asuna.page.getByRole('button', { name: "Join Kirito's party", exact: true }).click();
+  await waitState(kirito.page, state => state.snapshot?.party?.members.length === 2);
+  await kiritoHud.locator('.hp-extra').waitFor(); await asunaHud.locator('.hp-extra').waitFor();
+  assert.equal(await kiritoHud.locator('.hp-extra-name').textContent(), 'Asuna');
+  assert.equal(await asunaHud.locator('.hp-extra-name').textContent(), 'Kirito');
   await kirito.page.getByRole('button', { name: 'Message Box', exact: true }).click();
   await kirito.page.getByRole('textbox', { name: 'Direct message', exact: true }).fill('Meet at the teleport gate.');
   await kirito.page.getByRole('button', { name: 'Send message' }).click();
@@ -67,12 +83,17 @@ try {
   const credentials = JSON.parse(await readFile(path.join(temporary, 'Kirito/social-account.json'), 'utf8'));
   assert.equal('password' in credentials, false); assert.equal('token' in credentials, false);
   await kirito.instance.close(); instances.splice(instances.indexOf(kirito.instance), 1);
-  const restarted = await electron.launch({ executablePath: electronPath, args: ['.'], cwd: process.cwd(), env: { ...env, SAO_USER_DATA: path.join(temporary, 'Kirito') } }); instances.push(restarted);
+  const restarted = await electron.launch({ executablePath: electronPath, args: ['.'], cwd: process.cwd(), env: { ...env, SAO_TEST_SERVICE_URL:address, SAO_USER_DATA: path.join(temporary, 'Kirito') } }); instances.push(restarted);
   const page = await restarted.firstWindow();
   await page.waitForFunction(() => !!window.sao); await page.evaluate(() => window.sao.completeStartup());
   if (credentials.encryptedToken) {
     await waitState(page,state=>state.snapshot?.profile.username==='kirito');
     assert.equal((await page.evaluate(peer => window.saoSocial.getMessages(peer), asuna.state.snapshot.profile.id)).length, 2);
+    await waitState(page, state => state.snapshot?.party?.members.length === 2);
+    await page.evaluate(() => window.saoSocial.leaveParty());
+    await waitState(asuna.page, state => state.snapshot?.party?.members.length === 1);
+    await asunaHud.waitForFunction(() => document.querySelectorAll('.hp-extra').length === 0);
+    assert.equal(await asuna.instance.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find(window => window.getTitle() === 'SAO HP Display').getSize()[1]), 62);
   }
   await page.evaluate(() => window.saoSocial.logout());
   assert.equal((await page.evaluate(() => window.saoSocial.getState())).snapshot, null);

@@ -1,6 +1,7 @@
 import { createHash, randomBytes, randomUUID, scrypt, timingSafeEqual } from 'node:crypto';
 import { messageText, username, type SocialProfile, type SocialSnapshot } from '../shared/social';
 import type { AccountStore, StoredProfile, StoredUser } from './store';
+import { PartyError } from './store';
 
 /** The account protocol spoken by the desktop app, independent of where data is stored. */
 class ServiceError extends Error { constructor(readonly status: number, message: string) { super(message); } }
@@ -54,7 +55,11 @@ export function createAccountService(store: AccountStore) {
       .filter(item => peers.has(item.peerId))
       .map(item => ({ peer: peers.get(item.peerId)!, lastMessage: item.lastMessage, unread: item.unread }))
       .sort((a, b) => b.lastMessage.createdAt - a.lastMessage.createdAt);
-    return { profile: profile(user), friends, requests, conversations };
+    const party = await store.party(user.id), invitations = await store.partyInvites(user.id);
+    return { profile: profile(user), friends, requests, conversations,
+      party: party ? { id: party.id, leaderId: party.leaderId, members: party.members.map(member => ({ ...profile(member), online: now - member.lastSeen < ONLINE_WINDOW, batteryPercent: member.batteryPercent })) } : null,
+      partyInvites: invitations.map(invite => ({ id: invite.id, partyId: invite.partyId, from: profile(invite.from), createdAt: invite.createdAt })),
+    };
   };
 
   async function readBody(request: Request): Promise<Record<string, unknown>> {
@@ -93,6 +98,20 @@ export function createAccountService(store: AccountStore) {
   async function signedIn(route: string, method: string, url: URL, body: Record<string, unknown>, user: StoredUser, token: string): Promise<Response> {
     if (route === '/v1/state' && method === 'GET') return json(await snapshot(user));
     if (route === '/v1/logout' && method === 'POST') { await store.deleteSession(hashToken(token)); return json({ ok: true }); }
+    if (route === '/v1/presence' && method === 'POST') {
+      if (typeof body.batteryPercent !== 'number' || !Number.isFinite(body.batteryPercent) || body.batteryPercent < 0 || body.batteryPercent > 100) throw new ServiceError(400, 'Use a battery percentage between 0 and 100.');
+      await store.setBattery(user.id, Math.round(body.batteryPercent)); return json({ ok: true });
+    }
+    if (route === '/v1/party/invite' && method === 'POST') {
+      await limit(`friend:${user.id}`, LIMITS.friend);
+      const peer = await requireFriend(user.id, body.peer);
+      await store.inviteParty({ from: user.id, to: peer, partyId: randomUUID(), inviteId: randomUUID(), now: Date.now() }); return json({ ok: true });
+    }
+    if (route === '/v1/party/resolve' && method === 'POST') {
+      if (typeof body.id !== 'string' || body.id.length > 100 || !['accept', 'decline'].includes(String(body.action))) throw new ServiceError(400, 'Choose Accept or Decline.');
+      await store.resolveParty(user.id, body.id, body.action === 'accept', Date.now()); return json({ ok: true });
+    }
+    if (route === '/v1/party/leave' && method === 'POST') { await store.leaveParty(user.id); return json({ ok: true }); }
     if (route === '/v1/friends/request' && method === 'POST') {
       await limit(`friend:${user.id}`, LIMITS.friend);
       const friend = await store.findUserByName(username(body.username));
@@ -143,7 +162,7 @@ export function createAccountService(store: AccountStore) {
         await store.touchUser(user.id, Date.now());
         return await signedIn(route, request.method, url, body, user, token);
       } catch (error) {
-        if (error instanceof ServiceError) return json({ error: error.message }, error.status);
+        if (error instanceof ServiceError || error instanceof PartyError) return json({ error: error.message }, error.status);
         if (error instanceof Error && /^(Use |Enter )/.test(error.message)) return json({ error: error.message }, 400);
         // Server-side detail only; the client gets a generic message. Messages here never contain credentials.
         console.error('Account operation failed.', { method: request.method, route: new URL(request.url).pathname, error: error instanceof Error ? `${error.name}: ${error.message}` : String(error) });

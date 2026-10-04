@@ -1,8 +1,13 @@
 {
   "name": "sao-menu",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "private": true,
   "description": "A local cross-platform port of the SAO Utils 2 launcher using its original theme resources",
+  "homepage": "https://sao-menu.favioon.com",
+  "author": {
+    "name": "Will Wang",
+    "email": "willwang0202@users.noreply.github.com"
+  },
   "type": "module",
   "main": "dist-desktop/main.cjs",
   "scripts": {

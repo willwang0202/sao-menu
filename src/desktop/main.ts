@@ -17,6 +17,7 @@ import { SocialClient } from './social';
 import { HpDisplay } from './hud';
 import { pointerInterval } from '../shared/refresh';
 import { HandTrackingController } from './hand-tracking';
+import { accountServiceEndpoint } from '../shared/social';
 
 protocol.registerSchemesAsPrivileged([{ scheme: 'sao-media', privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true, corsEnabled: true } }]);
 
@@ -102,8 +103,11 @@ function sendHandPoint(channel: 'sao:hand:cursor' | 'sao:hand:click', point: Pos
   window.webContents.send(channel, { x: point.x * bounds.width, y: point.y * bounds.height, ...extra });
 }
 
-if (!app.isPackaged && process.env.SAO_USER_DATA) {
-  const isolatedData = path.resolve(process.env.SAO_USER_DATA);
+// An explicit native command-line profile also lets packaged acceptance checks
+// run beside the user's app without sharing its settings, camera or instance lock.
+const profileDirectory = app.commandLine.getSwitchValue('sao-profile') || (!app.isPackaged ? process.env.SAO_USER_DATA : undefined);
+if (profileDirectory) {
+  const isolatedData = path.resolve(profileDirectory);
   mkdirSync(isolatedData, { recursive: true });
   app.setPath('userData', isolatedData);
 }
@@ -376,6 +380,9 @@ function installHandlers(): void {
   handler('sao:social:request', value => social.requestFriend(value));
   handler('sao:social:resolve', (id, action) => social.resolveRequest(id, action));
   handler('sao:social:remove', id => social.removeFriend(id));
+  handler('sao:social:party:invite', peer => social.inviteParty(peer));
+  handler('sao:social:party:resolve', (id, action) => social.resolveParty(id, action));
+  handler('sao:social:party:leave', () => social.leaveParty());
   handler('sao:social:messages', peer => social.getMessages(peer));
   handler('sao:social:send', (peer, text) => social.sendMessage(peer, text));
   handler('sao:social:read', peer => social.markRead(peer));
@@ -504,7 +511,7 @@ else {
   app.whenReady().then(async () => {
     await loadConfiguration();
     surfaces = new SurfaceManager(rendererURL, path.join(__dirname, 'surface-preload.cjs'), () => settings.reducedMotion, new SurfaceLayoutStore(path.join(app.getPath('userData'), 'surface-layout.json')));
-    social = new SocialClient(path.join(app.getPath('userData'), 'social-account.json'), state => { if (!startup && state.snapshot) hpDisplay?.show(); else hpDisplay?.hide(); if (window && !window.isDestroyed()) window.webContents.send('sao:social:state', state); });
+    social = new SocialClient(path.join(app.getPath('userData'), 'social-account.json'), state => { hpDisplay?.update(); if (!startup && state.snapshot) hpDisplay?.show(); else hpDisplay?.hide(); if (window && !window.isDestroyed()) window.webContents.send('sao:social:state', state); }, accountServiceEndpoint(app.isPackaged, process.env.SAO_TEST_SERVICE_URL));
     surfaces.install();
     // Everything is denied except the hand tracker's own video-only camera request.
     session.defaultSession.setPermissionRequestHandler((contents, permission, callback, details) => callback(handTracking.allowsPermission(contents, permission, details as { mediaTypes?: string[] })));
@@ -514,7 +521,7 @@ else {
     shortcutRegistered = registerShortcut(settings.shortcut);
     activeShortcut = shortcutRegistered ? settings.shortcut : null;
     await createWindow();
-    hpDisplay = new HpDisplay(rendererURL, () => settings);
+    hpDisplay = new HpDisplay(rendererURL, () => settings, () => social.getState().snapshot);
     await hpDisplay.create();
     if (!startup && social.getState().snapshot) hpDisplay.show();
     await surfaces.restore();

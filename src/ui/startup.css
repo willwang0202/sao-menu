@@ -12,7 +12,7 @@
 .startup-login-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:25px}
 .startup-login-actions button{font:14px Arial,sans-serif;color:#6e9ba9;padding:8px;white-space:nowrap}
 .startup-login-actions button:hover{color:#138fbc}
-.startup-service{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:12px;font-size:12px;max-width:100%}
-.startup-service input{width:280px;max-width:100%;box-sizing:border-box;border:1px solid #b2c8cd;background:white;padding:7px;color:#5a747b;font:13px Arial,sans-serif}
+.startup-register-details{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:12px;font-size:12px;max-width:100%}
+.startup-register-details input{width:230px;max-width:100%;box-sizing:border-box;border:1px solid #b2c8cd;background:#fafafa;padding:7px;color:#5a747b;font:13px Arial,sans-serif}
 .startup-login-error{margin:0;font-size:13px;color:#a46050;text-align:center;max-width:100%;overflow-wrap:anywhere}
-@media(max-aspect-ratio:4/3){.startup-login-actions{gap:10px}.startup-service{flex-direction:column}}
+@media(max-aspect-ratio:4/3){.startup-login-actions{gap:10px}.startup-register-details{flex-direction:column}}

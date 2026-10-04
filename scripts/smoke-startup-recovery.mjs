@@ -14,13 +14,14 @@ const server = createServer((request, response) => {
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 const address = `http://127.0.0.1:${server.address().port}`;
 const env = Object.fromEntries(Object.entries(process.env).filter(([key, value]) => value !== undefined && !['ELECTRON_RUN_AS_NODE', 'SAO_DEV_URL'].includes(key)));
-const instance = await electron.launch({ executablePath: electronPath, args: ['.'], cwd: process.cwd(), env: { ...env, SAO_USER_DATA: temporary } });
+const instance = await electron.launch({ executablePath: electronPath, args: ['.'], cwd: process.cwd(), env: { ...env, SAO_TEST_SERVICE_URL:address, SAO_USER_DATA: temporary } });
 const failures = [];
 try {
   const page = await instance.firstWindow();
   await page.getByRole('button', { name: 'Skip intro' }).click();
   await page.getByRole('form', { name: 'SAO account login' }).waitFor();
-  await page.getByRole('button', { name: 'Account service', exact: true }).click();
+  assert.equal(await page.getByRole('button', { name: 'Account service', exact: true }).count(), 0);
+  await page.getByRole('button', { name: 'Create account', exact: true }).click();
   const cdp = await page.context().newCDPSession(page);
   for (const viewport of [{ width: 5120, height: 1440 }, { width: 900, height: 1600 }]) {
     await cdp.send('Emulation.setDeviceMetricsOverride', { ...viewport, deviceScaleFactor: 1, mobile: false });
@@ -31,7 +32,7 @@ try {
     if (clipped.length) failures.push(`${viewport.width}×${viewport.height} clips functional controls: ${clipped.join(', ')}`);
   }
   await cdp.send('Emulation.clearDeviceMetricsOverride');
-  await page.getByLabel('Startup account service').fill(address);
+  await page.getByRole('button', { name: 'Back to login', exact: true }).click();
   await page.getByLabel('Account', { exact: true }).fill('kirito');
   await page.getByLabel('Password', { exact: true }).fill('a rejected session password');
   await page.getByRole('button', { name: 'Log in', exact: true }).click();

@@ -2,7 +2,14 @@
 
 ## Unreleased
 
-## 0.1.4 — October 3, 2026
+## 0.1.5 — October 3, 2026
+
+- Pin the production account service to sao-menu.favioon.com; remove address controls and allow account creation from the animated launch screen.
+- Use the account display name in the menu and HP widget. HP now represents battery percentage on macOS, Windows and Linux, with 100% when no battery is present.
+- Add persisted online parties: friend invitations, acceptance/decline and leave, six-member capacity, leader succession, and battery presence visible only to party members. Companion HP bars appear only after party acceptance.
+- Fix Windows resource archive restoration, Linux DEB maintainer metadata and installer architecture names, and isolated packaged-app launch checks.
+
+## 0.1.4 — unpublished build preparation
 
 - Rename the project and GitHub repository to `sao-menu`, and the website to SAO Menu at `sao-menu.favioon.com`. The old account-service hostname remains available for existing installations.
 - Use the hosted account service by default, carrying forward the shared SQLite/Postgres protocol, friends, presence and direct messages.

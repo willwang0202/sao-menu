@@ -25,6 +25,7 @@ export function LinkStart({ settings, onComplete }: { settings: Settings; onComp
   const section = useRef<HTMLElement>(null), canvas = useRef<HTMLCanvasElement>(null), audio = useRef<HTMLAudioElement>(null);
   const clock = useRef<StartupClock | null>(reduced ? holdClock(startClock(0), STARTUP.loginHold) : null);
   const currentPhase = useRef(phase), credentials = useRef<FrameOptions>({ accountLength: 0, passwordLength: 0 });
+  const creatingAccount = useRef(false);
   const completed = useRef(false), done = useRef(onComplete); done.current = onComplete;
   const changePhase = (next: Phase) => { currentPhase.current = next; setPhase(next); };
   const complete = () => {
@@ -84,7 +85,7 @@ export function LinkStart({ settings, onComplete }: { settings: Settings; onComp
       }
       const time = clock.current ? clockTime(clock.current, now) : 0;
       if (time >= STARTUP.end) { complete(); return; }
-      renderFrame(ctx, time, view.width, view.height, credentials.current);
+      renderFrame(ctx, time, view.width, view.height, { ...credentials.current, creatingAccount: currentPhase.current === 'login' && creatingAccount.current });
       const next = sceneAt(time);
       if (next !== scene && section.current) { scene = next; section.current.dataset.scene = next; }
       frame = requestAnimationFrame(tick);
@@ -102,33 +103,32 @@ export function LinkStart({ settings, onComplete }: { settings: Settings; onComp
   }}>
     <canvas ref={canvas} className="startup-canvas" role="img" aria-label="Link Start animation" />
     <audio ref={audio} src="./startup/link-start.m4a" preload="auto" />
-    {phase === 'login' && !state?.snapshot && <StartupLogin state={state} initialError={serviceError} onAuthenticated={enter} onOffline={complete} />}
+    {phase === 'login' && !state?.snapshot && <StartupLogin initialError={serviceError} onAuthenticated={enter} onOffline={complete} onModeChange={value => { creatingAccount.current = value; }} />}
     {phase !== 'login' && <button className="skip-intro" onClick={skip}>Skip intro</button>}
   </section>;
 }
 
-function StartupLogin({ state, initialError, onAuthenticated, onOffline }: { state: SocialState | null; initialError: string; onAuthenticated: (lengths: FrameOptions) => void; onOffline: () => void }) {
-  const [account, setAccount] = useState(''), [password, setPassword] = useState(''), [service, setService] = useState(state?.serviceURL ?? '');
-  const [configure, setConfigure] = useState(false), [busy, setBusy] = useState(false), [error, setError] = useState(initialError);
-  useEffect(() => { if (state?.serviceURL) setService(state.serviceURL); }, [state?.serviceURL]);
+function StartupLogin({ initialError, onAuthenticated, onOffline, onModeChange }: { initialError: string; onAuthenticated: (lengths: FrameOptions) => void; onOffline: () => void; onModeChange: (register: boolean) => void }) {
+  const [account, setAccount] = useState(''), [password, setPassword] = useState(''), [displayName, setDisplayName] = useState('');
+  const [register, setRegister] = useState(false), [busy, setBusy] = useState(false), [error, setError] = useState(initialError);
   return <div className="startup-login-scene">
-    <form id="sao-account-login" className="anime-login" aria-label="SAO account login" onSubmit={async event => {
+    <form id="sao-account-login" className="anime-login" aria-label={register ? 'Create SAO account' : 'SAO account login'} onSubmit={async event => {
       event.preventDefault(); if (busy) return;
-      if (!window.saoSocial || !service) { setConfigure(true); setError('Set your account service, or continue offline.'); return; }
+      if (!window.saoSocial) { setError('Sign-in is unavailable. Open the desktop app, or continue offline.'); return; }
       setBusy(true); setError('');
       try {
-        await window.saoSocial.authenticate({ serviceURL: service, username: account, password, register: false, displayName: '' });
+        await window.saoSocial.authenticate({ username: account, password, register, displayName: displayName.trim() || account });
         const lengths = { accountLength: account.length, passwordLength: password.length };
         setPassword(''); onAuthenticated(lengths);
       } catch (e) { setError(e instanceof Error ? e.message : String(e)); } finally { setBusy(false); }
     }}>
-      <h1 className="startup-accessible">Log in_::</h1>
-      <input className="anime-account" aria-label="Account" value={account} onChange={e => setAccount(e.target.value)} required maxLength={32} autoComplete="username" autoCapitalize="none" spellCheck={false} />
-      <input className="anime-password" aria-label="Password" type="password" value={password} onChange={e => setPassword(e.target.value)} required maxLength={128} autoComplete="current-password" />
+      <h1 className="startup-accessible">{register ? 'Create account' : 'Log in_::'}</h1>
+      <input className="anime-account" aria-label="Account" value={account} onChange={e => setAccount(e.target.value)} required minLength={3} maxLength={32} pattern="[a-zA-Z0-9_]{3,32}" autoComplete="username" autoCapitalize="none" spellCheck={false} />
+      <input className="anime-password" aria-label="Password" type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength={12} maxLength={128} autoComplete={register ? 'new-password' : 'current-password'} />
     </form>
     <div className="startup-login-tools">
-      <div className="startup-login-actions"><button form="sao-account-login" type="submit" disabled={busy}>{busy ? 'Signing in…' : 'Log in'}</button><button onClick={onOffline}>Continue offline</button><button onClick={() => setConfigure(!configure)}>Account service</button></div>
-      {configure && <label className="startup-service">Account service<input aria-label="Startup account service" type="url" value={service} onChange={e => setService(e.target.value)} placeholder="https://…" spellCheck={false} autoCapitalize="none" /></label>}
+      {register && <label className="startup-register-details">Player name (optional)<input form="sao-account-login" aria-label="Display name" value={displayName} onChange={e => setDisplayName(e.target.value)} maxLength={40} placeholder={account || 'Your player name'} autoComplete="nickname" /></label>}
+      <div className="startup-login-actions"><button form="sao-account-login" type="submit" disabled={busy}>{busy ? register ? 'Creating…' : 'Signing in…' : register ? 'Create account' : 'Log in'}</button><button disabled={busy} onClick={onOffline}>Continue offline</button><button disabled={busy} onClick={() => { setRegister(!register); onModeChange(!register); setError(''); }}>{register ? 'Back to login' : 'Create account'}</button></div>
       {error && <p className="startup-login-error" role="alert">{error}</p>}
     </div>
   </div>;

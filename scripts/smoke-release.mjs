@@ -11,8 +11,9 @@ const executablePath = path.resolve(process.platform === 'darwin'
   : process.platform === 'win32' ? 'release/win-unpacked/SAO Utils 2.exe' : 'release/linux-unpacked/sao-menu');
 const userData = await mkdtemp(path.join(tmpdir(), 'sao-release-'));
 const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !['ELECTRON_RUN_AS_NODE', 'SAO_DEV_URL'].includes(key)));
-const instance = await electron.launch({ executablePath, args: process.platform === 'linux' ? ['--no-sandbox'] : [], env: { ...env, SAO_USER_DATA: userData }, timeout: 60_000 });
+const instance = await electron.launch({ executablePath, args: [`--sao-profile=${userData}`, ...(process.platform === 'linux' ? ['--no-sandbox'] : [])], env, timeout: 60_000 });
 try {
+  assert.equal(await instance.evaluate(({ app }) => app.getPath('userData')), userData, 'The packaged check must use its disposable profile');
   const page = await instance.firstWindow();
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
@@ -23,6 +24,13 @@ try {
   assert.equal(runtime.platform, process.platform);
   assert.equal((await page.evaluate(() => window.sao.getSettings())).handTracking, false);
   assert.equal((await page.evaluate(() => window.saoSocial.getState())).serviceURL, 'https://sao-menu.favioon.com');
+  await page.getByRole('button', { name: 'Skip intro', exact: true }).click();
+  await page.getByRole('form', { name: 'SAO account login', exact: true }).waitFor();
+  assert.equal(await page.getByRole('button', { name: 'Account service', exact: true }).count(), 0);
+  await page.getByRole('button', { name: 'Create account', exact: true }).click();
+  await page.getByRole('form', { name: 'Create SAO account', exact: true }).waitFor();
+  assert.equal(await page.getByLabel('Display name', { exact: true }).count(), 1);
+  assert.equal(await instance.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find(window => window.getTitle() === 'SAO HP Display').isVisible()), false);
   await page.evaluate(() => window.sao.completeStartup());
   await page.getByRole('menuitem', { name: 'Kirito', exact: true }).waitFor();
   await page.evaluate(() => document.fonts.ready);

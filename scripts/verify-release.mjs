@@ -29,7 +29,8 @@ const os = platform === 'darwin' ? 'mac' : platform === 'win32' ? 'windows' : 'l
 const required = platform === 'darwin' ? ['dmg', 'zip'] : platform === 'win32' ? ['exe', 'zip'] : ['AppImage', 'deb'];
 const artifacts = [];
 for (const extension of required) {
-  const name = `sao-menu-${pkg.version}-${os}-${arch}.${extension}`;
+  const artifactArch = platform === 'linux' && arch === 'x64' ? (extension === 'deb' ? 'amd64' : 'x86_64') : arch;
+  const name = `sao-menu-${pkg.version}-${os}-${artifactArch}.${extension}`;
   const bytes = await readFile(path.join('release', name));
   assert.ok(bytes.length > 1_000_000, `Installer is unexpectedly small: ${name}`);
   artifacts.push({ name, bytes: bytes.length, sha256: createHash('sha256').update(bytes).digest('hex') });
