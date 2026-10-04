@@ -15,7 +15,7 @@ const FEATURES = [
 
 const BUILDS = [
   { name: 'macOS', detail: 'Universal · Apple Silicon + Intel', format: '.dmg', href: RELEASE.dmg },
-  { name: 'Windows', detail: '64-bit installer', format: '.exe', href: RELEASE.windows },
+  { name: 'Windows', detail: 'Universal · x64 + Arm64 installer', format: '.exe', href: RELEASE.windows },
   { name: 'Linux', detail: '64-bit AppImage', format: '.AppImage', href: RELEASE.linux },
   { name: 'Source', detail: 'Source code', format: '.zip', href: RELEASE.sourceArchive },
 ] as const;

@@ -1,5 +1,11 @@
 # Current test release verification
 
+## 0.1.8 release
+
+All 164 unit tests passed on the tagged source (d14704e). This is the first release built in the consolidated form: [release run 37227612384](https://github.com/willwang0202/sao-menu/actions/runs/37227612384) packaged a universal Mac app, one universal Windows NSIS installer (x64 and Arm64) and a Linux x86_64 AppImage. Each job verified the packaged ASAR and launched the packaged app. The Linux job's first attempt started before the resource bundle was re-uploaded and passed on rerun. CI then generated the feeds and removed its reports and the resource bundle from the release.
+
+The published Mac pair is the locally built universal app, Developer ID signed (not notarized). It passed `codesign --verify --deep --strict` and matched all 1,712 renderer, host and icon files. The packaged app launched natively on Apple Silicon and as x64 under Rosetta. The CI ad-hoc Mac pair was replaced, and all three feeds were regenerated from the final reports. The publication gate (`scripts/verify-release-assets.mjs`) confirmed the release holds only the three packages and three feeds. It also matched every installer's size and SHA-256 and every feed to its report, and checked the run passed for the tagged commit. All seven files and the source ZIP returned HTTP 200 after publication. Evidence: `output/release-status.json`.
+
 ## 0.1.7 release
 
 All 121 unit/protocol tests and the desktop/website production builds passed. Local Apple Silicon and Intel packages are Developer ID signed but not notarized. Strict package checks matched all 1,113 renderer/host/icon files; the packaged Apple Silicon app launched with the original font, fixed hosted account service and isolated profile. Local installer hashes are in `output/current-package.json` and `output/release-mac-*.json`.
