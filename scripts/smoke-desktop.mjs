@@ -192,12 +192,13 @@ try {
     const clockTime = clock ? await clock.webContents.executeJavaScript("document.querySelector('.sao-clock')?.getAttribute('aria-label') ?? ''") : '';
     const messageButton = message ? await message.webContents.executeJavaScript("!!document.querySelector('.sao-message-button')") : false;
     const hp = BrowserWindow.getAllWindows().find(window => new URL(window.webContents.getURL()).searchParams.get('hp') === '1');
-    return { clockSize: clock?.getSize(), messageSize: message?.getSize(), clockTime, messageButton, clockFocusable: clock?.isFocusable(), stacking: [clock, message, hp].map(window => window?.isAlwaysOnTop()) };
+    return { clockSize: clock?.getSize(), messageSize: message?.getSize(), clockTime, messageButton, clockFocusable: clock?.isFocusable(), messageVisible: message?.isVisible(), stacking: [clock, message, hp].map(window => window?.isAlwaysOnTop()) };
   });
   assert.deepEqual(widgets.clockSize, [304, 80], 'original clock widget size');
   assert.deepEqual(widgets.messageSize, [56, 56], 'original mail button size');
   assert.match(widgets.clockTime, /^Time \d\d:\d\d$/, 'clock renders the original %H:%M time');
   assert.equal(widgets.messageButton, true, 'message button renders');
+  assert.equal(widgets.messageVisible, false, 'the Message button stays hidden without unread messages');
   const alwaysOnTop = (await page.evaluate(() => window.sao.getSettings())).alwaysOnTop;
   assert.deepEqual(widgets.stacking, [alwaysOnTop, alwaysOnTop, alwaysOnTop], 'HP and widgets follow the Always on top setting');
   await page.getByRole('button', { name: 'Close options', exact: true }).first().click();

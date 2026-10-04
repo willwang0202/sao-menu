@@ -6,7 +6,6 @@
 /* Soft hologram edge: the map fades into a bright cyan rim. */
 .field-map-frame:after{content:'';position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 22px 8px rgba(190,240,255,.85);z-index:1}
 .field-map-canvas{position:absolute;inset:0}
-.field-map-canvas .maplibregl-ctrl-attrib{font-size:8px;background:rgba(255,255,255,.7);z-index:2}
 .field-map-hint{position:absolute;left:24px;right:24px;top:58px;margin:0;padding:8px 10px;font-size:11px;line-height:1.55;background:rgba(255,255,255,.95);border:1px solid rgba(110,110,118,.3);color:#6d5a2e;z-index:3}
 .field-map-hint.subtle{color:#666}
 .field-map-caption{position:relative;height:96px;padding:14px 16px 10px 22px;display:flex;flex-direction:column;gap:6px}

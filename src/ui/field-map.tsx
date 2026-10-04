@@ -47,7 +47,7 @@ export function FieldMap({ x, y, motion }: { x: number; y: number; motion: boole
     let active = true;
     void fetch(MAP_STYLE_URL).then(response => { if (!response.ok) throw new Error(String(response.status)); return response.json(); }).then(style => {
       if (!active || !container.current) return;
-      map.current = new maplibregl.Map({ container: container.current, style: saoMapStyle(style), center: [0, 20], zoom: WORLD_ZOOM, attributionControl: { compact: true }, fadeDuration: motion ? 300 : 0 });
+      map.current = new maplibregl.Map({ container: container.current, style: saoMapStyle(style), center: [0, 20], zoom: WORLD_ZOOM, attributionControl: false, fadeDuration: motion ? 300 : 0 });
       map.current.on('error', () => setError('Some map tiles could not be loaded.'));
     }).catch(() => { if (active) setError('The map could not be loaded. Check your internet connection.'); });
     locate();
