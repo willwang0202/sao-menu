@@ -28,7 +28,7 @@ Branch: `feat/themes-and-widgets`.
 - [x] Settings → Help opens https://sao-menu.favioon.com/support
 
 ## Link Start
-- [ ] Link Start text follows the system language and can be changed in Options
+- [x] Link Start blue forms (language selection, login, character registration) follow the system language and can be changed in Options; official anime text ("Welcome to Sword Art Online!", "Congratulations!!") stays original
 
 ## Later (new anime-only features from the darkblackswords vector pack)
 - [ ] "Congratulations!!" banner when account level increases

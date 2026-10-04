@@ -1,5 +1,6 @@
 import { clamp01, progress } from './ease';
 import { STARTUP } from './timeline';
+import type { StartupStrings } from '../../shared/startup-language';
 
 /** Flat UI cards from the reference, in its 1920×1080 coordinates. */
 const FONT = '"Source Han Sans", "Hiragino Sans", sans-serif';
@@ -36,6 +37,20 @@ function text(ctx: CanvasRenderingContext2D, value: string, x: number, y: number
   ctx.letterSpacing = '0px';
 }
 
+const CJK = /[\u3000-\u9fff\uac00-\ud7af]/;
+/** Translated card text shrinks to its box; letter spacing from the reference applies to CJK text only. */
+function fittedSize(ctx: CanvasRenderingContext2D, value: string, size: number, maxWidth: number, spacing = 0): number {
+  ctx.font = `500 ${size}px ${FONT}`;
+  ctx.letterSpacing = `${CJK.test(value) ? spacing : 0}px`;
+  const width = ctx.measureText(value).width;
+  ctx.letterSpacing = '0px';
+  return width > maxWidth ? Math.floor(size * maxWidth / width) : size;
+}
+function fitText(ctx: CanvasRenderingContext2D, value: string, x: number, y: number, size: number, maxWidth: number, color: string, align: CanvasTextAlign = 'left', spacing = 0, fixedSize?: number) {
+  const fitted = fixedSize ?? fittedSize(ctx, value, size, maxWidth, spacing);
+  text(ctx, value, x, y, fitted, color, align, (CJK.test(value) ? spacing : 0) * fitted / size);
+}
+
 /** A bar first appears as a faint line, then opens vertically around its centre. */
 function openBar(ctx: CanvasRenderingContext2D, t: number, start: number, box: Box, draw: () => void) {
   const open = progress(t, start, start + SCALE_IN);
@@ -57,14 +72,14 @@ const JAPANESE: Box = [857, 352, 597, 103];
 const JAPANESE_ALPHA = 0.93;
 const LANGUAGE_TIMES = { language: 9.08, japanese: 9.5, selected: 9.79, fadeOut: 10.15, gone: 10.3 } as const;
 
-export function drawLanguage(ctx: CanvasRenderingContext2D, t: number) {
+export function drawLanguage(ctx: CanvasRenderingContext2D, t: number, strings: StartupStrings) {
   const fade = 1 - progress(t, LANGUAGE_TIMES.fadeOut, LANGUAGE_TIMES.gone);
   if (fade <= 0) return;
   ctx.save();
   ctx.globalAlpha = fade;
   openBar(ctx, t, LANGUAGE_TIMES.language, LANGUAGE, () => {
     roundedBox(ctx, LANGUAGE, 16, LANGUAGE_BLUE);
-    text(ctx, 'Language', 636, 389, 70, '#ffffff', 'center');
+    fitText(ctx, strings.languageLabel, 636, 389, 70, 560, '#ffffff', 'center');
   });
   openBar(ctx, t, LANGUAGE_TIMES.japanese, JAPANESE, () => {
     const selected = progress(t, LANGUAGE_TIMES.selected - 0.04, LANGUAGE_TIMES.selected + 0.04);
@@ -75,7 +90,7 @@ export function drawLanguage(ctx: CanvasRenderingContext2D, t: number) {
     ctx.moveTo(958, 380); ctx.lineTo(997, 403); ctx.lineTo(958, 426); ctx.closePath();
     ctx.fillStyle = '#ffffff';
     ctx.fill();
-    text(ctx, 'Japanese', 1195, 423, 70, '#ffffff', 'center');
+    fitText(ctx, strings.languageName, 1195, 423, 70, 430, '#ffffff', 'center');
   });
   ctx.restore();
 }
@@ -90,15 +105,15 @@ function stars(ctx: CanvasRenderingContext2D, [x, y, , h]: Box, count: number) {
   for (let i = 0; i < Math.min(count, MAX_STARS); i++) text(ctx, '*', x + 6 + i * STAR_STEP, y + h + 8, 50, '#3c3c3c');
 }
 
-export function drawLogin(ctx: CanvasRenderingContext2D, t: number, accountLength: number, passwordLength: number, creatingAccount = false) {
+export function drawLogin(ctx: CanvasRenderingContext2D, t: number, strings: StartupStrings, accountLength: number, passwordLength: number, creatingAccount = false) {
   const alpha = clamp01((t - STARTUP.loginStart) / CARD_FADE) * (1 - progress(t, STARTUP.loginResume, STARTUP.registrationStart));
   if (alpha <= 0) return;
   ctx.save();
   ctx.globalAlpha = alpha;
   roundedBox(ctx, LOGIN_CARD, 22, CARD_BLUE);
-  text(ctx, creatingAccount ? 'Sign up_::' : 'Log in_::', 566, 472, creatingAccount ? 60 : 70, '#ffffff');
-  text(ctx, ':account', 979, 482, 46, '#ffffff');
-  text(ctx, ':password', 979, 605, 46, '#ffffff');
+  fitText(ctx, creatingAccount ? strings.signUp : strings.login, 566, 472, creatingAccount ? 60 : 70, 370, '#ffffff');
+  fitText(ctx, strings.account, 979, 482, 46, 420, '#ffffff');
+  fitText(ctx, strings.password, 979, 605, 46, 420, '#ffffff');
   ctx.fillStyle = FIELD;
   for (const field of [LOGIN_FIELDS.account, LOGIN_FIELDS.password]) ctx.fillRect(...field);
   // The source types placeholder credentials; after real login, show the real lengths instead.
@@ -120,23 +135,24 @@ function pill(ctx: CanvasRenderingContext2D, [x, y, w, h]: Box, fill: string) {
   ctx.fill();
 }
 
-export function drawRegistration(ctx: CanvasRenderingContext2D, t: number) {
+export function drawRegistration(ctx: CanvasRenderingContext2D, t: number, strings: StartupStrings) {
   const alpha = progress(t, REGISTRATION_TIMES.appear, REGISTRATION_TIMES.shown) * (1 - progress(t, REGISTRATION_TIMES.fadeOut, REGISTRATION_TIMES.gone));
   if (alpha <= 0) return;
   ctx.save();
   ctx.globalAlpha = alpha;
   roundedBox(ctx, TITLE, 47, '#0583bf');
-  text(ctx, 'キャラクター登録', 961, 293, 62, '#ffffff', 'center', 4);
+  fitText(ctx, strings.registrationTitle, 961, 293, 62, 640, '#ffffff', 'center', 4);
   roundedBox(ctx, BODY, 32, '#0381bd');
-  text(ctx, 'βテスト時に登録したデータが', 476, 437, 52, '#ffffff', 'left', 9);
-  text(ctx, '残っていますが、使用しますか？', 472, 513, 52, '#ffffff', 'left', 9);
+  const bodySize = Math.min(...strings.registrationBody.map(line => fittedSize(ctx, line, 52, 980, 9)));
+  fitText(ctx, strings.registrationBody[0], 476, 437, 52, 980, '#ffffff', 'left', 9, bodySize);
+  fitText(ctx, strings.registrationBody[1], 472, 513, 52, 980, '#ffffff', 'left', 9, bodySize);
   ctx.fillStyle = CYAN;
   ctx.fillRect(737, 628, 446, 61);
   text(ctx, 'Kirito(M)', 961, 680, 52, '#ffffff', 'center', 8);
   const yes = t >= REGISTRATION_TIMES.yes;
   pill(ctx, [613, 790, 197, 48], yes ? '#0bf9fc' : '#09badb');
   pill(ctx, [1109, 790, 197, 48], '#09badb');
-  text(ctx, 'YES', 712, 830, 44, yes ? '#2a8fb2' : '#ffffff', 'center');
-  text(ctx, 'NO', 1207, 830, 44, '#ffffff', 'center');
+  fitText(ctx, strings.yes, 712, 830, 44, 180, yes ? '#2a8fb2' : '#ffffff', 'center');
+  fitText(ctx, strings.no, 1207, 830, 44, 180, '#ffffff', 'center');
   ctx.restore();
 }

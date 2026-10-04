@@ -1,4 +1,5 @@
 import type { ThemeId } from './themes';
+import type { StartupLanguageSetting } from './startup-language';
 export type Platform = 'darwin' | 'win32' | 'linux' | 'web';
 export interface Position { x: number; y: number }
 export interface GestureStatus { supported: boolean; permission: 'granted' | 'denied' | 'unknown'; running: boolean; message: string }
@@ -21,6 +22,8 @@ export interface Settings {
   shortcut: string;
   /** Launcher look: original SAO, ALO or GGO theme. */
   theme: ThemeId;
+  /** Language of the Link Start blue cards; `system` follows the OS. */
+  startupLanguage: StartupLanguageSetting;
   /** Original SAO clock widget on the desktop. */
   showClock: boolean;
   /** Original mail-style button that opens Message. */
