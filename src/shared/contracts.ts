@@ -28,6 +28,8 @@ export interface SystemStats {
   platform: Platform; hostname: string; cpuPercent: number | null;
   memoryUsed: number | null; memoryTotal: number | null;
   uptime: number | null; batteryPercent: number | null;
+  /** External power with a battery present (the ALO HP bar's charging buff). */
+  isCharging?: boolean;
 }
 export interface RuntimeInfo { platform: Platform; version: string; desktop: boolean; shortcutRegistered: boolean; startup: boolean }
 export interface ImportResult { imported: number; warnings: string[]; settings: Settings }

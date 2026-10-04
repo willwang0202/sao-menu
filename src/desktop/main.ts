@@ -277,6 +277,7 @@ async function applySettings(input: unknown): Promise<Settings> {
     }
     if (newShortcutRegistered && previousShortcut) globalShortcut.unregister(previousShortcut);
     settings = next;
+    hpDisplay?.update();
     updates?.setAutomatic(next.automaticUpdates);
     activeShortcut = newShortcutRegistered ? next.shortcut : previousShortcut;
     shortcutRegistered = activeShortcut !== null;
