@@ -21,6 +21,10 @@ export interface Settings {
   shortcut: string;
   /** Launcher look: original SAO, ALO or GGO theme. */
   theme: ThemeId;
+  /** Original SAO clock widget on the desktop. */
+  showClock: boolean;
+  /** Original mail-style button that opens Message. */
+  showMessageButton: boolean;
   favorites: LauncherItem[];
   menu?: MenuEntry[];
 }
@@ -62,7 +66,8 @@ export interface DesktopAPI {
   quit(): Promise<void>;
   completeStartup(): Promise<void>;
   onStartupComplete(callback: () => void): () => void;
-  onToggleMenu(callback: (open?: boolean, anchor?: Position) => void): () => void;
+  /** `category` selects a root category (e.g. `message`) when the menu opens. */
+  onToggleMenu(callback: (open?: boolean, anchor?: Position, category?: string) => void): () => void;
   onDismissMenu(callback: () => void): () => void;
   onGlobalPointerDown(callback: (point: Position) => void): () => void;
   onPointerMove(callback: (point: Position) => void): () => void;

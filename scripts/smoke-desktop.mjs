@@ -177,6 +177,17 @@ try {
     try { return await other.webContents.executeJavaScript('window.sao ? window.sao.getSettings().then(() => false, () => true) : "missing-preload"'); } finally { other.destroy(); }
   }, path.resolve('dist-desktop/preload.cjs'));
   assert.equal(strayDenied, true, 'untrusted IPC sender rejected');
+  const widgets = await instance.evaluate(async ({ BrowserWindow }) => {
+    const find = kind => BrowserWindow.getAllWindows().find(window => new URL(window.webContents.getURL()).searchParams.get('widget') === kind);
+    const clock = find('clock'), message = find('message');
+    const clockTime = clock ? await clock.webContents.executeJavaScript("document.querySelector('.sao-clock')?.getAttribute('aria-label') ?? ''") : '';
+    const messageButton = message ? await message.webContents.executeJavaScript("!!document.querySelector('.sao-message-button')") : false;
+    return { clockSize: clock?.getSize(), messageSize: message?.getSize(), clockTime, messageButton, clockFocusable: clock?.isFocusable() };
+  });
+  assert.deepEqual(widgets.clockSize, [304, 80], 'original clock widget size');
+  assert.deepEqual(widgets.messageSize, [56, 56], 'original mail button size');
+  assert.match(widgets.clockTime, /^Time \d\d:\d\d$/, 'clock renders the original %H:%M time');
+  assert.equal(widgets.messageButton, true, 'message button renders');
   await page.getByRole('button', { name: 'Close options', exact: true }).first().click();
   await page.reload();
   await page.waitForFunction(() => Boolean(document.querySelector('.original-menu')));
@@ -192,5 +203,5 @@ try {
   await instance.evaluate(({ app }) => app.emit('activate'));
   await page.locator('.original-menu').waitFor({ state: 'visible' });
   assert.deepEqual(errors, []);
-  console.log(JSON.stringify({ platform: runtime.platform, applications: applications.length, memoryTotal: stats.memoryTotal, shortcutRegistered: runtime.shortcutRegistered, storage, gesture, geometry, fonts, categorySwitch: { selfAnchor, optionsAnchor, railUnchanged: true }, assertions: 'original assets and geometry, anchored category switching, cascading menus, native launch, pointer passthrough, bridge isolation, IPC owner, settings, import/export, hotkey dismissal, hide/reopen, reload', screenshot: path.join(output, 'original-menu.png'), userData }, null, 2));
+  console.log(JSON.stringify({ platform: runtime.platform, applications: applications.length, memoryTotal: stats.memoryTotal, shortcutRegistered: runtime.shortcutRegistered, storage, gesture, geometry, fonts, categorySwitch: { selfAnchor, optionsAnchor, railUnchanged: true }, assertions: 'original assets and geometry, clock and message widgets, anchored category switching, cascading menus, native launch, pointer passthrough, bridge isolation, IPC owner, settings, import/export, hotkey dismissal, hide/reopen, reload', screenshot: path.join(output, 'original-menu.png'), userData }, null, 2));
 } finally { await instance.close(); await rm(userData, { recursive: true, force: true }); }

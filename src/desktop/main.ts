@@ -18,6 +18,7 @@ import { mediaKind } from '../shared/surfaces';
 import { SurfaceLayoutStore } from './surface-store';
 import { SocialClient } from './social';
 import { HpDisplay } from './hud';
+import { DesktopWidgets } from './widgets';
 import { pointerInterval } from '../shared/refresh';
 import { HandTrackingController } from './hand-tracking';
 import { accountServiceEndpoint } from '../shared/social';
@@ -39,6 +40,7 @@ let applicationCatalogue: LauncherItem[] | null = null;
 let surfaces: SurfaceManager;
 let social: SocialClient;
 let hpDisplay: HpDisplay;
+let desktopWidgets: DesktopWidgets;
 let updates: UpdateController;
 let updateQuitting = false;
 let installBarrier = false;
@@ -202,7 +204,7 @@ function reveal(): void {
   summonAt(screen.getCursorScreenPoint());
 }
 
-function summonAt(point: Position): void {
+function summonAt(point: Position, category?: string): void {
   if (!window) return;
   window.setIgnoreMouseEvents(false);
   if (window.isMinimized()) window.restore();
@@ -226,7 +228,7 @@ function summonAt(point: Position): void {
   handTracking.setMenuOpen(true, { x: menuAnchor.x / width, y: menuAnchor.y / height });
   window.show();
   window.focus();
-  window.webContents.send('sao:menu:toggle', true, menuAnchor);
+  window.webContents.send('sao:menu:toggle', true, menuAnchor, category);
 }
 
 function toggleMenu(): void {
@@ -277,6 +279,7 @@ async function applySettings(input: unknown): Promise<Settings> {
     }
     if (newShortcutRegistered && previousShortcut) globalShortcut.unregister(previousShortcut);
     settings = next;
+    desktopWidgets?.update(); hpDisplay?.update();
     updates?.setAutomatic(next.automaticUpdates);
     activeShortcut = newShortcutRegistered ? next.shortcut : previousShortcut;
     shortcutRegistered = activeShortcut !== null;
@@ -471,6 +474,7 @@ function installHandlers(): void {
       window.setBounds(area); window.setAlwaysOnTop(settings.alwaysOnTop,'floating'); refreshPointerRate();
     }
     if (social?.getState().snapshot) hpDisplay?.show();
+    desktopWidgets?.show();
     window?.webContents.send('sao:startup:done');
   });
   handler('sao:gesture:status', () => gesture.getStatus());
@@ -578,12 +582,12 @@ else {
     event.preventDefault();
     void surfaces.flush().catch(error => console.warn('Preview layout could not be saved.', error)).finally(() => { quitFlushed = true; app.quit(); });
   });
-  app.on('will-quit', () => { updates?.dispose(); gesture.stop(); handTracking.stop(); surfaces?.stop(); social?.stop(); hpDisplay?.stop(); if (pointerTimer) clearInterval(pointerTimer); globalShortcut.unregisterAll(); tray?.destroy(); });
+  app.on('will-quit', () => { updates?.dispose(); gesture.stop(); handTracking.stop(); surfaces?.stop(); social?.stop(); hpDisplay?.stop(); desktopWidgets?.stop(); if (pointerTimer) clearInterval(pointerTimer); globalShortcut.unregisterAll(); tray?.destroy(); });
   app.on('window-all-closed', () => { if (quitting) app.quit(); });
   app.whenReady().then(async () => {
     await loadConfiguration();
     surfaces = new SurfaceManager(rendererURL, path.join(__dirname, 'surface-preload.cjs'), () => settings.reducedMotion, new SurfaceLayoutStore(path.join(app.getPath('userData'), 'surface-layout.json')));
-    social = new SocialClient(path.join(app.getPath('userData'), 'social-account.json'), state => { hpDisplay?.update(); if (!startup && state.snapshot) hpDisplay?.show(); else hpDisplay?.hide(); if (window && !window.isDestroyed()) window.webContents.send('sao:social:state', state); }, accountServiceEndpoint(app.isPackaged, process.env.SAO_TEST_SERVICE_URL));
+    social = new SocialClient(path.join(app.getPath('userData'), 'social-account.json'), state => { hpDisplay?.update(); desktopWidgets?.update(); if (!startup && state.snapshot) hpDisplay?.show(); else hpDisplay?.hide(); if (window && !window.isDestroyed()) window.webContents.send('sao:social:state', state); }, accountServiceEndpoint(app.isPackaged, process.env.SAO_TEST_SERVICE_URL));
     createUpdates();
     surfaces.install();
     // Everything is denied except the hand tracker's own video-only camera request.
@@ -597,6 +601,9 @@ else {
     hpDisplay = new HpDisplay(rendererURL, () => settings, () => social.getState().snapshot);
     await hpDisplay.create();
     if (!startup && social.getState().snapshot) hpDisplay.show();
+    desktopWidgets = new DesktopWidgets(rendererURL, () => settings, () => social.getState().snapshot, () => summonAt(screen.getCursorScreenPoint(), 'message'));
+    await desktopWidgets.create();
+    if (!startup) desktopWidgets.show();
     await surfaces.restore();
     await social.start();
     gesture.start();

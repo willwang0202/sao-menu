@@ -13,7 +13,7 @@ export function defaultSettings(_platform: Platform, playerName = 'Kirito'): Set
   return {
     version: 1, playerName: playerName.slice(0, 40), sound: true,
     reducedMotion: false, alwaysOnTop: false, launchAtLogin: false, automaticUpdates: true, handTracking: false, handDebugView: false,
-    shortcut: 'Alt+S', theme: 'sao',
+    shortcut: 'Alt+S', theme: 'sao', showClock: true, showMessageButton: true,
     favorites: [],
   };
 }
@@ -54,6 +54,7 @@ export function normalizeSettings(value: unknown, platform: Platform): Settings 
     handDebugView: bool(input.handDebugView, defaults.handDebugView),
     shortcut: text(input.shortcut, defaults.shortcut, 100) || defaults.shortcut,
     theme: isThemeId(input.theme) ? input.theme : defaults.theme,
+    showClock: bool(input.showClock, defaults.showClock), showMessageButton: bool(input.showMessageButton, defaults.showMessageButton),
     favorites,
     menu: normalizeMenu(input.menu, platform, validateLauncher),
   };

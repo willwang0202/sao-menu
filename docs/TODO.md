@@ -16,9 +16,11 @@ Branch: `feat/themes-and-widgets`.
 - [ ] GGO theme: launcher skin from `com.gpbeta.theme.ggo` QML/images (buttons, items, panel bars, dialog)
 
 ## Widgets (main session)
-- [ ] SAO clock widget from `Presets/widget-clock.*`: 304×80 `clock-bg.png`, hour/minute pointers, 62 px SAO UI digital time, 5 s sampling; separate floating window like the HP display
-- [ ] Mail/message button (`widget-mail`): 56×56 desktop circle opening Message, unread indicator from accepted-friend conversations
-- [ ] Widget settings in Settings → Option (not a right-click menu): show/hide HP, clock and mail widgets; SAO `item-preview` artwork per the original `ShortcutMenu.qml`
+- [x] SAO clock widget from `Presets/widget-clock.*`: 304×80 `clock-bg.png`, hour/minute pointers, 62 px SAO UI digital time, 5 s sampling; separate floating window like the HP display
+- [x] Mail/message button (`widget-mail`): 56×56 desktop circle opening Message, unread indicator from accepted-friend conversations
+- [x] Widget settings in Settings → Option → Interface → Desktop widgets: clock and Message button toggles
+- [ ] Ask the user: the original `widget-mail` click opens `ShortcutMenu.qml` (a small SAO popup: Compose, Online players, Inbox, Settings). The port's button opens the launcher's Message category directly. Keep it that way, or port the popup?
+- [ ] End-to-end test: clicking the Message button opens the launcher on Message
 
 ## Parity checks
 - [x] Screen-edge accommodation: already implemented (`.original-menu` 400 ms InOutQuad `left` transition plus clamping in `main.tsx`); confirm in the desktop app

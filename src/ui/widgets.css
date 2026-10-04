@@ -1,0 +1,13 @@
+.widget-window,.widget-window body,.widget-window #root{background:transparent;overflow:hidden}
+.sao-clock{position:relative;width:304px;height:80px;background:url('../../public/sao-original/Images/etc/clock-bg.png') 0 0/304px 80px no-repeat;font-family:'SAO UI','Source Han Sans',sans-serif;pointer-events:none;user-select:none}
+/* Pointer pivots: ptrOriginY 14 (hour, 5x16) and 20 (minute, 5x22) at the dial centre. */
+.clock-hand{position:absolute;left:27px;width:5px;transform-origin:2.5px var(--origin)}
+.clock-hour{top:26px;height:16px;--origin:14px}
+.clock-minute{top:20px;height:22px;--origin:20px}
+.clock-text{position:absolute;left:184px;top:41px;transform:translate(-50%,-50%);font-size:62px;line-height:1;font-weight:400;color:rgba(85,85,85,.93);white-space:nowrap}
+.clock-highlight{left:183px;top:39px;color:rgba(255,255,255,.67)}
+.sao-message-button{position:relative;width:56px;height:56px;padding:0;border:0;background:url('../../public/sao-original/Images/icon/mail.png') 0 0/56px 56px no-repeat;cursor:pointer}
+.sao-message-button:hover{background-image:url('../../public/sao-original/Images/icon/mail-hovered.png')}
+.sao-message-button:active{background-image:url('../../public/sao-original/Images/icon/mail-pressed.png')}
+.sao-message-button:focus-visible{outline:2px solid #d98400;outline-offset:-4px;border-radius:50%}
+.message-badge{position:absolute;right:2px;top:2px;min-width:18px;height:18px;padding:0 4px;border-radius:9px;background:#e6a100;color:#fff;font:500 11px/18px 'SAO UI','Source Han Sans',sans-serif;text-align:center;box-shadow:0 0 0 1px rgba(255,255,255,.8)}

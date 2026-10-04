@@ -93,3 +93,11 @@ test('defaults to the SAO theme and keeps a known ALO or GGO theme choice', () =
   assert.equal(normalizeSettings({ theme: 'alo' }, 'darwin').theme, 'alo');
   assert.equal(normalizeSettings({ theme: 'windows-xp' }, 'darwin').theme, 'sao');
 });
+
+test('shows the clock and message widgets by default and keeps a saved choice', () => {
+  const defaults = defaultSettings('darwin');
+  assert.equal(defaults.showClock, true); assert.equal(defaults.showMessageButton, true);
+  const hidden = normalizeSettings({ showClock: false, showMessageButton: false }, 'darwin');
+  assert.equal(hidden.showClock, false); assert.equal(hidden.showMessageButton, false);
+  assert.equal(normalizeSettings({ showClock: 'no' }, 'darwin').showClock, true);
+});
