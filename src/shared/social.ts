@@ -16,6 +16,9 @@ export interface SocialAPI {
   markRead(peer: string): Promise<void>;
   onState(callback: (state: SocialState) => void): () => void;
 }
+/** The hosted account service; users can still point the app at their own. */
+export const DEFAULT_SERVICE_URL = 'https://sao.favioon.com';
+
 export function serviceURL(value: unknown): string {
   if (typeof value !== 'string' || value.length > 2048 || /[\u0000-\u0020\u007f]/.test(value)) throw new Error('Enter the HTTPS account service address.');
   const url = new URL(value);

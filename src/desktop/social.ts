@@ -1,11 +1,11 @@
 import { safeStorage } from 'electron';
 import { mkdir, readFile, rename, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { messageText, serviceURL, username, type DirectMessage, type SocialSnapshot, type SocialState } from '../shared/social';
+import { DEFAULT_SERVICE_URL, messageText, serviceURL, username, type DirectMessage, type SocialSnapshot, type SocialState } from '../shared/social';
 
 class AccountError extends Error { constructor(readonly status: number, message: string) { super(message); } }
 export class SocialClient {
-  private state: SocialState = { serviceURL: '', connected: false, error: '', snapshot: null };
+  private state: SocialState = { serviceURL: DEFAULT_SERVICE_URL, connected: false, error: '', snapshot: null };
   private token = '';
   private generation = 0;
   private timer: ReturnType<typeof setInterval> | null = null;
