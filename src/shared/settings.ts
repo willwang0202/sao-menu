@@ -1,6 +1,7 @@
 import { XMLParser, XMLValidator } from 'fast-xml-parser';
 import type { ImportResult, LauncherItem, MenuEntry, Platform, Settings } from './contracts';
 import { normalizeMenu, originalIcon } from './menu';
+import { isThemeId } from './themes';
 
 export const MAX_CONFIGURATION_BYTES = 2 * 1024 * 1024;
 const MAX_FAVORITES = 200;
@@ -12,7 +13,7 @@ export function defaultSettings(_platform: Platform, playerName = 'Kirito'): Set
   return {
     version: 1, playerName: playerName.slice(0, 40), sound: true,
     reducedMotion: false, alwaysOnTop: false, launchAtLogin: false, automaticUpdates: true, handTracking: false, handDebugView: false,
-    shortcut: 'Alt+S',
+    shortcut: 'Alt+S', theme: 'sao',
     favorites: [],
   };
 }
@@ -52,6 +53,7 @@ export function normalizeSettings(value: unknown, platform: Platform): Settings 
     handTracking: bool(input.handTracking, defaults.handTracking),
     handDebugView: bool(input.handDebugView, defaults.handDebugView),
     shortcut: text(input.shortcut, defaults.shortcut, 100) || defaults.shortcut,
+    theme: isThemeId(input.theme) ? input.theme : defaults.theme,
     favorites,
     menu: normalizeMenu(input.menu, platform, validateLauncher),
   };

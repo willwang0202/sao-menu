@@ -1,3 +1,4 @@
+import type { ThemeId } from './themes';
 export type Platform = 'darwin' | 'win32' | 'linux' | 'web';
 export interface Position { x: number; y: number }
 export interface GestureStatus { supported: boolean; permission: 'granted' | 'denied' | 'unknown'; running: boolean; message: string }
@@ -18,6 +19,8 @@ export interface Settings {
   /** Shows the tracker's camera view with landmarks, for tuning. */
   handDebugView: boolean;
   shortcut: string;
+  /** Launcher look: original SAO, ALO or GGO theme. */
+  theme: ThemeId;
   favorites: LauncherItem[];
   menu?: MenuEntry[];
 }

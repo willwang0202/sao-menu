@@ -15,6 +15,12 @@ await cp(path.join(theme, 'Images'), path.join(destination, 'Images'), { recursi
 await cp(path.join(theme, 'Sounds'), path.join(destination, 'Sounds'), { recursive: true });
 await mkdir(path.join(destination, 'WidgetIcons'), { recursive: true });
 await cp(path.join(source, 'Packages/com.gpbeta.widget.hp-bar/Images/icon/SAO.png'), path.join(destination, 'WidgetIcons/SAO.png'));
+// Alternate original looks: GGO launcher theme and the HP widget's ALO bar artwork.
+await cp(path.join(source, 'Packages/com.gpbeta.theme.ggo/Images'), path.join(destination, 'GGO/Images'), { recursive: true });
+await cp(path.join(source, 'Packages/com.gpbeta.theme.ggo/Presets'), path.join(destination, 'GGO/Presets'), { recursive: true });
+await cp(path.join(source, 'Packages/com.gpbeta.theme.ggo/LICENSE.GPGPL'), path.join(destination, 'GGO/LICENSE.GPGPL'));
+await cp(path.join(source, 'Packages/com.gpbeta.widget.hp-bar/Images'), path.join(destination, 'HPBar'), { recursive: true });
+await cp(path.join(theme, 'Presets'), path.join(destination, 'Presets'), { recursive: true });
 await cp(path.join(source, 'Packages/system/Images'), path.join(destination, 'System'), { recursive: true });
 await cp(path.join(source, 'Packages/com.gpbeta.media/Images'), path.join(destination, 'Media'), { recursive: true });
 await cp(path.join(source, 'Packages/com.gpbeta.media/Shaders/gl-transitions'), path.join(destination, 'MediaShaders'), { recursive: true });
