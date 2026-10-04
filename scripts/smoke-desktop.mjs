@@ -203,5 +203,11 @@ try {
   await instance.evaluate(({ app }) => app.emit('activate'));
   await page.locator('.original-menu').waitFor({ state: 'visible' });
   assert.deepEqual(errors, []);
-  console.log(JSON.stringify({ platform: runtime.platform, applications: applications.length, memoryTotal: stats.memoryTotal, shortcutRegistered: runtime.shortcutRegistered, storage, gesture, geometry, fonts, categorySwitch: { selfAnchor, optionsAnchor, railUnchanged: true }, assertions: 'original assets and geometry, clock and message widgets, anchored category switching, cascading menus, native launch, pointer passthrough, bridge isolation, IPC owner, settings, import/export, hotkey dismissal, hide/reopen, reload', screenshot: path.join(output, 'original-menu.png'), userData }, null, 2));
+  // Earlier steps import a custom menu; restore the bundled hierarchy, which has Message.
+  await page.evaluate(async () => { const current = await window.sao.getSettings(); await window.sao.saveSettings({ ...current, menu: undefined }); });
+  await page.reload(); await page.waitForSelector('.sao-desktop');
+  await instance.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find(window => new URL(window.webContents.getURL()).searchParams.get('widget') === 'message').webContents.executeJavaScript('window.saoWidget.openMessages()'));
+  await page.waitForFunction(() => document.querySelector('.root-button.selected')?.getAttribute('aria-label') === 'Message', null, { timeout: 5000 });
+  assert.equal(await instance.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find(window => window.webContents.getURL().endsWith('/index.html')).isVisible()), true, 'Message button summons the launcher');
+  console.log(JSON.stringify({ platform: runtime.platform, applications: applications.length, memoryTotal: stats.memoryTotal, shortcutRegistered: runtime.shortcutRegistered, storage, gesture, geometry, fonts, categorySwitch: { selfAnchor, optionsAnchor, railUnchanged: true }, assertions: 'original assets and geometry, clock and message widgets, Message button opens Message, anchored category switching, cascading menus, native launch, pointer passthrough, bridge isolation, IPC owner, settings, import/export, hotkey dismissal, hide/reopen, reload', screenshot: path.join(output, 'original-menu.png'), userData }, null, 2));
 } finally { await instance.close(); await rm(userData, { recursive: true, force: true }); }

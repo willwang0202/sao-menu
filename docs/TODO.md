@@ -20,7 +20,7 @@ Branch: `feat/themes-and-widgets`.
 - [x] Mail/message button (`widget-mail`): 56×56 desktop circle opening Message, unread indicator from accepted-friend conversations
 - [x] Widget settings in Settings → Option → Interface → Desktop widgets: clock and Message button toggles
 - [ ] Ask the user: the original `widget-mail` click opens `ShortcutMenu.qml` (a small SAO popup: Compose, Online players, Inbox, Settings). The port's button opens the launcher's Message category directly. Keep it that way, or port the popup?
-- [ ] End-to-end test: clicking the Message button opens the launcher on Message
+- [x] End-to-end test: clicking the Message button opens the launcher on Message (`scripts/smoke-desktop.mjs`)
 
 ## Parity checks
 - [x] Screen-edge accommodation: already implemented (`.original-menu` 400 ms InOutQuad `left` transition plus clamping in `main.tsx`); confirm in the desktop app
