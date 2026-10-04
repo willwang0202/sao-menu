@@ -13,7 +13,7 @@ Branch: `feat/themes-and-widgets`.
 
 ## Themes (subagents, own worktrees)
 - [ ] ALO theme: ALO SFX preset (`sfx-alo.json`) and ALO HP-bar style (`HPBar/alo-*.png`, `BarALO.qml`/`StyleALO.qml`)
-- [ ] GGO theme: launcher skin from `com.gpbeta.theme.ggo` QML/images (buttons, items, panel bars, dialog)
+- [x] GGO theme: launcher skin from `com.gpbeta.theme.ggo` QML/images (buttons, items, panel bars, dialog); see `docs/original-design.md` → GGO theme
 
 ## Widgets (main session)
 - [ ] SAO clock widget from `Presets/widget-clock.*`: 304×80 `clock-bg.png`, hour/minute pointers, 62 px SAO UI digital time, 5 s sampling; separate floating window like the HP display

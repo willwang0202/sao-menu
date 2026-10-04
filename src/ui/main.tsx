@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ArrowRight, Check, Download, Folder, Info, Link, LoaderCircle, Plus, Search, Upload, X } from 'lucide-react';
 import { api } from '../shared/bridge';
@@ -14,6 +14,10 @@ import { LinkStart } from './startup';
 import { HandReticle, HandTrackingStatusLine, useHandPointer } from './hand-pointer';
 import { menuArtwork } from './menu-art';
 import { THEME_IDS, THEME_NAMES, themeSound, type SoundEvent, type ThemeId } from '../shared/themes';
+import { columnTops, launcherLayout, submenuLayout, type SubmenuLayout } from '../shared/theme-geometry';
+import { themeHoverSource, themeIconSources, usesSaoVectorArt } from '../shared/theme-icons';
+import { LauncherThemeContext, useLauncherTheme } from './theme-context';
+import { GgoInfoPanel, GgoMenuTray, GgoRailTray, ggoPanelIndicatorTop, ggoPanelTop } from './ggo';
 
 const IMAGE = './sao-original/Images/';
 const SOUND = './sao-original/Sounds/';
@@ -24,7 +28,6 @@ const iconPath = (entry: MenuEntry, root = false, index = 0) => {
   const path = entry.icon ?? (root ? rootIcons[index % rootIcons.length] : entry.kind === 'menu' ? 'item/folder.png' : entry.launcher?.kind === 'url' ? 'item/web.png' : entry.launcher?.kind === 'folder' ? 'item/folder.png' : 'item/help.png');
   return path.replace(/^\.\/sao-original\/Images\//, '').replace(/^Images\//, '').replace(/^\.\.\/Images\//, '');
 };
-const hoveredPath = (path: string) => path.replace(/\.png$/i, '-hovered.png');
 function fallbackMenu(platform: RuntimeInfo['platform'], apps: LauncherItem[], favorites: LauncherItem[]): MenuEntry[] {
   return buildDefaultMenu(platform, apps, favorites).map(root => root.id === 'settings' ? {
     ...root,
@@ -53,6 +56,9 @@ function App() {
   const [rootStart, setRootStart] = useState(0);
   const [rootOpened, setRootOpened] = useState(false);
   const [path, setPath] = useState<string[]>([]);
+  const [selectedRowTops, setSelectedRowTops] = useState<number[]>([]);
+  const openDelay = useRef(700);
+  const reportRowTop = useCallback((depth: number, top: number) => setSelectedRowTops(current => current[depth] === top ? current : Object.assign([...current], { [depth]: top })), []);
   const [menuVisible, setMenuVisible] = useState(true);
   const [entrance, setEntrance] = useState(0);
   const [leaving, setLeaving] = useState(false);
@@ -260,7 +266,7 @@ function App() {
   useEffect(() => {
     if (starting || !menuVisible || !settings) return;
     sound('popupLauncher');
-    const timer = setTimeout(() => { setRootOpened(true); }, settings.reducedMotion || matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 700);
+    const timer = setTimeout(() => { setRootOpened(true); }, settings.reducedMotion || matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : openDelay.current);
     return () => clearTimeout(timer);
   }, [starting, menuVisible, !!settings, entrance, sound]);
 
@@ -292,19 +298,22 @@ function App() {
   useEffect(() => {
     for (const directory of directoryPaths) if (!directories[directory] && !directoryErrors[directory]) void readDirectory(directory);
   }, [directoryPaths.join('\0'), directories, directoryErrors, readDirectory]);
-  const groupWidth = Math.max(835, 345 + Math.max(1, columns.length) * 172 + 10);
-  const selectedRootSlot = (rootIndex - rootStart + roots.length) % Math.max(1, roots.length);
-  const selectedRootOffset = selectedRootSlot * 70;
+  const theme = settings?.theme ?? 'sao';
+  const isGgo = theme === 'ggo';
   // Reserve every category's expansion area up front, so selecting a lower
   // category moves its menus without shifting the category rail to fit them.
-  const groupHeight = Math.max(562, 370 + Math.max(0, Math.min(roots.length, 7) - 1) * 70);
+  const layout = launcherLayout(theme, roots.length, columns.length);
+  openDelay.current = layout.openDelay;
+  const { width: groupWidth, height: groupHeight } = layout;
+  const selectedRootSlot = (rootIndex - rootStart + roots.length) % Math.max(1, roots.length);
+  const rootCenter = layout.rootCenter(selectedRootSlot);
+  const menuTops = columnTops(theme, rootCenter, columns.map(column => column.parent.children?.length ?? 0), selectedRowTops);
   const scale = Math.min(1, (viewport.width - 24) / groupWidth, (viewport.height - 24) / groupHeight);
-  const groupLeft = Math.max(12, Math.min(viewport.width - groupWidth * scale - 12, anchor.x - 303 * scale));
-  const groupTop = Math.max(12, Math.min(viewport.height - groupHeight * scale - 12, anchor.y - 298 * scale));
+  const groupLeft = Math.max(12, Math.min(viewport.width - groupWidth * scale - 12, anchor.x - layout.anchorX * scale));
+  const groupTop = Math.max(12, Math.min(viewport.height - groupHeight * scale - 12, anchor.y - layout.anchorY * scale));
   const motion = !settings?.reducedMotion && !matchMedia('(prefers-reduced-motion: reduce)').matches;
   const tiltX = cursor ? Math.max(-1, Math.min(1, (cursor.x - anchor.x) / viewport.width)) * 7 : 0;
   const tiltY = cursor ? Math.max(-1, Math.min(1, (cursor.y - anchor.y) / viewport.height)) * -5 : 0;
-  const paddingTop = Math.max((414 - (Math.min(roots.length, 7) * 64 + (Math.min(roots.length, 7) - 1) * 6)) / 2, 0);
   const launch = async (entry: MenuEntry) => {
     if (entry.kind === 'unsupported' && entry.reason === 'The original configuration has no action assigned.' && !entry.launcher && !entry.nativeTarget && !entry.directory) return;
     if (entry.kind === 'launcher' && entry.launcher) { try { await api.launch(entry.launcher); dismiss(); } catch (e) { notice(message(e), true); } }
@@ -315,7 +324,7 @@ function App() {
   const selectRoot = (index: number) => {
     if (performance.now() < suppressRootClick.current) return;
     setRootIndex(index); setPath([]);
-    if ((index - rootStart + roots.length) % roots.length >= 7) setRootStart(index);
+    if ((index - rootStart + roots.length) % roots.length >= layout.rootCapacity) setRootStart(index);
     if (index === rootIndex && rootOpened) { setRootOpened(false); return; }
     setRootOpened(true);
     if (roots[index]?.directory) void readDirectory(roots[index].directory);
@@ -357,59 +366,68 @@ function App() {
   };
 
   if (!settings || !runtime) return <div className="initializing" role="status"><div className="initializing-circle"><img src={IMAGE + 'symbol/setting.png'} alt="" /></div>{bootError ? <><p>{bootError}</p><button onClick={() => location.reload()}>Try again</button></> : <><LoaderCircle className="spin" size={16} /><span>Initializing SAO menu…</span></>}</div>;
-  return <div data-theme={settings.theme} className={`sao-desktop ${runtime.desktop ? 'native-desktop' : 'browser-preview'} ${settings.reducedMotion ? 'reduce-motion' : ''}`} onDragOver={event => { if (event.dataTransfer.types.includes('Files')) { event.preventDefault(); event.dataTransfer.dropEffect = 'link'; } }} onDrop={event => { event.preventDefault(); void api.dropFiles([...event.dataTransfer.files]).catch(error => notice(message(error), true)); }} onPointerDown={e => { if (!starting && (!e.target || !(e.target as HTMLElement).closest('.root-path,.submenu-column,.info-panel,.social-panel,.sao-dialog,.sao-notification')) && menuVisible && !preferences) dismiss(); }}>
+  return <LauncherThemeContext.Provider value={settings.theme}><div data-theme={settings.theme} className={`sao-desktop ${runtime.desktop ? 'native-desktop' : 'browser-preview'} ${settings.reducedMotion ? 'reduce-motion' : ''}`} onDragOver={event => { if (event.dataTransfer.types.includes('Files')) { event.preventDefault(); event.dataTransfer.dropEffect = 'link'; } }} onDrop={event => { event.preventDefault(); void api.dropFiles([...event.dataTransfer.files]).catch(error => notice(message(error), true)); }} onPointerDown={e => { if (!starting && (!e.target || !(e.target as HTMLElement).closest('.root-path,.submenu-column,.info-panel,.social-panel,.sao-dialog,.sao-notification')) && menuVisible && !preferences) dismiss(); }}>
     {starting && <LinkStart settings={settings} onComplete={() => { void api.completeStartup().then(() => { sound('ready'); setStarting(false); }).catch(error => notice(message(error), true)); }} />}
     <HandReticle pointer={handPointer} />
     {!starting && menuVisible && <main key={entrance} className={`original-menu ${leaving ? 'dismissing' : ''}`} aria-label="SAO menu" style={{ left: groupLeft, top: groupTop, width: groupWidth, height: groupHeight, transform: `scale(${scale})`, '--menu-scale': scale } as React.CSSProperties}>
-      <div className="hologram-content" style={{ transform: motion ? `perspective(1800px) rotateX(${tiltY}deg) rotateY(${tiltX}deg)` : undefined }}>
-      {rootOpened && panelEntry?.infoPanel === true && <InfoPanel entry={panelEntry} playerName={account?.displayName ?? settings.playerName} y={selectedRootOffset} onPopup={() => sound('popupPanel')} />}
-      <div className={`root-path ${rootOpened ? '' : 'unselected'}`} role="menu" aria-label="Categories" style={{ left: 271, top: 215 - paddingTop - 32 }} onWheel={e => { if (Math.abs(e.deltaY) > 1 && roots.length) { setRootStart((rootStart + (e.deltaY > 0 ? 1 : roots.length - 1)) % roots.length); setRootOpened(false); setPath([]); } }} onPointerDown={event => { if (event.button === 0) rootDrag.current = { y: event.clientY, index: rootStart, steps: 0 }; }} onPointerMove={event => { const drag = rootDrag.current; if (!drag) return; const steps = Math.trunc((event.clientY - drag.y) / (70 * scale)); if (steps !== drag.steps) { drag.steps = steps; event.currentTarget.setPointerCapture(event.pointerId); suppressRootClick.current = performance.now() + 300; setRootStart((drag.index - steps % roots.length + roots.length) % roots.length); setRootOpened(false); setPath([]); } }} onPointerUp={() => { rootDrag.current = null; }} onPointerCancel={() => { rootDrag.current = null; }}>
+      <div className="hologram-content" style={{ transformOrigin: `${layout.anchorX}px ${layout.anchorY}px`, transform: motion ? `perspective(1800px) rotateX(${tiltY}deg) rotateY(${tiltX}deg)` : undefined }}>
+      {isGgo && <GgoRailTray left={layout.railLeft} top={layout.railTop} openDelay={layout.openDelay} />}
+      {rootOpened && panelEntry?.infoPanel === true && (isGgo
+        ? <GgoInfoPanel entry={panelEntry} playerName={account?.displayName ?? settings.playerName} left={0} top={ggoPanelTop(layout.railTop)} indicatorTop={ggoPanelIndicatorTop(layout.rootTop(selectedRootSlot))} onPopup={() => sound('popupPanel')} />
+        : <InfoPanel entry={panelEntry} playerName={account?.displayName ?? settings.playerName} y={rootCenter - 215} onPopup={() => sound('popupPanel')} />)}
+      <div className={`root-path ${rootOpened ? '' : 'unselected'}`} role="menu" aria-label="Categories" style={{ left: layout.railLeft, top: layout.railTop }} onWheel={e => { if (Math.abs(e.deltaY) > 1 && roots.length) { setRootStart((rootStart + (e.deltaY > 0 ? 1 : roots.length - 1)) % roots.length); setRootOpened(false); setPath([]); } }} onPointerDown={event => { if (event.button === 0) rootDrag.current = { y: event.clientY, index: rootStart, steps: 0 }; }} onPointerMove={event => { const drag = rootDrag.current; if (!drag) return; const steps = Math.trunc((event.clientY - drag.y) / (layout.rootPitch * scale)); if (steps !== drag.steps) { drag.steps = steps; event.currentTarget.setPointerCapture(event.pointerId); suppressRootClick.current = performance.now() + 300; setRootStart((drag.index - steps % roots.length + roots.length) % roots.length); setRootOpened(false); setPath([]); } }} onPointerUp={() => { rootDrag.current = null; }} onPointerCancel={() => { rootDrag.current = null; }}>
         {roots.map((entry, index) => {
           const slot = (index - rootStart + roots.length) % roots.length;
-          if (slot >= 7) return null;
-          return <OriginalButton key={entry.id} entry={entry} root index={index} hovered={hoveredButton === `root:${entry.id}`} selected={rootOpened && index === rootIndex} label={entry.id === 'user' ? account?.displayName ?? (settings.playerName || entry.name) : entry.name} style={{ top: paddingTop + slot * 70, opacity: !rootOpened || index === rootIndex ? 1 : .5, animationDelay: `${Math.max((Math.min(roots.length, 5) - slot) * 100, 0)}ms` }} onPress={() => sound()} onClick={() => selectRoot(index)} onKeyDown={e => { if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); const next = (index + (e.key === 'ArrowDown' ? 1 : roots.length - 1)) % roots.length; selectRoot(next); requestAnimationFrame(() => document.querySelector<HTMLButtonElement>(`[data-root-index="${next}"]`)?.focus()); } }} />;
+          if (slot >= layout.rootCapacity) return null;
+          return <OriginalButton key={entry.id} entry={entry} root index={index} disabled={!layout.rootEnabled(slot)} hovered={hoveredButton === `root:${entry.id}`} selected={rootOpened && index === rootIndex} label={entry.id === 'user' ? account?.displayName ?? (settings.playerName || entry.name) : entry.name} style={{ top: layout.rootTop(slot), opacity: !rootOpened || index === rootIndex ? 1 : .5, animationDelay: `${layout.rootEntranceDelay(slot)}ms` }} onPress={() => sound()} onClick={() => selectRoot(index)} onKeyDown={e => { if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); const next = (index + (e.key === 'ArrowDown' ? 1 : roots.length - 1)) % roots.length; selectRoot(next); requestAnimationFrame(() => document.querySelector<HTMLButtonElement>(`[data-root-index="${next}"]`)?.focus()); } }} />;
         })}
       </div>
-      {rootOpened && columns.length > 0 && <MenuIndicator x={339} y={215 + selectedRootOffset} itemCount={columns[0].parent.children?.length ?? 0} hidden={!!columns[0].selected} />}
-      {rootOpened && columns.map(({ parent, selected }, depth) => <Submenu key={depth} parent={parent} selected={selected} hoveredButton={hoveredButton} depth={depth} x={345 + depth * 172} y={60 + selectedRootOffset} onPress={() => sound()} onPopup={() => sound('popupMenu')} onBrowse={() => setPath(current => current.slice(0, depth))} onSelect={entry => selectEntry(entry, depth)} />)}
-      {rootOpened && activeRoot?.social && <SocialPanel mode={activeRoot.social} y={60 + selectedRootOffset} onPress={() => sound()} />}
+      {rootOpened && !isGgo && columns.length > 0 && <MenuIndicator x={339} y={rootCenter} itemCount={columns[0].parent.children?.length ?? 0} hidden={!!columns[0].selected} />}
+      {rootOpened && columns.map(({ parent, selected }, depth) => <Submenu key={depth} parent={parent} selected={selected} hoveredButton={hoveredButton} depth={depth} x={layout.menuLeft(depth)} y={menuTops[depth]} layout={submenuLayout(theme)} onSelectedTop={top => reportRowTop(depth, top)} onPress={() => sound()} onPopup={() => sound('popupMenu')} onBrowse={() => setPath(current => current.slice(0, depth))} onSelect={entry => selectEntry(entry, depth)} />)}
+      {rootOpened && activeRoot?.social && <SocialPanel mode={activeRoot.social} x={layout.menuLeft(0)} y={rootCenter - 155} onPress={() => sound()} />}
       </div>
     </main>}
     {!menuVisible && !runtime.desktop && <button className="restore-button" onClick={() => { setMenuVisible(true); setRootIndex(0); setRootStart(0); setPath([]); }}><img src={IMAGE + 'symbol/setting.png'} alt="" /><span>Open SAO menu</span></button>}
     {preferences && <Preferences tab={preferences} onTab={setPreferences} onClose={() => setPreferences(null)} settings={settings} accountName={account?.displayName ?? settings.playerName} runtime={runtime} gesture={gesture} apps={apps} applicationError={applicationError} save={save} busy={busy} saving={saving} saveError={saveError} addFavorite={addFavorite} pick={pick} importConfiguration={importConfiguration} exportConfiguration={exportConfiguration} openPreview={async kind => { try { await (kind === "browser" ? api.openBrowser() : api.openMedia()); } catch (e) { notice(message(e), true); } }} enableGesture={async () => { try { const status = await (gesture?.permission === 'granted' ? api.getGestureStatus() : api.requestGesturePermission()); setGesture(status); notice(status.message, status.permission !== 'granted'); } catch (e) { notice(message(e), true); } }} launch={async item => { try { await api.launch(item); } catch (e) { notice(message(e), true); } }} />}
     {toast && <div role={toast.error ? 'alert' : 'status'} className={`sao-notification ${toast.error ? 'error' : ''}`}>{toast.error ? <Info size={18} /> : <Check size={18} />}<span>{toast.text}</span><button onClick={() => setToast(null)} aria-label="Dismiss notification"><X size={16} /></button></div>}
-  </div>;
+  </div></LauncherThemeContext.Provider>;
 }
 
-function OriginalButton({ entry, root = false, index = 0, hovered = false, selected = false, label, style, onPress, onClick, onKeyDown }: { entry: MenuEntry; root?: boolean; index?: number; hovered?: boolean; selected?: boolean; label?: string; style?: React.CSSProperties; onPress: () => void; onClick: () => void; onKeyDown?: React.KeyboardEventHandler<HTMLButtonElement> }) {
+function OriginalButton({ entry, root = false, index = 0, hovered = false, selected = false, disabled = false, label, style, onPress, onClick, onKeyDown }: { entry: MenuEntry; root?: boolean; index?: number; hovered?: boolean; selected?: boolean; disabled?: boolean; label?: string; style?: React.CSSProperties; onPress: () => void; onClick: () => void; onKeyDown?: React.KeyboardEventHandler<HTMLButtonElement> }) {
   const [focused, setFocused] = useState(false);
+  const theme = useLauncherTheme();
   const normalIcon = iconPath(entry, root, index);
   const buttonStyle = { ...style, opacity: 1, '--background-opacity': style?.opacity ?? 1 } as React.CSSProperties;
-  return <button type="button" role="menuitem" className={`${root ? 'root-button' : 'item-button'} ${hovered ? 'hovered' : ''} ${selected ? 'selected' : ''}`} style={buttonStyle} aria-label={label ?? entry.name} aria-haspopup={entry.kind === 'menu' ? 'menu' : undefined} aria-expanded={entry.kind === 'menu' ? selected : undefined} data-hover-id={`${root ? 'root' : 'item'}:${entry.id}`} data-root-index={root ? index : undefined} data-menu-item={!root ? entry.id : undefined} onFocus={event => setFocused(event.currentTarget.matches(':focus-visible'))} onBlur={() => setFocused(false)} onPointerDown={event => { if (event.button === 0) onPress(); }} onClick={onClick} onKeyDown={event => { if (!event.repeat && ['Enter', ' '].includes(event.key)) onPress(); onKeyDown?.(event); }}><ButtonIcon key={normalIcon} icon={normalIcon} active={hovered || selected || focused} root={root} />{!root && <span>{entry.name}</span>}</button>;
+  return <button type="button" role="menuitem" className={`${root ? 'root-button' : 'item-button'} ${hovered ? 'hovered' : ''} ${selected ? 'selected' : ''}`} style={buttonStyle} disabled={disabled || undefined} aria-label={label ?? entry.name} aria-haspopup={entry.kind === 'menu' ? 'menu' : undefined} aria-expanded={entry.kind === 'menu' ? selected : undefined} data-hover-id={`${root ? 'root' : 'item'}:${entry.id}`} data-root-index={root ? index : undefined} data-menu-item={!root ? entry.id : undefined} onFocus={event => setFocused(event.currentTarget.matches(':focus-visible'))} onBlur={() => setFocused(false)} onPointerDown={event => { if (event.button === 0) onPress(); }} onClick={onClick} onKeyDown={event => { if (!event.repeat && ['Enter', ' '].includes(event.key)) onPress(); onKeyDown?.(event); }}><ButtonIcon key={`${theme}:${normalIcon}`} icon={normalIcon} active={hovered || selected || focused} root={root} />{!root && <span>{entry.name}</span>}</button>;
 }
 function ButtonIcon({ icon, active, root }: { icon: string; active: boolean; root: boolean }) {
-  const [fallback, setFallback] = useState(false);
+  const theme = useLauncherTheme();
+  const [attempt, setAttempt] = useState(0);
   const [decoded, setDecoded] = useState('');
-  const vector = fallback ? null : menuArtwork(icon, root);
-  const normal = vector?.normal ?? IMAGE + (fallback ? root ? 'symbol/help.png' : 'item/help.png' : icon);
-  const hovered = vector?.active ?? hoveredPath(normal);
+  const sources = themeIconSources(theme, icon, root);
+  const vector = attempt === 0 && usesSaoVectorArt(theme) ? menuArtwork(icon, root) : null;
+  const normal = vector?.normal ?? sources[Math.min(attempt, sources.length - 1)];
+  const hovered = vector?.active ?? themeHoverSource(theme, normal);
   const useHover = active && decoded === hovered;
-  return <div className={`original-icon-stack${vector && root ? ' vector-ring' : ''}`}><img className="original-icon" src={normal} alt="" draggable="false" style={{ opacity: useHover ? 0 : 1 }} onError={() => { if (!fallback) setFallback(true); }} /><img className="original-icon" src={hovered} alt="" draggable="false" style={{ opacity: useHover ? 1 : 0 }} onLoad={event => { const image = event.currentTarget; void image.decode().then(() => setDecoded(hovered)).catch(() => {}); }} onError={() => setDecoded('')} /></div>;
+  return <div className={`original-icon-stack${vector && root ? ' vector-ring' : ''}`}><img className="original-icon" src={normal} alt="" draggable="false" style={{ opacity: useHover ? 0 : 1 }} onError={() => { if (attempt < sources.length - 1) setAttempt(attempt + 1); }} /><img className="original-icon" src={hovered} alt="" draggable="false" style={{ opacity: useHover ? 1 : 0 }} onLoad={event => { const image = event.currentTarget; void image.decode().then(() => setDecoded(hovered)).catch(() => {}); }} onError={() => setDecoded('')} /></div>;
 }
-function Submenu({ parent, selected, hoveredButton, depth, x, y, onPress, onPopup, onBrowse, onSelect }: { parent: MenuEntry; selected?: string; hoveredButton: string | null; depth: number; x: number; y: number; onPress: () => void; onPopup: () => void; onBrowse: () => void; onSelect: (entry: MenuEntry) => void }) {
+function Submenu({ parent, selected, hoveredButton, depth, x, y, layout, onPress, onPopup, onBrowse, onSelect, onSelectedTop }: { parent: MenuEntry; selected?: string; hoveredButton: string | null; depth: number; x: number; y: number; layout: SubmenuLayout; onPress: () => void; onPopup: () => void; onBrowse: () => void; onSelect: (entry: MenuEntry) => void; onSelectedTop: (top: number) => void }) {
   const entries = parent.children ?? [];
   const [start, setStart] = useState(0);
-  const count = Math.min(entries.length, 8);
+  const isGgo = useLauncherTheme() === 'ggo';
+  const count = Math.min(entries.length, layout.capacity);
   const selectedIndex = entries.findIndex(entry => entry.id === selected);
   const container = useRef<HTMLDivElement>(null);
   const drag = useRef<{ y: number; start: number; steps: number } | null>(null);
   const suppressClick = useRef(0);
-  useEffect(() => { setStart(0); const timer = setTimeout(onPopup, 300); return () => clearTimeout(timer); }, [parent.id]);
-  const padding = entries.length >= 8 ? 0 : (310 - (count * 46 + Math.max(0, count - 1) * -2)) / 2;
+  useEffect(() => { setStart(0); const timer = setTimeout(onPopup, layout.popupDelay); return () => clearTimeout(timer); }, [parent.id]);
+  const isCentred = selectedIndex >= 0 && layout.recenterSelected;
   const visible = Array.from({ length: count }, (_, slot) => {
-    const index = selectedIndex < 0 ? (start + slot) % entries.length : (selectedIndex - Math.floor(count / 2) + slot + entries.length) % entries.length;
-    return { entry: entries[index], top: selectedIndex < 0 ? padding + slot * 44 : 132 + (slot - Math.floor(count / 2)) * 44 };
+    const index = !isCentred ? (start + slot) % entries.length : (selectedIndex - Math.floor(count / 2) + slot + entries.length) % entries.length;
+    return { entry: entries[index], top: layout.rowTop(slot, count, entries.length, isCentred) };
   });
+  const selectedTop = visible.find(row => row.entry.id === selected)?.top;
+  useLayoutEffect(() => { if (selectedTop !== undefined) onSelectedTop(selectedTop); }, [selectedTop]);
   const keyboard = (event: React.KeyboardEvent<HTMLButtonElement>, entry: MenuEntry) => {
     if (event.key === 'ArrowRight') { event.preventDefault(); if (entry.kind === 'menu') { onSelect(entry); requestAnimationFrame(() => document.querySelector<HTMLButtonElement>(`[data-menu-depth="${depth + 1}"] button`)?.focus()); } }
     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
@@ -419,11 +437,12 @@ function Submenu({ parent, selected, hoveredButton, depth, x, y, onPress, onPopu
       requestAnimationFrame(() => container.current?.querySelector<HTMLButtonElement>(`[data-menu-item="${CSS.escape(entries[next].id)}"]`)?.focus());
     }
   };
-  return <div className="submenu-column" data-menu-depth={depth} style={{ left: x, top: y }} role="menu" aria-label={parent.name}>
-    <div className="submenu-mask" ref={container} onWheel={e => { if (entries.length > 1 && Math.abs(e.deltaY) > 1) { if (selected) onBrowse(); setStart(value => (value + (e.deltaY > 0 ? 1 : entries.length - 1)) % entries.length); } }} onPointerDown={event => { if (event.button === 0) drag.current = { y: event.clientY, start, steps: 0 }; }} onPointerMove={event => { const current = drag.current; if (!current || entries.length < 2) return; const steps = Math.trunc((event.clientY - current.y) / 44); if (steps !== current.steps) { current.steps = steps; event.currentTarget.setPointerCapture(event.pointerId); suppressClick.current = performance.now() + 300; if (selected) onBrowse(); setStart((current.start - steps % entries.length + entries.length) % entries.length); } }} onPointerUp={() => { drag.current = null; }} onPointerCancel={() => { drag.current = null; }}>
+  return <div className="submenu-column" data-menu-depth={depth} style={{ left: x, top: y, height: layout.height(entries.length) }} role="menu" aria-label={parent.name}>
+    {isGgo && <GgoMenuTray />}
+    <div className="submenu-mask" ref={container} onWheel={e => { if (entries.length > 1 && Math.abs(e.deltaY) > 1) { if (selected) onBrowse(); setStart(value => (value + (e.deltaY > 0 ? 1 : entries.length - 1)) % entries.length); } }} onPointerDown={event => { if (event.button === 0) drag.current = { y: event.clientY, start, steps: 0 }; }} onPointerMove={event => { const current = drag.current; if (!current || entries.length < 2) return; const steps = Math.trunc((event.clientY - current.y) / layout.pitch); if (steps !== current.steps) { current.steps = steps; event.currentTarget.setPointerCapture(event.pointerId); suppressClick.current = performance.now() + 300; if (selected) onBrowse(); setStart((current.start - steps % entries.length + entries.length) % entries.length); } }} onPointerUp={() => { drag.current = null; }} onPointerCancel={() => { drag.current = null; }}>
       {visible.map(({ entry, top }) => <OriginalButton key={entry.id} entry={entry} hovered={hoveredButton === `item:${entry.id}`} selected={entry.id === selected} style={{ top, opacity: selected && entry.id !== selected ? .5 : 1 }} onPress={onPress} onClick={() => { if (performance.now() >= suppressClick.current) onSelect(entry); }} onKeyDown={e => keyboard(e, entry)} />)}
     </div>
-    {selected && <MenuIndicator x={166} y={155} itemCount={entries.find(entry => entry.id === selected)?.children?.length ?? 0} />}
+    {selected && !isGgo && <MenuIndicator x={166} y={155} itemCount={entries.find(entry => entry.id === selected)?.children?.length ?? 0} />}
   </div>;
 }
 function MenuIndicator({ x, y, itemCount, hidden = false }: { x: number; y: number; itemCount: number; hidden?: boolean }) { const height = Math.max(70, Math.min(230, itemCount * 44 + 2)); return <div className={`menu-indicator ${hidden ? 'hidden' : ''}`} style={{ left: x, top: y - height / 2, height }} aria-hidden="true"><span className="indicator-upper" /><span className="indicator-lower" /></div>; }
