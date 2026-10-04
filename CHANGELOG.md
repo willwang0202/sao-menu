@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+## 0.1.8 — October 4, 2026
+
+- Add the ALfheim Online and Gun Gale Online looks from the original theme packages. Choose them in Options → Interface → Theme. ALO uses the original ALO sounds and HP bar (name, HP, MP, level and charging icon); GGO uses the original GGO rail, menus, info panel and icons. The SAO look is unchanged.
+- Add the original SAO clock (analog hands and digital time) at the top right, and the mail-style Message button below the HP bar. The button shows unread messages and opens the launcher on Message. Both can be turned off in Options → Interface → Desktop widgets.
+- Keep the HP bar, clock and Message button in front of the launcher; Always on top decides whether they also stay above other apps.
+- Translate the Link Start language, login and character-registration cards to the system language (English, Japanese, Traditional and Simplified Chinese, Korean, Spanish, French, German), or choose one in Options. Japanese keeps the anime's cards word for word.
+- Kirito → Skills now starts empty. Kirito → Equipment holds Calendar, Reminders, Notes, Maps, Calculator, Terminal, Finder and Mail.
+- Settings → Help opens the support page at sao-menu.favioon.com.
+
 ## 0.1.7 — October 3, 2026
 
 - Expand HP name boxes and their artwork/native window to fit the measured display name, including party members; retain the original battery bar geometry.
