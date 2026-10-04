@@ -1,7 +1,7 @@
-/** SAO Field Map look: the anime's white/grey hologram map, applied to an OpenFreeMap (OpenMapTiles) style. */
+/** SAO Field Map look from the anime's Dungeon Map: glowing cyan ground, deep-blue paths, applied to an OpenFreeMap (OpenMapTiles) style. */
 export const SAO_MAP_COLORS = {
-  ground: 'rgba(246,247,249,0.94)', water: '#c6d9e7', green: '#e3e9e1', building: '#dfe1e5',
-  road: '#ffffff', roadCasing: '#c9ccd2', boundary: '#9ba6b2', label: '#555a60', halo: 'rgba(255,255,255,0.9)',
+  ground: '#86d6f4', water: '#62c3ec', green: '#7ccff0', building: 'rgba(60,150,225,0.10)',
+  road: '#1d6fd2', roadCasing: '#4aa8e6', boundary: '#2a80d6', label: '#ffffff', halo: 'rgba(18,96,180,0.75)',
 } as const;
 
 type Layer = { id: string; type: string; 'source-layer'?: string; paint?: Record<string, unknown>; layout?: Record<string, unknown> };
@@ -15,7 +15,7 @@ function recolor(layer: Layer): Record<string, unknown> | undefined {
   if (layer.type === 'fill') {
     if (matches(layer, 'water')) return { ...paint, 'fill-color': SAO_MAP_COLORS.water };
     if (matches(layer, 'park', 'landcover', 'wood', 'grass')) return { ...paint, 'fill-color': SAO_MAP_COLORS.green };
-    if (matches(layer, 'building')) return { ...paint, 'fill-color': SAO_MAP_COLORS.building };
+    if (matches(layer, 'building')) return { ...paint, 'fill-color': SAO_MAP_COLORS.building, 'fill-outline-color': SAO_MAP_COLORS.building };
     return layer.paint;
   }
   if (layer.type === 'line') {
@@ -29,7 +29,14 @@ function recolor(layer: Layer): Record<string, unknown> | undefined {
   return layer.paint;
 }
 
+/** Points of interest are hidden: the anime map shows only paths and place names. */
+const isHidden = (layer: Layer) => layer.type === 'symbol' && matches(layer, 'poi');
+
 /** Returns a new style; the downloaded one is left unchanged. */
 export function saoMapStyle<T extends Style>(style: T): T {
-  return { ...style, layers: style.layers.map(layer => { const paint = recolor(layer); return paint ? { ...layer, paint } : layer; }) };
+  return { ...style, layers: style.layers.map(layer => {
+    if (isHidden(layer)) return { ...layer, layout: { ...layer.layout, visibility: 'none' } };
+    const paint = recolor(layer);
+    return paint ? { ...layer, paint } : layer;
+  }) };
 }

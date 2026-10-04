@@ -9,10 +9,11 @@ const style = { version: 8, sources: {}, layers: [
   { id: 'building', type: 'fill', 'source-layer': 'building', paint: { 'fill-color': '#888' } },
   { id: 'highway_major', type: 'line', 'source-layer': 'transportation', paint: { 'line-color': '#f00', 'line-width': 2 } },
   { id: 'boundary_country', type: 'line', 'source-layer': 'boundary', paint: { 'line-color': '#000' } },
+  { id: 'poi_r1', type: 'symbol', 'source-layer': 'poi', layout: { 'text-field': '{name}' }, paint: {} },
   { id: 'place_city', type: 'symbol', 'source-layer': 'place', layout: { 'text-field': '{name}' }, paint: { 'text-color': '#000' } },
 ] };
 
-test('restyles OpenStreetMap layers into the SAO white hologram palette', () => {
+test('restyles OpenStreetMap layers into the anime Dungeon Map palette', () => {
   const next = saoMapStyle(style);
   const paint = (id: string) => next.layers.find(layer => layer.id === id)!.paint as Record<string, unknown>;
   assert.equal(paint('background')['background-color'], SAO_MAP_COLORS.ground);
@@ -24,6 +25,7 @@ test('restyles OpenStreetMap layers into the SAO white hologram palette', () => 
   assert.equal(paint('boundary_country')['line-color'], SAO_MAP_COLORS.boundary);
   assert.equal(paint('place_city')['text-color'], SAO_MAP_COLORS.label);
   assert.equal(paint('place_city')['text-halo-color'], SAO_MAP_COLORS.halo);
+  assert.equal((next.layers.find(layer => layer.id === 'poi_r1')!.layout as Record<string, unknown>).visibility, 'none', 'points of interest are hidden');
 });
 
 test('does not mutate the downloaded style', () => {

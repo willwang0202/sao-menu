@@ -1,18 +1,23 @@
-/* SAO map window: white hologram card, grey title band, orange player arrow. */
-.field-map{position:absolute;z-index:6;display:flex;flex-direction:column;background:linear-gradient(#fdfdfd,#eceef1);border:1px solid rgba(110,110,118,.55);box-shadow:0 10px 26px rgba(0,0,0,.18),inset 0 0 0 1px rgba(255,255,255,.7);color:rgba(51,51,51,.85);font-family:'SAO UI','Source Han Sans',sans-serif;animation:submenu-fade 400ms ease-out;pointer-events:auto}
-.field-map-title{display:flex;align-items:baseline;gap:14px;height:46px;padding:0 18px;border-bottom:1px solid rgba(110,110,118,.25);background:linear-gradient(#ffffff,#e9ebee)}
-.field-map-title h2{margin:0;font-size:22px;font-weight:500;line-height:46px;color:rgba(51,51,51,.75)}
-.field-map-title span{flex:1;min-width:0;font-size:13px;color:#888;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right}
-.field-map-canvas{position:relative;flex:1;min-height:0;background:rgba(246,247,249,.94)}
-.field-map-canvas .maplibregl-ctrl-attrib{font-size:9px;background:rgba(255,255,255,.75)}
-.field-map-hint{position:absolute;left:16px;right:16px;top:58px;margin:0;padding:10px 12px;font-size:12px;line-height:1.6;background:rgba(255,255,255,.94);border:1px solid rgba(110,110,118,.35);color:#6d5a2e;z-index:2}
+/* The anime's Dungeon Map window: white card, small grey title, glowing cyan map, caption band. */
+.field-map{position:absolute;z-index:6;display:flex;flex-direction:column;background:linear-gradient(#ffffff,#f1f2f4);border:1px solid rgba(150,150,158,.45);box-shadow:0 12px 30px rgba(0,0,0,.16);color:rgba(51,51,51,.82);font-family:'SAO UI','Source Han Sans',sans-serif;animation:submenu-fade 400ms ease-out;pointer-events:auto}
+.field-map-title{height:38px;display:flex;align-items:center;justify-content:center;border-bottom:1px solid rgba(150,150,158,.22)}
+.field-map-title h2{margin:0;font-size:15px;font-weight:500;color:rgba(80,80,86,.6);letter-spacing:.04em}
+.field-map-frame{position:relative;flex:1;min-height:0;margin:10px 12px 0;background:#86d6f4;box-shadow:inset 0 0 0 1px rgba(30,110,200,.35)}
+/* Soft hologram edge: the map fades into a bright cyan rim. */
+.field-map-frame:after{content:'';position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 22px 8px rgba(190,240,255,.85);z-index:1}
+.field-map-canvas{position:absolute;inset:0}
+.field-map-canvas .maplibregl-ctrl-attrib{font-size:8px;background:rgba(255,255,255,.7);z-index:2}
+.field-map-hint{position:absolute;left:24px;right:24px;top:58px;margin:0;padding:8px 10px;font-size:11px;line-height:1.55;background:rgba(255,255,255,.95);border:1px solid rgba(110,110,118,.3);color:#6d5a2e;z-index:3}
 .field-map-hint.subtle{color:#666}
-.field-map-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;height:42px;padding:0 12px 0 18px;border-top:1px solid rgba(110,110,118,.25);font-size:12px;color:#777;font-variant-numeric:tabular-nums;white-space:pre}
-.field-map-controls{display:flex;gap:6px}
-.field-map-controls button{min-width:28px;height:26px;padding:0 9px;border:1px solid #a9a9a9;border-radius:13px;background:linear-gradient(#fff,#e7e7e7);font-size:14px;color:#555}
+.field-map-caption{position:relative;height:96px;padding:14px 16px 10px 22px;display:flex;flex-direction:column;gap:6px}
+.field-map-chevron{position:absolute;left:14px;top:2px;width:14px;height:8px;border-left:1px solid rgba(110,110,118,.55);border-bottom:1px solid rgba(110,110,118,.55);transform:skewX(-35deg)}
+.field-map-caption strong{font-size:24px;font-weight:500;line-height:1.1;color:rgba(51,51,51,.78);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.field-map-meta{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11px;color:#888;font-variant-numeric:tabular-nums;white-space:pre}
+.field-map-controls{display:flex;gap:5px}
+.field-map-controls button{min-width:26px;height:24px;padding:0 8px;border:1px solid #b5b5b5;border-radius:12px;background:linear-gradient(#fff,#ececec);font-size:13px;color:#555}
 .field-map-controls button:hover{background:linear-gradient(#ffd260,#ffb916);border-color:#b68418;color:#6e4500}
 .field-map-player{position:relative;width:28px;height:28px}
 .player-arrow{position:absolute;left:7px;top:4px;width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:20px solid #f0a020;filter:drop-shadow(0 0 2px #fff) drop-shadow(0 1px 2px rgba(0,0,0,.35))}
-.player-pulse{position:absolute;inset:0;border-radius:50%;background:rgba(240,160,32,.25);animation:player-pulse 1.8s ease-out infinite}
+.player-pulse{position:absolute;inset:0;border-radius:50%;background:rgba(255,255,255,.45);animation:player-pulse 1.8s ease-out infinite}
 @keyframes player-pulse{from{transform:scale(.4);opacity:1}to{transform:scale(1.6);opacity:0}}
 .reduce-motion .player-pulse{animation:none}

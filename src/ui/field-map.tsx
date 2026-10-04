@@ -7,7 +7,8 @@ import { api } from '../shared/bridge';
 import { MAP_STYLE_URL, type MapPosition } from '../shared/map';
 import { saoMapStyle } from '../shared/map-style';
 
-export const FIELD_MAP_SIZE = { width: 540, height: 420 } as const;
+/** Portrait card like the anime's Dungeon Map window. */
+export const FIELD_MAP_SIZE = { width: 380, height: 500 } as const;
 // Vite bundles MapLibre's worker so it loads from the app itself in dev and production builds.
 maplibregl.setWorkerUrl(mapWorkerUrl);
 const STREET_ZOOM = 15;
@@ -62,19 +63,23 @@ export function FieldMap({ x, y, motion }: { x: number; y: number; motion: boole
   }, [position, map.current]);
 
   const located = position && position.source !== 'none' ? position : null;
-  const title = !position ? 'Locating…' : position.source === 'home' ? position.label : position.source === 'device' ? 'Current location' : 'World';
+  const caption = !position ? 'Locating…' : position.source === 'home' ? position.label : position.source === 'device' ? 'Current Location' : 'World';
   return <section className="field-map" style={{ left: x, top: y, width: FIELD_MAP_SIZE.width, height: FIELD_MAP_SIZE.height }} aria-label="Field Map" onWheel={event => event.stopPropagation()} onPointerDown={event => event.stopPropagation()}>
-    <header className="field-map-title"><h2>Field Map</h2><span title={title}>{title}</span></header>
-    <div className="field-map-canvas" ref={container} />
+    <header className="field-map-title"><h2>Field Map</h2></header>
+    <div className="field-map-frame"><div className="field-map-canvas" ref={container} /></div>
     {position?.source === 'none' && <p className="field-map-hint" role="status">{HINTS[position.reason] ?? HINTS.unavailable}</p>}
-    {position?.source === 'home' && <p className="field-map-hint subtle" role="status">{`${HOME_REASONS[position.reason] ?? ''} Showing your home location.`.trim()}</p>}
+    {position?.source === 'home' && HOME_REASONS[position.reason] && <p className="field-map-hint subtle" role="status">{`${HOME_REASONS[position.reason]} Showing your home location.`}</p>}
     {error && <p className="field-map-hint" role="alert">{error}</p>}
-    <footer className="field-map-footer">
-      <span>{located ? `${formatCoordinate(located.latitude, 'N', 'S')}  ${formatCoordinate(located.longitude, 'E', 'W')}` : '—'}{located?.source === 'device' && located.accuracy ? `  ±${Math.round(located.accuracy)} m` : ''}</span>
-      <div className="field-map-controls">
-        <button type="button" aria-label="Zoom out" onClick={() => map.current?.zoomOut()}>−</button>
-        <button type="button" aria-label="Zoom in" onClick={() => map.current?.zoomIn()}>+</button>
-        <button type="button" className="field-map-locate" onClick={locate}>Locate</button>
+    <footer className="field-map-caption">
+      <span className="field-map-chevron" aria-hidden="true" />
+      <strong title={caption}>{caption}</strong>
+      <div className="field-map-meta">
+        <span>{located ? `${formatCoordinate(located.latitude, 'N', 'S')}  ${formatCoordinate(located.longitude, 'E', 'W')}` : '—'}{located?.source === 'device' && located.accuracy ? `  ±${Math.round(located.accuracy)} m` : ''}</span>
+        <div className="field-map-controls">
+          <button type="button" aria-label="Zoom out" onClick={() => map.current?.zoomOut()}>−</button>
+          <button type="button" aria-label="Zoom in" onClick={() => map.current?.zoomIn()}>+</button>
+          <button type="button" className="field-map-locate" onClick={locate}>Locate</button>
+        </div>
       </div>
     </footer>
   </section>;

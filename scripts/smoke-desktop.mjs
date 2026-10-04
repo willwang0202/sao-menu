@@ -226,10 +226,10 @@ try {
   await page.getByRole('menuitem', { name: 'Navigation', exact: true }).click();
   await page.getByRole('menuitem', { name: 'Field Map', exact: true }).click();
   await page.waitForSelector('.field-map .maplibregl-canvas');
-  await page.waitForFunction(() => document.querySelector('.field-map-title span')?.textContent === 'Taipei City Hall', null, { timeout: 15000 });
-  assert.match(await page.locator('.field-map-footer span').first().textContent(), /^N 25\.0375°\s+E 121\.5637°/);
+  await page.waitForFunction(() => document.querySelector('.field-map-caption strong')?.textContent === 'Taipei City Hall', null, { timeout: 15000 });
+  assert.match(await page.locator('.field-map-meta span').first().textContent(), /^N 25\.0375°\s+E 121\.5637°/);
   assert.ok(!errors.some(error => /worker/i.test(error)), `Map worker failed: ${errors.join('; ')}`);
-  await page.waitForTimeout(4000);
+  await page.waitForTimeout(9000);
   await page.screenshot({ path: path.join(output, 'field-map.png') });
   console.log(JSON.stringify({ platform: runtime.platform, applications: applications.length, memoryTotal: stats.memoryTotal, shortcutRegistered: runtime.shortcutRegistered, storage, gesture, geometry, fonts, categorySwitch: { selfAnchor, optionsAnchor, railUnchanged: true }, assertions: 'original assets and geometry, clock and message widgets, Message button opens Message, Field Map, anchored category switching, cascading menus, native launch, pointer passthrough, bridge isolation, IPC owner, settings, import/export, hotkey dismissal, hide/reopen, reload', screenshot: path.join(output, 'original-menu.png'), userData }, null, 2));
 } finally { await instance.close(); await rm(userData, { recursive: true, force: true }); }
