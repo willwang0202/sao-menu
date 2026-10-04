@@ -34,3 +34,12 @@ test('gallery settings accept only bundled transitions, passive frames and origi
   assert.equal(settings.stillTime, 5000);
   assert.equal(layout.normalizeGallery({ transition: 'Cube.glsl', frame: 'compact-white.9.png', fill: 'contain', fillColor: '#e0e0e0', animateTime: 2000, stillTime: 15000 }).transition, 'Cube.glsl');
 });
+
+
+test('video FOV and size survive restore while fresh video windows use the large default', () => {
+  const entries = layout.normalizeLayouts([{ kind: 'video', source: '/tmp/movie.webm', bounds: { x: 20, y: 20, width: 1200, height: 800 }, fieldOfView: 32 }]);
+  assert.equal(entries[0].fieldOfView, 32);
+  assert.deepEqual(layout.initialPreviewSize('video', { width: 1920, height: 1080 }), { width: 1728, height: 972 });
+  assert.deepEqual(layout.initialPreviewSize('browser', { width: 1920, height: 1080 }), { width: 1728, height: 972 });
+  assert.equal(layout.initialPreviewSize('image', { width: 1920, height: 1080 }).width, 560);
+});

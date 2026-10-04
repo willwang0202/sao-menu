@@ -25,12 +25,13 @@ export function SurfaceApp() {
   const motion = !state.reducedMotion && !matchMedia('(prefers-reduced-motion: reduce)').matches;
   const horizontal = Math.max(-1, Math.min(1, (pointer.x - innerWidth / 2) / innerWidth));
   const vertical = Math.max(-1, Math.min(1, (pointer.y - innerHeight / 2) / innerHeight));
-  const perspective = state.kind === 'browser' ? browserPerspective(innerWidth-40,state.fieldOfView) : 1600;
+  const perspective = state.kind !== 'gallery' ? browserPerspective(innerWidth-40,state.fieldOfView) : 1600;
   return <div className={`surface-scene ${state.reducedMotion ? 'reduce-motion' : ''} ${dragging ? 'file-drag' : ''}`} onDragOver={event => { if (state.kind !== 'browser' && event.dataTransfer.types.includes('Files')) { event.preventDefault(); event.dataTransfer.dropEffect = 'link'; setDragging(true); } }} onDragLeave={event => { if (!event.currentTarget.contains(event.relatedTarget as Node)) setDragging(false); }} onDrop={event => { event.preventDefault(); setDragging(false); setError(''); void api.dropFiles([...event.dataTransfer.files]).catch(error => setError(String(error))); }}>
     <section className={`floating-surface ${state.kind === 'browser' ? 'browser-surface' : 'media-surface'}`} style={{ transform: motion ? `perspective(${perspective}px) rotateX(${-vertical * 6}deg) rotateY(${horizontal * 9}deg)` : undefined }} aria-label={state.kind === 'browser' ? 'Built-in web browser' : state.kind === 'video' ? 'Video preview' : state.kind === 'gallery' ? 'Gallery preview' : 'Image preview'}>
       {state.kind === 'browser' ? <BrowserSurface state={state} /> : state.kind === 'gallery' ? <GallerySurface state={state} /> : <MediaSurface state={state} />}
       {error && <div className="surface-error" role="alert">{error}<button onClick={() => setError('')}>Dismiss</button></div>}
     </section>
+    <PreviewCorner state={state} onError={setError} />
   </div>;
 }
 
@@ -129,7 +130,7 @@ function BrowserSurface({ state }: { state: SurfaceState }) {
     {addressOpen && <form className="browser-address-form" onSubmit={e => { e.preventDefault(); void api.navigate(address.trim()).then(() => { setError(''); setAddressOpen(false); canvas.current?.focus(); }).catch(e => setError(String(e))); }}><label>Web address<input aria-label="Web address" autoFocus placeholder="https://…" value={address} onChange={e => setAddress(e.target.value)} onFocus={e => e.target.select()} /></label><button type="submit">Open</button><button type="button" onClick={() => setAddressOpen(false)}>Cancel</button></form>}
     {menu && <div className="surface-context" role="menu" style={{ left: Math.min(menu.x, innerWidth - 190), top: Math.min(menu.y, innerHeight - 330) }}><button role="menuitem" disabled={!state.canGoBack} onClick={() => { call('back'); setMenu(null); }}>Back</button><button role="menuitem" disabled={!state.canGoForward} onClick={() => { call('forward'); setMenu(null); }}>Forward</button><button role="menuitem" onClick={() => { call('reload'); setMenu(null); }}>Reload</button><button role="menuitem" onClick={() => { setAddressOpen(true); setMenu(null); }}>Web address</button><button role="menuitem" onClick={() => { call('external'); setMenu(null); }}>Open in default browser</button>
       <label className="browser-fov">Field of view <output>{Math.round(state.fieldOfView)}°</output><input aria-label="Web preview field of view" type="range" min="20" max="100" step="1" value={state.fieldOfView} onChange={event => { void api.setFieldOfView(Number(event.target.value)).catch(e => setError(String(e))); }} /></label>
-      <button role="menuitem" onClick={() => { void api.setFieldOfView(45).catch(e => setError(String(e))); }}>Reset field of view</button>
+      <button role="menuitem" onClick={() => { void api.setFieldOfView(20).catch(e => setError(String(e))); }}>Reset field of view</button>
     </div>}
   </>;
 }
@@ -160,5 +161,35 @@ function MediaSurface({ state }: { state: SurfaceState }) {
     {state.kind === 'video' && <button className="media-play" aria-label={playing ? 'Pause video' : 'Play video'} onClick={toggle}>{playing ? 'Ⅱ' : '▷'}</button>}
     {error && <div className="surface-error" role="alert">{error}</div>}
     {menu && <div className="surface-context media-context" role="menu"><button role="menuitemcheckbox" aria-checked={autoResize} onClick={() => presentation({ autoResize: !autoResize })}>Auto Resize {autoResize ? '✓' : ''}</button>{state.kind === 'video' && <button role="menuitemcheckbox" aria-checked={muted} onClick={() => presentation({ muted: !muted })}>Mute {muted ? '✓' : ''}</button>}<button role="menuitemradio" aria-checked={fill === 'contain'} onClick={() => presentation({ fill: 'contain' })}>Fit {fill === 'contain' ? '✓' : ''}</button><button role="menuitemradio" aria-checked={fill === 'cover'} onClick={() => presentation({ fill: 'cover' })}>Crop {fill === 'cover' ? '✓' : ''}</button><button role="menuitem" onClick={() => { resetSize(); setMenu(false); }}>Reset Size</button><button role="menuitem" onClick={() => { setMenu(false); void api.command('change').catch(e => setError(String(e))); }}>{state.kind === 'image' ? 'Change Image' : 'Change Video'}</button><button role="menuitem" onClick={() => void api.command('close')}>Close</button></div>}
+  </div>;
+}
+
+
+function PreviewCorner({ state, onError }: { state: SurfaceState; onError: (error: string) => void }) {
+  const drag = useRef<{ x: number; y: number; width: number; height: number } | null>(null);
+  const frame = useRef(0);
+  const pending = useRef<{ width: number; height: number } | null>(null);
+  const resize = () => {
+    frame.current = 0; const size = pending.current; pending.current = null;
+    if (size) void api.resize(size.width, size.height).catch(error => onError(String(error)));
+  };
+  useEffect(() => () => { if (frame.current) cancelAnimationFrame(frame.current); }, []);
+  return <div className="surface-corner-tools">
+    {state.kind !== 'gallery' && <label className="corner-fov"><span>FOV</span><input aria-label="Preview field of view" type="range" min="20" max="100" step="1" value={state.fieldOfView} onChange={event => void api.setFieldOfView(Number(event.target.value)).catch(error => onError(String(error)))} /><output>{Math.round(state.fieldOfView)}°</output></label>}
+    <button className="surface-resize-handle" aria-label="Resize preview" title="Drag to resize; arrow keys adjust size" onPointerDown={event => {
+      if (event.button !== 0) return;
+      event.preventDefault(); event.currentTarget.setPointerCapture(event.pointerId);
+      drag.current = { x: event.screenX, y: event.screenY, width: innerWidth, height: innerHeight };
+    }} onPointerMove={event => {
+      if (!drag.current) return;
+      pending.current = { width: drag.current.width + event.screenX - drag.current.x, height: drag.current.height + event.screenY - drag.current.y };
+      if (!frame.current) frame.current = requestAnimationFrame(resize);
+    }} onPointerUp={event => {
+      drag.current = null; if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+      if (frame.current) cancelAnimationFrame(frame.current); resize();
+    }} onPointerCancel={() => { drag.current = null; pending.current = null; if (frame.current) cancelAnimationFrame(frame.current); frame.current = 0; }} onKeyDown={event => {
+      if (!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.key)) return;
+      event.preventDefault(); void api.resize(innerWidth + (event.key === 'ArrowRight' ? 32 : event.key === 'ArrowLeft' ? -32 : 0), innerHeight + (event.key === 'ArrowDown' ? 32 : event.key === 'ArrowUp' ? -32 : 0)).catch(error => onError(String(error)));
+    }}>◢</button>
   </div>;
 }

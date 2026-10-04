@@ -21,3 +21,22 @@ test('account name overrides local preferences; companions require accepted memb
   assert.deepEqual(hpState(settings, null, snapshot).partyMembers, [], 'nonmembers cannot display another party');
   assert.equal(hpHeight(0), 62); assert.equal(hpHeight(1), 89); assert.equal(hpHeight(5), 257);
 });
+
+test('HP name boxes grow by measured text width while retaining original battery geometry', async () => {
+  const { hpNameWidth, hpWidgetWidth } = await import('../src/shared/hud');
+  assert.equal(hpNameWidth(28), 40);
+  assert.equal(hpNameWidth(68.1), 77);
+  assert.equal(hpWidgetWidth([68.1]), 395);
+  assert.equal(hpWidgetWidth([28, 640]), 826);
+  assert.equal(hpWidgetWidth([28]), 358);
+});
+
+test('HP level starts at one and counts complete days since account creation', async () => {
+  const { hpLevel } = await import('../src/shared/hud');
+  const created = Date.UTC(2026, 9, 3, 10);
+  assert.equal(hpLevel(created, created), 1);
+  assert.equal(hpLevel(created, created + 86400000 - 1), 1);
+  assert.equal(hpLevel(created, created + 3 * 86400000), 4);
+  assert.equal(hpLevel(created, created - 60000), 1);
+  assert.equal(hpLevel(undefined, created), 1);
+});

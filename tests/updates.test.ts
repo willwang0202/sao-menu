@@ -100,3 +100,36 @@ test('manual-only packages compare stable versions and never offer an in-app ins
   version = '0.1.6'; assert.equal((await controller.check()).status, 'current');
   version = '0.1.9-beta.1'; assert.equal((await controller.check()).status, 'error');
 });
+
+test('native preparation can stay asynchronous without installing or flushing early', async () => {
+  let ready!: () => void, flushes = 0;
+  const preparation = new Promise<void>(resolve => { ready = resolve; });
+  const updater = new Transport();
+  const controller = new UpdateController({ currentVersion: '0.1.7', capability: 'automatic', automatic: false, updater,
+    prepareInstall: () => preparation, beforeInstall: async () => { flushes++; } });
+  await controller.check(); await controller.download(); updater.emit('update-downloaded', { version: '0.1.8' });
+  const install = controller.install(); await Promise.resolve();
+  assert.equal(flushes, 0); assert.equal(updater.installs, 0); assert.equal(controller.getState().status, 'installing');
+  ready(); await install; assert.equal(flushes, 1); assert.equal(updater.installs, 1);
+});
+test('failed native preparation keeps the verified download and permits retry', async () => {
+  const updater = new Transport(); let fail = true;
+  const controller = new UpdateController({ currentVersion: '0.1.7', capability: 'automatic', automatic: false, updater,
+    prepareInstall: async () => { if (fail) throw new Error('native staging failed'); } });
+  await controller.check(); await controller.download(); updater.emit('update-downloaded', { version: '0.1.8' });
+  await assert.rejects(controller.install(), /native staging failed/); assert.equal(updater.installs, 0);
+  assert.equal(controller.getState().status, 'downloaded');
+  fail = false; await controller.install(); assert.equal(updater.installs, 1);
+});
+
+test('Mac staging waits for native readiness, cleans listeners and can retry native errors', async () => {
+  const { prepareMacUpdate } = await import('../src/desktop/updates');
+  const native = Object.assign(new EventEmitter(), { checkForUpdates() {} });
+  const pending = prepareMacUpdate(native);
+  assert.equal(native.listenerCount('update-downloaded'), 1);
+  native.emit('update-downloaded'); await pending;
+  assert.equal(native.listenerCount('update-downloaded'), 0); assert.equal(native.listenerCount('error'), 0);
+  const failure = prepareMacUpdate(native); native.emit('error', new Error('signature rejected'));
+  await assert.rejects(failure, /signature rejected/);
+  const retry = prepareMacUpdate(native); native.emit('update-downloaded'); await retry;
+});

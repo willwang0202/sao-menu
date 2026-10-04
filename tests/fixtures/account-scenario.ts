@@ -16,6 +16,8 @@ export async function runAccountScenario(initial: Handle, reopen?: () => Promise
   const asuna = await call('register', { username: 'asuna', displayName: 'Asuna', password: 'another long test password' });
   const outsider = await call('register', { username: 'outsider', displayName: 'Outsider', password: 'an outsider password' });
   assert.equal(kirito.status, 201); assert.equal(asuna.status, 201);
+  assert.equal(typeof kirito.data.profile.createdAt, 'number');
+  assert.ok(Math.abs(Date.now() - kirito.data.profile.createdAt) < 10000);
   assert.match(kirito.data.token, /^[a-zA-Z0-9_-]{43}$/);
   assert.equal((await call('login', { username: 'KIRITO', password: 'a long test password' })).status, 200, 'usernames are case-insensitive');
   assert.equal((await call('login', { username: 'kirito', password: 'wrong password here' })).status, 401);
@@ -29,6 +31,7 @@ export async function runAccountScenario(initial: Handle, reopen?: () => Promise
   assert.equal((await call('friends/resolve', { id: pending.id, action: 'accept' }, outsider.data.token)).status, 403);
   assert.equal((await call('friends/resolve', { id: pending.id, action: 'accept' }, asuna.data.token)).status, 200);
   const kiritoState = (await call('state', undefined, kirito.data.token)).data;
+  assert.equal(kiritoState.profile.createdAt, kirito.data.profile.createdAt, 'presence and login never reset account age');
   assert.equal(kiritoState.friends[0].username, 'asuna');
   assert.equal(kiritoState.friends[0].online, true);
   assert.equal(kiritoState.party, null, 'friendship alone does not create a party');

@@ -13,6 +13,7 @@ export interface UpdateTransport extends Pick<EventEmitter, 'on' | 'removeListen
 interface Options {
   currentVersion: string; capability: UpdateCapability; automatic: boolean;
   updater?: UpdateTransport; latestRelease?: () => Promise<string>;
+  prepareInstall?: () => Promise<void>;
   beforeInstall?: () => Promise<void>; onState?: (state: UpdateStatus) => void;
 }
 export function updateCapability(input: { packaged: boolean; platform: string; signedMac?: boolean; installedWindows?: boolean; appImage?: boolean }): UpdateCapability {
@@ -76,6 +77,7 @@ export class UpdateController {
   private fail(): void { this.publish({ status: 'error', percent: undefined, message: 'The update could not complete. Check your connection and try again.' }); }
   start(): void { this.started = true; this.schedule(); }
   setAutomatic(enabled: boolean): void {
+    if (this.automatic === enabled) return;
     this.automatic = enabled;
     if (this.started) this.schedule();
     if (enabled && this.state.status === 'available' && this.options.capability === 'automatic') void this.download();
@@ -126,9 +128,16 @@ export class UpdateController {
     if (this.installOperation) return this.installOperation;
     if (this.disposed || this.state.status !== 'downloaded') return Promise.reject(new Error('Download and verify an update before installing it.'));
     this.installOperation = Promise.resolve().then(async () => {
-      await this.options.beforeInstall?.();
-      this.publish({ status: 'installing', message: 'Installing update and restarting…' });
-      try { this.options.updater!.quitAndInstall(); } catch (error) { this.fail(); throw error; }
+      this.publish({ status: 'installing', message: 'Preparing update for installation…' });
+      try {
+        await this.options.prepareInstall?.();
+        await this.options.beforeInstall?.();
+        this.publish({ status: 'installing', message: 'Installing update and restarting…' });
+        this.options.updater!.quitAndInstall();
+      } catch (error) {
+        this.publish({ status: 'downloaded', message: 'Installation could not complete. Your download is retained; try Install and restart again.' });
+        throw error;
+      }
       return this.getState();
     }).finally(() => { this.installOperation = null; });
     return this.installOperation;
@@ -140,4 +149,16 @@ export class UpdateController {
     for (const [event, listener] of this.listeners) this.options.updater?.removeListener(event, listener);
     this.listeners = [];
   }
+}
+
+/** Squirrel.Mac stages asynchronously. Wait before entering the application's quit barrier. */
+export function prepareMacUpdate(native: Pick<EventEmitter, 'once' | 'removeListener'> & { checkForUpdates(): void }): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const cleanup = () => { clearTimeout(timer); native.removeListener('update-downloaded', ready); native.removeListener('error', failed); };
+    const ready = () => { cleanup(); resolve(); };
+    const failed = (error: Error) => { cleanup(); reject(error); };
+    const timer = setTimeout(() => failed(new Error('macOS update preparation timed out. Please try again.')), 60_000); timer.unref();
+    native.once('update-downloaded', ready); native.once('error', failed);
+    try { native.checkForUpdates(); } catch (error) { failed(error instanceof Error ? error : new Error(String(error))); }
+  });
 }

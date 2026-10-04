@@ -1,0 +1,25 @@
+{
+  "measuredNames": {
+    "name": "willwang22",
+    "nameWidth": 73,
+    "textWidth": 64.2265625,
+    "partyWidth": 211,
+    "partyTextWidth": 202.1640625,
+    "level": "LV: 3",
+    "ownBarWidth": 258,
+    "nativeWidth": 391,
+    "contentWidth": 391
+  },
+  "preview": {
+    "defaultFov": 20,
+    "initialBounds": {
+      "x": 96,
+      "y": 83,
+      "width": 1728,
+      "height": 945
+    },
+    "cornerResize": true,
+    "adjustableFov": true
+  },
+  "verifiedAt": "2026-10-04T04:35:59.687Z"
+}

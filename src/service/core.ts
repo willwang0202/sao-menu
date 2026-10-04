@@ -20,7 +20,7 @@ const TOKEN = /^Bearer ([a-zA-Z0-9_-]{43})$/;
 const DUMMY_SALT = '0'.repeat(48);
 
 const hashToken = (token: string) => createHash('sha256').update(token).digest('hex');
-const profile = (user: SocialProfile): SocialProfile => ({ id: user.id, username: user.username, displayName: user.displayName });
+const profile = (user: SocialProfile): SocialProfile => ({ id: user.id, username: user.username, displayName: user.displayName, ...(user.createdAt !== undefined ? { createdAt: user.createdAt } : {}) });
 const pairKey = (a: string, b: string) => [a, b].sort().join(':');
 const json = (data: unknown, status = 200) => new Response(JSON.stringify(data), { status, headers: { 'content-type': 'application/json', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' } });
 
@@ -85,7 +85,8 @@ export function createAccountService(store: AccountStore) {
       if (typeof body.displayName !== 'string' || !body.displayName.trim() || body.displayName.length > 40 || /[\u0000-\u001f\u007f]/.test(body.displayName)) throw new ServiceError(400, 'Enter a display name of 1–40 characters.');
       if (await store.findUserByName(name)) throw new ServiceError(409, 'That username is already taken.');
       const salt = randomBytes(24).toString('hex');
-      const user: StoredUser = { id: randomUUID(), username: name, displayName: body.displayName.trim(), salt, password: (await passwordHash(body.password, salt)).toString('hex'), lastSeen: Date.now() };
+      const createdAt = Date.now();
+      const user: StoredUser = { id: randomUUID(), username: name, displayName: body.displayName.trim(), salt, password: (await passwordHash(body.password, salt)).toString('hex'), lastSeen: createdAt, createdAt };
       if (!await store.insertUser(user)) throw new ServiceError(409, 'That username is already taken.');
       return json(await session(user), 201);
     }

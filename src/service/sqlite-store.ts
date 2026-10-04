@@ -22,7 +22,7 @@ const PARTY_SCHEMA = `
 const MAX_RATE_KEYS = 2000;
 
 type Row = Record<string, unknown>;
-const user = (row: Row): StoredUser => ({ id: String(row.id), username: String(row.username), displayName: String(row.displayName), password: String(row.password), salt: String(row.salt), lastSeen: Number(row.last_seen) });
+const user = (row: Row): StoredUser => ({ id: String(row.id), username: String(row.username), displayName: String(row.displayName), password: String(row.password), salt: String(row.salt), lastSeen: Number(row.last_seen), createdAt: Number(row.created_at) });
 const player = (row: Row, prefix: string): StoredProfile => ({ id: String(row[`${prefix}_id`]), username: String(row[`${prefix}_username`]), displayName: String(row[`${prefix}_name`]), lastSeen: Number(row[`${prefix}_seen`]) });
 const message = (row: Row): DirectMessage => ({ id: String(row.id), from: String(row.from), to: String(row.to), text: String(row.text), createdAt: Number(row.createdAt), readAt: row.readAt === null ? null : Number(row.readAt) });
 
@@ -30,6 +30,10 @@ export function createSqliteStore(file: string): AccountStore & { close(): void 
   const db = new DatabaseSync(file);
   db.exec(SCHEMA);
   if (!(db.prepare('PRAGMA table_info(users)').all() as Row[]).some(row => row.name === 'battery_percent')) db.exec('ALTER TABLE users ADD COLUMN battery_percent INTEGER NOT NULL DEFAULT 100 CHECK(battery_percent BETWEEN 0 AND 100)');
+  if (!(db.prepare('PRAGMA table_info(users)').all() as Row[]).some(row => row.name === 'created_at')) {
+    db.exec('ALTER TABLE users ADD COLUMN created_at INTEGER NOT NULL DEFAULT 0');
+    db.prepare('UPDATE users SET created_at=?').run(Date.now());
+  }
   db.exec(PARTY_SCHEMA);
   const rates = new Map<string, { start: number; count: number }>();
   const one = (sql: string, ...params: (string | number | null)[]) => db.prepare(sql).get(...params) as Row | undefined;
@@ -49,7 +53,7 @@ export function createSqliteStore(file: string): AccountStore & { close(): void 
     ...partyStore(sql),
     async findUserByName(name) { const row = one('SELECT * FROM users WHERE username=?', name); return row ? user(row) : null; },
     async insertUser(next) {
-      try { run('INSERT INTO users(id,username,displayName,password,salt,last_seen) VALUES(?,?,?,?,?,?)', next.id, next.username, next.displayName, next.password, next.salt, next.lastSeen); return true; }
+      try { run('INSERT INTO users(id,username,displayName,password,salt,last_seen,created_at) VALUES(?,?,?,?,?,?,?)', next.id, next.username, next.displayName, next.password, next.salt, next.lastSeen, next.createdAt ?? next.lastSeen); return true; }
       catch { return false; }
     },
     async touchUser(id, now) { run('UPDATE users SET last_seen=? WHERE id=?', now, id); },

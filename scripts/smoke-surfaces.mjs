@@ -214,7 +214,7 @@ try {
   assert.equal((await restoredBrowser.evaluate(()=>window.saoSurface.getState())).fieldOfView,88,'saved FOV restores after process restart');
   await restoredBrowser.locator('canvas').click({button:'right',position:{x:200,y:200}});
   await restoredBrowser.getByRole('menuitem',{name:'Reset field of view'}).click();
-  await restoredBrowser.waitForFunction(()=>document.querySelector('.browser-fov output')?.textContent==='45°');
+  await restoredBrowser.waitForFunction(()=>document.querySelector('.browser-fov output')?.textContent==='20°');
   await restoredBrowser.evaluate(()=>window.saoSurface.command('close'));
   console.log(JSON.stringify({ browser: 'native page painting, inverse curved click mapping, typed input, links/history, isolation and URL checks', media: 'simultaneous PNG, original GIF and looping WebM; pause/resume; replacement, token revocation and range streaming; previews survive menu dismissal', motion, dismissal: 'outside pointer and swipe channels animate and hide the native menu', screenshots: output }, null, 2));
 } finally { await instance.close(); await new Promise(resolve => server.close(resolve)); await rm(temporary, { recursive: true, force: true }); }

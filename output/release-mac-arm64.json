@@ -1,19 +1,21 @@
 {
-  "version": "0.1.6",
+  "version": "0.1.7",
   "platform": "darwin",
   "arch": "arm64",
-  "verifiedAt": "2026-10-04T03:21:32.535Z",
-  "packagedFilesMatched": 1111,
+  "verifiedAt": "2026-10-04T04:25:39.626Z",
+  "packagedFilesMatched": 1113,
   "artifacts": [
     {
-      "name": "sao-menu-0.1.6-mac-arm64.dmg",
-      "bytes": 177796175,
-      "sha256": "beeaaea721f9dad4eba3c08cb836e7607237d4df8d543ea3aae760ab8c0f40be"
+      "name": "sao-menu-0.1.7-mac-arm64.dmg",
+      "bytes": 178335012,
+      "sha256": "032849663007f0bddc4c1807a5a956c7ed244d9753cd4c664a81ca302049ade8",
+      "sha512": "AEL7r6KWDSB3VC3+cYKUWaOsjz0aS80+ReQYZ91AUBUefXOe9X61nTSlzwhh2+zutrE559xOAfuSGTs7xKKa8w=="
     },
     {
-      "name": "sao-menu-0.1.6-mac-arm64.zip",
-      "bytes": 177499366,
-      "sha256": "95ec307113035417556ee75fdb301740e18cd42943bf33ea9e10caff59c56cb0"
+      "name": "sao-menu-0.1.7-mac-arm64.zip",
+      "bytes": 178018982,
+      "sha256": "30d77a13a6cb76007d6a71ed40dc4fb10e923fa051782643ae5fad5f01c57c10",
+      "sha512": "dweXuT276RUTSCTsmrIsmOBKn3B+yJ9VIO0qE+v6j0fcHCNLPuccKz72SQAt0ueRedKT8BqcGH9+UfS5HAtDaQ=="
     }
   ]
 }

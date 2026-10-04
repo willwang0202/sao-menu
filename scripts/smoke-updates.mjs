@@ -27,18 +27,26 @@ const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !['
 let instance;
 try {
   instance = await electron.launch({ executablePath: path.resolve('release/mac-arm64/SAO Utils 2.app/Contents/MacOS/SAO Utils 2'), args: [`--sao-profile=${profile}`], env, timeout: 60000 });
-  const page = await instance.firstWindow(); await page.waitForFunction(() => !!window.sao);
+  console.log('Packaged updater launched');
+  const page = await instance.firstWindow(); page.setDefaultTimeout(15000); await page.waitForFunction(() => !!window.sao);
   assert.equal((await page.evaluate(() => window.sao.getUpdateStatus())).capability, 'automatic');
-  await page.evaluate(async () => { const settings = await window.sao.getSettings(); await window.sao.saveSettings({ ...settings, automaticUpdates: false }); });
+  await page.evaluate(() => window.sao.completeStartup());
+  await page.getByRole('menuitem', { name: 'Settings', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Option', exact: true }).click();
+  await page.getByRole('button', { name: 'About', exact: true }).click();
+  await page.getByRole('checkbox', { name: 'Automatically check and download updates' }).uncheck();
+  await page.waitForFunction(async () => !(await window.sao.getSettings()).automaticUpdates);
   await instance.evaluate(async ({ app }, url) => {
-    const module = await import(`${app.getAppPath()}/node_modules/electron-updater/out/main.js`);
-    module.default.autoUpdater.setFeedURL({ provider: 'generic', url });
+    const require = process.getBuiltinModule('module').createRequire(`${app.getAppPath()}/package.json`);
+    const module = require('electron-updater');
+    module.autoUpdater.setFeedURL({ provider: 'generic', url });
   }, address);
   assert.equal((await page.evaluate(() => window.sao.checkForUpdates())).status, 'current');
-  assert.equal(fileRequests, 0);
+  assert.equal(fileRequests, 0); console.log('Current-version check passed');
   await instance.evaluate(async ({ app }) => {
-    const module = await import(`${app.getAppPath()}/node_modules/electron-updater/out/main.js`);
-    const updater = module.default.autoUpdater;
+    const require = process.getBuiltinModule('module').createRequire(`${app.getAppPath()}/package.json`);
+    const module = require('electron-updater');
+    const updater = module.autoUpdater;
     const version = updater.currentVersion;
     updater.currentVersion = new version.constructor('0.0.1');
   });
@@ -46,24 +54,38 @@ try {
   assert.equal((await page.evaluate(() => window.sao.checkForUpdates())).status, 'available');
   assert.equal((await page.evaluate(() => window.sao.downloadUpdate())).status, 'error', 'sha512 failure must never become installable');
   await assert.rejects(page.evaluate(() => window.sao.installUpdate()), /Download and verify/);
+  console.log('Invalid checksum rejected');
   corrupt = false;
   assert.equal((await page.evaluate(() => window.sao.checkForUpdates())).status, 'available');
   const downloaded = await page.evaluate(() => window.sao.downloadUpdate());
-  assert.equal(downloaded.status, 'downloaded'); assert.equal(downloaded.percent, 100);
-  await page.evaluate(() => window.sao.completeStartup());
-  await page.getByRole('menuitem', { name: 'Settings', exact: true }).click();
-  await page.getByRole('menuitem', { name: 'Option', exact: true }).click();
-  await page.getByRole('button', { name: 'About', exact: true }).click();
+  assert.equal(downloaded.status, 'downloaded'); assert.equal(downloaded.percent, 100); console.log('Verified retry downloaded');
   await page.getByRole('button', { name: 'Install and restart', exact: true }).waitFor();
   assert.equal(await page.getByRole('button', { name: 'Install and restart', exact: true }).isEnabled(), true);
   assert.equal(await page.getByRole('checkbox', { name: 'Automatically check and download updates' }).isChecked(), false);
   await mkdir('output/playwright', { recursive: true });
-  await page.screenshot({ path: 'output/playwright/updates-ready.png' });
-  // User installation is intentionally not invoked by this acceptance check.
-  const report = { version: pkg.version, fixtureCurrentCheck: true, checksumRejection: true, retryDownload: true, installButton: true, automaticSettingPersisted: true, profileIsolated: true, fileRequests, verifiedAt: new Date().toISOString() };
+  await instance.evaluate(({ app }) => app.emit('activate'));
+  await page.screenshot({ path: 'output/playwright/updates-ready.png', timeout: 10000 });
+  console.log('Update controls passed');
+  // Simulate slow/failing native preparation after a real verified download.
+  // Never call the actual OS installer from this acceptance check.
+  await instance.evaluate(({ autoUpdater }) => { autoUpdater.checkForUpdates = () => {}; });
+  const installing = page.evaluate(async () => { try { await window.sao.installUpdate(); return ''; } catch (error) { return String(error); } });
+  await page.waitForFunction(async () => (await window.sao.getUpdateStatus()).status === 'installing');
+  await instance.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find(window => window.webContents.getURL().endsWith('/index.html')).close());
+  assert.equal(await instance.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().some(window => window.webContents.getURL().endsWith('/index.html'))), true, 'close during staging must hide, not destroy, the launcher');
+  await page.evaluate(async () => { const settings = await window.sao.getSettings(); await window.sao.saveSettings({ ...settings, reducedMotion: true }); });
+  await instance.evaluate(({ autoUpdater }) => autoUpdater.emit('error', new Error('Native staging fixture failure')));
+  assert.match(await installing, /Native staging fixture failure/);
+  assert.equal((await page.evaluate(() => window.sao.getUpdateStatus())).status, 'downloaded');
+  assert.equal(JSON.parse(await readFile(path.join(profile, 'settings.json'), 'utf8')).reducedMotion, true, 'configuration saved during staging is retained');
+  await instance.evaluate(({ app }) => app.emit('activate'));
+  const report = { version: pkg.version, fixtureCurrentCheck: true, checksumRejection: true, retryDownload: true, installButton: true, automaticSettingPersisted: true, profileIsolated: true, deferredNativeStageKeepsWindowAlive: true, nativeStagingFailureRetainsDownload: true, stagingEditsPersist: true, fileRequests, verifiedAt: new Date().toISOString() };
   await writeFile('output/update-acceptance.json', JSON.stringify(report, null, 2) + '\n');
   console.log(JSON.stringify(report));
 } finally {
-  if (instance) await instance.close();
-  await new Promise(resolve => server.close(resolve)); await rm(profile, { recursive: true, force: true });
+  if (instance) {
+    const timer = setTimeout(() => instance.process().kill('SIGKILL'), 10000);
+    try { await instance.close(); } finally { clearTimeout(timer); }
+  }
+  server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); await rm(profile, { recursive: true, force: true });
 }

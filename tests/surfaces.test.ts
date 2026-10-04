@@ -6,8 +6,8 @@ import * as surfaces from '../src/shared/surfaces';
 
 test('browser FOV accepts safe degrees and keeps page input aligned at every zoom', () => {
   assert.equal(typeof surfaces.normalizeFieldOfView, 'function');
-  assert.equal(surfaces.normalizeFieldOfView(undefined),45);
-  for (const value of [NaN,Infinity,'90',null]) assert.equal(surfaces.normalizeFieldOfView(value),45);
+  assert.equal(surfaces.normalizeFieldOfView(undefined),20);
+  for (const value of [NaN,Infinity,'90',null]) assert.equal(surfaces.normalizeFieldOfView(value),20);
   assert.equal(surfaces.normalizeFieldOfView(-10),20);
   assert.equal(surfaces.normalizeFieldOfView(180),100);
   assert.equal(surfaces.normalizeFieldOfView(70),70);

@@ -33,8 +33,14 @@ export function normalizeLayouts(value: unknown): SurfaceLayout[] {
     }
     if (!['x', 'y', 'width', 'height'].every(key => typeof bounds[key] === 'number' && Number.isFinite(bounds[key]) && Math.abs(bounds[key] as number) <= 100000)) continue;
     if (Number(bounds.width) < 180 || Number(bounds.height) < 120) continue;
-    result.push({ kind, source, bounds: { x: Math.round(Number(bounds.x)), y: Math.round(Number(bounds.y)), width: Math.round(Number(bounds.width)), height: Math.round(Number(bounds.height)) }, presentation: normalizePresentation(data.presentation), ...(kind === 'browser' ? { fieldOfView: normalizeFieldOfView(data.fieldOfView) } : {}), ...(kind === 'gallery' ? { gallery: normalizeGallery(data.gallery) } : {}) });
+    result.push({ kind, source, bounds: { x: Math.round(Number(bounds.x)), y: Math.round(Number(bounds.y)), width: Math.round(Number(bounds.width)), height: Math.round(Number(bounds.height)) }, presentation: normalizePresentation(data.presentation), ...(kind !== 'gallery' ? { fieldOfView: normalizeFieldOfView(data.fieldOfView) } : {}), ...(kind === 'gallery' ? { gallery: normalizeGallery(data.gallery) } : {}) });
     if (result.length === 12) break;
   }
   return result;
+}
+
+export function initialPreviewSize(kind: SurfaceKind, area: { width: number; height: number }): { width: number; height: number } {
+  return kind === 'browser' || kind === 'video'
+    ? { width: Math.round(area.width * .9), height: Math.round(area.height * .9) }
+    : { width: Math.min(560, area.width), height: Math.min(370, area.height) };
 }

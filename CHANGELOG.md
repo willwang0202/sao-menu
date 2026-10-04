@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+## 0.1.7 — October 3, 2026
+
+- Expand HP name boxes and their artwork/native window to fit the measured display name, including party members; retain the original battery bar geometry.
+- Use account age in days as the HP level (creation day is level 1). Existing accounts start their counter today; new accounts retain the exact signup time.
+- Default browser and video previews to 20° FOV and about 90% of the monitor's usable width and height. Add visible FOV/corner resize controls and persist video FOV alongside window layout.
+- Add Check for updates in Options → About, the tray and native Help menu. Installed supported packages check after startup and every four hours, automatically download verified stable releases by default, and wait for Install and restart.
+- Save the automatic update preference locally. Failed checks/downloads can be retried; concurrent actions coalesce, and pending downloads are retained across checks. Save configuration and preview layout before updating.
+- Publish complete GitHub update feeds for macOS, Windows NSIS and Linux AppImage. The Mac feed retains Intel and Apple Silicon installers; hashes are generated from the final signed packages and verified before publication. DEB, portable Windows and unsigned Mac packages use manual installation links.
+
 ## 0.1.6 — October 3, 2026
 
 - Complete native packaging verification on Windows by using its path separators when reading ASAR entries. This release includes the account, battery and party changes prepared for 0.1.5.

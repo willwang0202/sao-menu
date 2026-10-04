@@ -103,7 +103,7 @@ jobs:
         with:
           node-version: 24
       - name: Collect all final native reports
-        run: gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --pattern 'release-*.json' --dir output
+        run: gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --pattern 'release-*.json' --dir output --clobber
       - name: Generate architecture-aware update feeds
         run: node scripts/update-feeds.mjs
       - name: Upload update feeds to the draft release

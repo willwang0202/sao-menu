@@ -1,6 +1,6 @@
 {
   "name": "sao-menu",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "private": true,
   "description": "A local cross-platform port of the SAO Utils 2 launcher using its original theme resources",
   "homepage": "https://sao-menu.favioon.com",

@@ -11,6 +11,7 @@ export class HpDisplay {
   private timer: ReturnType<typeof setInterval> | null = null;
   private state: HpState = { playerName: 'Kirito', reducedMotion: false, stats: null, partyMembers: [] };
   private sampling = false;
+  private width = 358;
   constructor(private readonly renderer: string, private readonly settings: () => Settings, private readonly snapshot: () => SocialSnapshot | null) {}
   async create(): Promise<void> {
     const url = new URL(this.renderer); url.searchParams.set('hp', '1');
@@ -27,9 +28,15 @@ export class HpDisplay {
     window.on('page-title-updated', event => event.preventDefault());
     window.webContents.on('will-navigate', (event, destination) => { if (destination !== url.href) event.preventDefault(); });
     window.webContents.on('will-attach-webview', event => event.preventDefault());
-    ipcMain.handle('sao:hp:state', event => {
+    const owner = (event: Electron.IpcMainInvokeEvent) => {
       if (event.sender !== window.webContents || event.senderFrame !== window.webContents.mainFrame || event.senderFrame.url !== url.href) throw new Error('Untrusted HP display sender.');
-      return this.state;
+    };
+    ipcMain.handle('sao:hp:state', event => { owner(event); return this.state; });
+    ipcMain.handle('sao:hp:width', (event, width) => {
+      owner(event);
+      if (typeof width !== 'number' || !Number.isFinite(width) || width < 358 || width > 2048) throw new Error('Invalid HP display width.');
+      this.width = Math.ceil(width);
+      window.setSize(this.width, hpHeight(this.state.partyMembers.length));
     });
     screen.on('display-metrics-changed', this.position);
     screen.on('display-added', this.position); screen.on('display-removed', this.position);
@@ -42,7 +49,7 @@ export class HpDisplay {
     this.state = hpState(this.settings(), this.state.stats, this.snapshot());
     if (this.window && !this.window.isDestroyed()) {
       const height = hpHeight(this.state.partyMembers.length);
-      if (this.window.getSize()[1] !== height) this.window.setSize(358, height);
+      if (this.window.getSize()[1] !== height) this.window.setSize(this.width, height);
       this.window.webContents.send('sao:hp:update', this.state);
     }
   }
@@ -60,6 +67,6 @@ export class HpDisplay {
   stop(): void {
     if (this.timer) clearInterval(this.timer);
     screen.removeListener('display-metrics-changed', this.position); screen.removeListener('display-added', this.position); screen.removeListener('display-removed', this.position);
-    ipcMain.removeHandler('sao:hp:state'); this.window?.destroy(); this.window = null;
+    ipcMain.removeHandler('sao:hp:state'); ipcMain.removeHandler('sao:hp:width'); this.window?.destroy(); this.window = null;
   }
 }

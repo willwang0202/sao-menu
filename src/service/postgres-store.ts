@@ -14,7 +14,7 @@ const RATE_ROW_RETENTION = 24 * 60 * 60 * 1000;
 type Row = Record<string, unknown>;
 // bigint columns arrive as strings from some drivers; normalize to numbers.
 const num = (value: unknown) => Number(value);
-const user = (row: Row): StoredUser => ({ id: String(row.id), username: String(row.username), displayName: String(row.display_name), password: String(row.password), salt: String(row.salt), lastSeen: num(row.last_seen) });
+const user = (row: Row): StoredUser => ({ id: String(row.id), username: String(row.username), displayName: String(row.display_name), password: String(row.password), salt: String(row.salt), lastSeen: num(row.last_seen), createdAt: num(row.created_at) });
 const player = (row: Row, prefix: string): StoredProfile => ({ id: String(row[`${prefix}_id`]), username: String(row[`${prefix}_username`]), displayName: String(row[`${prefix}_name`]), lastSeen: num(row[`${prefix}_seen`]) });
 const message = (row: Row): DirectMessage => ({ id: String(row.id), from: String(row.from_id), to: String(row.to_id), text: String(row.text), createdAt: num(row.created_at), readAt: row.read_at === null ? null : num(row.read_at) });
 
@@ -24,8 +24,8 @@ export function createPostgresStore(sql: SqlClient): AccountStore {
     ...partyStore(sql),
     async findUserByName(name) { const row = await one('SELECT * FROM sao.users WHERE username=$1', [name]); return row ? user(row) : null; },
     async insertUser(next) {
-      const rows = await sql.query('INSERT INTO sao.users(id,username,display_name,password,salt,last_seen) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT (username) DO NOTHING RETURNING id',
-        [next.id, next.username, next.displayName, next.password, next.salt, next.lastSeen]);
+      const rows = await sql.query('INSERT INTO sao.users(id,username,display_name,password,salt,last_seen,created_at) VALUES($1,$2,$3,$4,$5,$6,$7) ON CONFLICT (username) DO NOTHING RETURNING id',
+        [next.id, next.username, next.displayName, next.password, next.salt, next.lastSeen, next.createdAt ?? next.lastSeen]);
       return rows.length === 1;
     },
     async touchUser(id, now) { await sql.query('UPDATE sao.users SET last_seen=$2 WHERE id=$1', [id, now]); },

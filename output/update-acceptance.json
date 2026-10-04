@@ -1,0 +1,14 @@
+{
+  "version": "0.1.7",
+  "fixtureCurrentCheck": true,
+  "checksumRejection": true,
+  "retryDownload": true,
+  "installButton": true,
+  "automaticSettingPersisted": true,
+  "profileIsolated": true,
+  "deferredNativeStageKeepsWindowAlive": true,
+  "nativeStagingFailureRetainsDownload": true,
+  "stagingEditsPersist": true,
+  "fileRequests": 2,
+  "verifiedAt": "2026-10-04T04:34:59.723Z"
+}

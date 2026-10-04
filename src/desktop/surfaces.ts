@@ -5,7 +5,7 @@ import { Readable } from 'node:stream';
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import { browserURL, mediaKind, normalizeFieldOfView, type SurfaceState, type SurfaceInput, type BrowserFrame } from '../shared/surfaces';
-import { defaultPresentation, normalizeGallery, normalizePresentation, type SurfaceLayout } from '../shared/surface-layout';
+import { defaultPresentation, initialPreviewSize, normalizeGallery, normalizePresentation, type SurfaceLayout } from '../shared/surface-layout';
 import { SurfaceLayoutStore } from './surface-store';
 import { displayFrameRate, pointerInterval } from '../shared/refresh';
 
@@ -23,10 +23,12 @@ export class SurfaceManager {
   private saveTimer: ReturnType<typeof setTimeout> | null = null;
   private restoring = false;
   private stopping = false;
+  private updateBarrier = false;
   constructor(private readonly rendererURL: string, private readonly preload: string, private readonly reducedMotion: () => boolean, private readonly store: SurfaceLayoutStore) {}
 
   install(): void {
     const owner = (event: Pick<IpcMainInvokeEvent, 'sender' | 'senderFrame'>) => {
+      if (this.updateBarrier) throw new Error('The application is restarting for an update.');
       const surface = this.surfaces.get(event.sender.id);
       if (!surface || event.senderFrame !== event.sender.mainFrame || event.senderFrame?.url !== surface.url) throw new Error('Untrusted surface sender.');
       return surface;
@@ -75,7 +77,7 @@ export class SurfaceManager {
     });
     ipcMain.handle('sao:surface:fov', (event, value) => {
       const surface = owner(event);
-      if (surface.state.kind !== 'browser' || typeof value !== 'number' || !Number.isFinite(value)) throw new Error('Invalid browser field of view.');
+      if (surface.state.kind === 'gallery' || typeof value !== 'number' || !Number.isFinite(value)) throw new Error('Invalid browser field of view.');
       surface.state.fieldOfView = normalizeFieldOfView(value); this.publish(surface); this.scheduleSave();
     });
     ipcMain.handle('sao:surface:input', (event, input) => this.input(owner(event), input));
@@ -257,9 +259,13 @@ export class SurfaceManager {
       }
     } finally { this.restoring = false; await this.flush(); }
   }
+  setUpdateBarrier(enabled: boolean): void {
+    this.updateBarrier = enabled;
+    for (const surface of this.surfaces.values()) if (!surface.view.isDestroyed()) surface.view.setIgnoreMouseEvents(enabled);
+  }
   async flush(): Promise<void> {
     if (this.saveTimer) { clearTimeout(this.saveTimer); this.saveTimer = null; }
-    const layouts = [...this.surfaces.values()].map(surface => ({ kind: surface.state.kind, source: surface.state.kind === 'browser' ? surface.state.url : surface.source, bounds: surface.view.getBounds(), presentation: surface.state.presentation, fieldOfView: surface.state.kind === 'browser' ? surface.state.fieldOfView : undefined, gallery: surface.state.gallery?.settings }));
+    const layouts = [...this.surfaces.values()].map(surface => ({ kind: surface.state.kind, source: surface.state.kind === 'browser' ? surface.state.url : surface.source, bounds: surface.view.getBounds(), presentation: surface.state.presentation, fieldOfView: surface.state.kind !== 'gallery' ? surface.state.fieldOfView : undefined, gallery: surface.state.gallery?.settings }));
     await this.store.save(layouts);
   }
   private scheduleSave(): void {
@@ -326,6 +332,7 @@ export class SurfaceManager {
     location.searchParams.set('surface', id);
     const cursor = screen.getCursorScreenPoint(); const area = (layout ? screen.getDisplayMatching(layout.bounds) : screen.getDisplayNearestPoint(cursor)).workArea;
     const offset = (this.surfaces.size % 5) * 34;
+    if (!layout && (kind === 'browser' || kind === 'video')) ({ width, height } = initialPreviewSize(kind, area));
     width = Math.min(layout?.bounds.width ?? width, area.width); height = Math.min(layout?.bounds.height ?? height, area.height);
     const view = new BrowserWindow({ width, height, minWidth: 180, minHeight: 120,
       x: Math.round(layout ? Math.max(area.x, Math.min(area.x + area.width - width, layout.bounds.x)) : area.x + (area.width - width) / 2 + Math.min(offset, (area.width - width) / 2)),
@@ -333,7 +340,7 @@ export class SurfaceManager {
       show: false, frame: false, transparent: true, backgroundColor: '#00000000', hasShadow: false, resizable: true,
       title, autoHideMenuBar: true, alwaysOnTop: true,
       webPreferences: { preload: this.preload, nodeIntegration: false, sandbox: true, contextIsolation: true, webSecurity: true, autoplayPolicy: 'no-user-gesture-required' } });
-    const surface: Surface = { view, token, galleryTokens: [], source: layout?.source ?? '', url: location.href, state: { id, kind, title, url: source, loading: false, error: '', canGoBack: false, canGoForward: false, reducedMotion: this.reducedMotion(), restored: !!layout, fieldOfView: normalizeFieldOfView(layout?.fieldOfView), presentation: layout?.presentation ?? { ...defaultPresentation } } };
+    const surface: Surface = { view, token, galleryTokens: [], source: layout?.source ?? '', url: location.href, state: { id, kind, title, url: source, loading: false, error: '', canGoBack: false, canGoForward: false, reducedMotion: this.reducedMotion(), restored: !!layout, fieldOfView: normalizeFieldOfView(layout?.fieldOfView), presentation: layout?.presentation ?? { ...defaultPresentation, autoResize: kind !== 'video' } } };
     const senderId = view.webContents.id;
     this.surfaces.set(senderId, surface);
     view.on('page-title-updated', event => event.preventDefault());

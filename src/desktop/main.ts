@@ -1,9 +1,9 @@
-import { app, BrowserWindow, dialog, globalShortcut, ipcMain, Menu, Notification, protocol, screen, session, shell, Tray, type IpcMainInvokeEvent } from 'electron';
+import { app, autoUpdater as nativeUpdater, BrowserWindow, dialog, globalShortcut, ipcMain, Menu, Notification, protocol, screen, session, shell, Tray, type IpcMainInvokeEvent } from 'electron';
 import { readFile, realpath, rename, stat, writeFile, mkdir } from 'node:fs/promises';
 import { existsSync, mkdirSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import electronUpdater from 'electron-updater';
-import { UpdateController, updateCapability, RELEASE_PAGE } from './updates';
+import { UpdateController, updateCapability, prepareMacUpdate, RELEASE_PAGE } from './updates';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import type { ImportResult, LauncherItem, Position, Settings } from '../shared/contracts';
@@ -41,6 +41,7 @@ let social: SocialClient;
 let hpDisplay: HpDisplay;
 let updates: UpdateController;
 let updateQuitting = false;
+let installBarrier = false;
 let startup = true;
 let pointerTimer: ReturnType<typeof setInterval> | null = null;
 let pointerDelay = 0;
@@ -115,6 +116,8 @@ if (profileDirectory) {
   const isolatedData = path.resolve(profileDirectory);
   mkdirSync(isolatedData, { recursive: true });
   app.setPath('userData', isolatedData);
+  const isolatedCache = path.join(isolatedData, 'cache'); mkdirSync(isolatedCache, { recursive: true });
+  app.setPath('cache', isolatedCache);
 }
 
 function assertOwner(event: IpcMainInvokeEvent): void {
@@ -126,6 +129,7 @@ function assertOwner(event: IpcMainInvokeEvent): void {
 function handler(channel: string, callback: (...arguments_: unknown[]) => unknown | Promise<unknown>): void {
   ipcMain.handle(channel, (event, ...arguments_: unknown[]) => {
     assertOwner(event);
+    if (installBarrier && channel !== 'sao:update:status') throw new Error('The application is restarting for an update.');
     return callback(...arguments_);
   });
 }
@@ -413,13 +417,23 @@ function createUpdates(): void {
     const install = updater.quitAndInstall.bind(updater);
     updater.quitAndInstall = () => {
       updateQuitting = true; quitting = true; quitFlushed = true;
-      try { install(); } catch (error) { updateQuitting = false; quitting = false; quitFlushed = false; throw error; }
+      try { install(); } catch (error) { updateQuitting = false; quitting = false; quitFlushed = false; installBarrier = false; surfaces.setUpdateBarrier(false); throw error; }
     };
   }
+  let macPrepared = false;
+  if (updater && platform === 'darwin') {
+    nativeUpdater.on('update-downloaded', () => { macPrepared = true; });
+    nativeUpdater.on('error', () => { macPrepared = false; });
+  }
+  const releaseBarrier = () => { installBarrier = false; surfaces.setUpdateBarrier(false); };
   updates = new UpdateController({ currentVersion: app.getVersion(), capability, automatic: settings.automaticUpdates, updater,
-    beforeInstall: async () => { await writeQueue; await surfaces.flush(); },
+    prepareInstall: updater && platform === 'darwin' ? async () => { if (!macPrepared) await prepareMacUpdate(nativeUpdater); } : undefined,
+    beforeInstall: async () => {
+      installBarrier = true; surfaces.setUpdateBarrier(true);
+      try { await writeQueue; await surfaces.flush(); } catch (error) { releaseBarrier(); throw error; }
+    },
     onState: state => {
-      if (state.status === 'error' && updateQuitting) { updateQuitting = false; quitting = false; quitFlushed = false; }
+      if ((state.status === 'error' || state.status === 'downloaded') && updateQuitting) { updateQuitting = false; quitting = false; quitFlushed = false; releaseBarrier(); }
       if (window && !window.isDestroyed()) window.webContents.send('sao:update:status', state);
       updateTrayMenu();
       if (state.status === 'downloaded' && Notification.isSupported()) new Notification({ title: 'SAO Menu update ready', body: state.message }).show();

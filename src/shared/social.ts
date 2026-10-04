@@ -1,4 +1,4 @@
-export interface SocialProfile { id: string; username: string; displayName: string }
+export interface SocialProfile { id: string; username: string; displayName: string; createdAt?: number }
 export interface SocialFriend extends SocialProfile { online: boolean }
 export interface FriendRequest { id: string; from: SocialProfile; to: SocialProfile; createdAt: number }
 export interface DirectMessage { id: string; from: string; to: string; text: string; createdAt: number; readAt: number | null }

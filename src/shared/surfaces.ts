@@ -47,7 +47,7 @@ export function mediaKind(file: string): 'image' | 'video' | null {
 // the curved page addresses the corresponding point in the actual browser.
 export const pageBend = .11;
 export function normalizeFieldOfView(value: unknown): number {
-  return typeof value === 'number' && Number.isFinite(value) ? Math.max(20,Math.min(100,value)) : 45;
+  return typeof value === 'number' && Number.isFinite(value) ? Math.max(20,Math.min(100,value)) : 20;
 }
 export function browserPerspective(width: number, fieldOfView: number): number {
   return Math.max(1,width)/(2*Math.tan(normalizeFieldOfView(fieldOfView)*Math.PI/360));
@@ -55,11 +55,11 @@ export function browserPerspective(width: number, fieldOfView: number): number {
 export function browserBend(fieldOfView: number): number {
   return pageBend*Math.tan(normalizeFieldOfView(fieldOfView)*Math.PI/360)/Math.tan(Math.PI/8);
 }
-export function curveInset(x: number, width: number, height: number, fieldOfView = 45): number {
+export function curveInset(x: number, width: number, height: number, fieldOfView = 20): number {
   const normalized = 2 * x / Math.max(1, width) - 1;
   return height * browserBend(fieldOfView) * (1 - normalized * normalized) / 2;
 }
-export function pagePoint(x: number, y: number, width: number, height: number, fieldOfView = 45): { x: number; y: number } | null {
+export function pagePoint(x: number, y: number, width: number, height: number, fieldOfView = 20): { x: number; y: number } | null {
   if (x < 0 || x >= width) return null;
   const inset = curveInset(x, width, height, fieldOfView);
   if (y < inset || y >= height - inset) return null;
