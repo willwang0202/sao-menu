@@ -24,10 +24,10 @@ try {
     const send = window.webContents.send.bind(window.webContents);
     window.webContents.send = (channel, ...args) => { if (!['sao:pointer:down', 'sao:menu:dismiss'].includes(channel)) send(channel, ...args); };
   });
-  // Hold the original white sprite through entrance and initial hover. This
+  // Hold the white vector face through entrance and initial hover. This
   // proves that loading a hover face never blanks the already decoded icon.
   const artwork = new Promise(resolve => { releaseArtwork = resolve; });
-  await page.route('**/symbol/party-hovered.png', async route => { await artwork; await route.continue(); });
+  await page.route('**/sao-art/party-active.svg', async route => { await artwork; await route.continue(); });
   await page.reload({ waitUntil: 'domcontentloaded' });
   await instance.evaluate(({ BrowserWindow }) => { const window = BrowserWindow.getAllWindows().find(window => window.webContents.getURL().endsWith('/index.html')); window.showInactive(); window.webContents.send('sao:menu:toggle', true, { x: 700, y: 350 }); });
   await page.getByRole('menuitem', { name: 'Party', exact: true }).waitFor();
@@ -48,11 +48,11 @@ try {
   const button = page.getByRole('menuitem', { name: 'Party', exact: true });
   await pointAt(button);
   const cold = await visibleIcons(button);
-  assert.deepEqual(cold, [{ source: './sao-original/Images/symbol/party.png', loaded: true }], 'cold hover retains decoded original artwork');
+  assert.deepEqual(cold, [{ source: './sao-art/party.svg', loaded: true }], 'cold hover retains decoded idle artwork');
   releaseArtwork();
   const waitHoverFace = async button => {
     const id = await button.getAttribute('data-hover-id');
-    await page.waitForFunction(id => [...document.querySelector(`[data-hover-id="${id}"]`).querySelectorAll('img')].some(image => getComputedStyle(image).opacity === '1' && image.complete && image.getAttribute('src').endsWith('-hovered.png')), id);
+    await page.waitForFunction(id => [...document.querySelector(`[data-hover-id="${id}"]`).querySelectorAll('img')].some(image => getComputedStyle(image).opacity === '1' && image.complete && /(?:-hovered\.png|-active\.svg)$/.test(image.getAttribute('src'))), id);
   };
   await waitHoverFace(button);
   const handoff = async button => {
@@ -67,11 +67,11 @@ try {
         const background = getComputedStyle(element, ':before').backgroundImage;
         const point = window.testLatestPoint;
         const box = element.getBoundingClientRect();
-        states.push({ sources: images.map(image => image.getAttribute('src')), hoveredBackground: background.includes('-hovered'), hovered: element.classList.contains('hovered'), point, box: { x: box.x, y: box.y, width: box.width, height: box.height }, hit: point && document.elementFromPoint(point.x, point.y)?.outerHTML.slice(0, 160) });
+        states.push({ sources: images.map(image => image.getAttribute('src')), hoveredBackground: background.includes('-hovered'), vectorRing: !!element.querySelector('.vector-ring'), hovered: element.classList.contains('hovered'), point, box: { x: box.x, y: box.y, width: box.width, height: box.height }, hit: point && document.elementFromPoint(point.x, point.y)?.outerHTML.slice(0, 160) });
       }
       return states;
     });
-    assert.ok(samples.every(sample => sample.sources.length === 1 && sample.sources[0].endsWith('-hovered.png') && sample.hoveredBackground), `hover artwork and background stay stable during native handoffs: ${JSON.stringify(samples)}`);
+    assert.ok(samples.every(sample => sample.sources.length === 1 && /(?:-hovered\.png|-active\.svg)$/.test(sample.sources[0]) && (sample.hoveredBackground || sample.vectorRing)), `hover artwork and background stay stable during native handoffs: ${JSON.stringify(samples)}`);
   };
   await instance.evaluate(({ BrowserWindow }) => { BrowserWindow.getAllWindows().find(window => window.webContents.getURL().endsWith('/index.html')).hoverHistory = []; });
   await handoff(button);
@@ -80,7 +80,7 @@ try {
   // must clear both faces and restore click-through by itself.
   await instance.evaluate(({ BrowserWindow }) => { BrowserWindow.getAllWindows().find(window => window.webContents.getURL().endsWith('/index.html')).testPointer = { x: 2, y: 2 }; });
   await page.waitForFunction(() => !document.querySelector('[data-root-index="1"]').classList.contains('hovered'));
-  assert.deepEqual(await visibleIcons(button), [{ source: './sao-original/Images/symbol/party.png', loaded: true }]);
+  assert.deepEqual(await visibleIcons(button), [{ source: './sao-art/party.svg', loaded: true }]);
   assert.equal(await instance.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find(window => window.webContents.getURL().endsWith('/index.html')).hoverHistory.at(-1)), true);
   const row = page.getByRole('menuitem', { name: 'Equipment', exact: true });
   await row.waitFor();
