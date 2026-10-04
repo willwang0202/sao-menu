@@ -6,8 +6,8 @@ import path from 'node:path';
 import { _electron as electron } from 'playwright';
 
 const pkg = JSON.parse(await readFile('package.json', 'utf8'));
-const executablePath = path.resolve(process.platform === 'darwin'
-  ? `release/${process.arch === 'arm64' ? 'mac-arm64' : 'mac'}/SAO Utils 2.app/Contents/MacOS/SAO Utils 2`
+const executablePath = process.env.SAO_RELEASE_EXE ?? path.resolve(process.platform === 'darwin'
+  ? 'release/mac-universal/SAO Utils 2.app/Contents/MacOS/SAO Utils 2'
   : process.platform === 'win32' ? 'release/win-unpacked/SAO Utils 2.exe' : 'release/linux-unpacked/sao-menu');
 const userData = await mkdtemp(path.join(tmpdir(), 'sao-release-'));
 const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !['ELECTRON_RUN_AS_NODE', 'SAO_DEV_URL'].includes(key)));

@@ -18,16 +18,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # Only three packages are published: universal Mac, universal Windows and Linux.
         include:
           - os: macos-15
             platform: mac
-            arch: arm64
-          - os: macos-15-intel
-            platform: mac
-            arch: x64
+            arch: universal
           - os: windows-latest
             platform: windows
-            arch: x64
+            arch: universal
           - os: ubuntu-latest
             platform: linux
             arch: x64
@@ -56,13 +54,13 @@ jobs:
       - run: npm run build
       - name: Package macOS
         if: matrix.platform == 'mac'
-        run: npx electron-builder --mac dmg zip --${{ matrix.arch }} --publish never
+        run: npx electron-builder --mac dmg zip --universal --publish never
       - name: Package Windows
         if: matrix.platform == 'windows'
-        run: npx electron-builder --win nsis zip --x64 --publish never
+        run: npx electron-builder --win nsis --x64 --arm64 --publish never
       - name: Package Linux
         if: matrix.platform == 'linux'
-        run: npx electron-builder --linux AppImage deb --x64 --publish never
+        run: npx electron-builder --linux AppImage --x64 --publish never
       - run: node scripts/verify-release.mjs
       - name: Launch packaged Linux app
         if: matrix.platform == 'linux'
@@ -79,12 +77,11 @@ jobs:
             release/sao-menu-*-*.zip
             release/sao-menu-*-*.exe
             release/sao-menu-*-*.AppImage
-            release/sao-menu-*-*.deb
             output/release-*.json
           if-no-files-found: error
       - name: Upload verified packages to the draft release
         run: |
-          for file in release/sao-menu-*-*.{dmg,zip,exe,AppImage,deb}; do
+          for file in release/sao-menu-*-*.{dmg,zip,exe,AppImage}; do
             if [ -f "$file" ]; then gh release upload "$RELEASE_TAG" "$file" --repo "$GITHUB_REPOSITORY" --clobber; fi
           done
           gh release upload "$RELEASE_TAG" "output/release-${{ matrix.platform }}-${{ matrix.arch }}.json" --repo "$GITHUB_REPOSITORY" --clobber
@@ -108,3 +105,8 @@ jobs:
         run: node scripts/update-feeds.mjs
       - name: Upload update feeds to the draft release
         run: gh release upload "$RELEASE_TAG" release/latest.yml release/latest-mac.yml release/latest-linux.yml --repo "$GITHUB_REPOSITORY" --clobber
+      - name: Keep only the published packages, feeds and source on the release
+        run: |
+          for name in release-mac-universal.json release-windows-universal.json release-linux-x64.json sao-menu-build-assets.tgz; do
+            gh release delete-asset "$RELEASE_TAG" "$name" --repo "$GITHUB_REPOSITORY" --yes || true
+          done

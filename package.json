@@ -93,17 +93,15 @@
       }
     },
     "win": {
-      "artifactName": "sao-menu-${version}-windows-${arch}.${ext}",
+      "artifactName": "sao-menu-${version}-windows-universal.${ext}",
       "target": [
-        "nsis",
-        "zip"
+        "nsis"
       ]
     },
     "linux": {
-      "artifactName": "sao-menu-${version}-linux-${arch}.${ext}",
+      "artifactName": "sao-menu-${version}-linux-x86_64.${ext}",
       "target": [
-        "AppImage",
-        "deb"
+        "AppImage"
       ],
       "category": "Utility"
     },
