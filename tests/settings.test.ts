@@ -78,3 +78,11 @@ test('the camera debug view is off by default and recovers from corrupt values',
   assert.equal(normalizeSettings({ handDebugView: 1 }, 'darwin').handDebugView, false);
   assert.equal(normalizeSettings({ handDebugView: true }, 'darwin').handDebugView, true);
 });
+
+test('automatic updates default on, persist off and stay local when importing', () => {
+  assert.equal(defaultSettings('darwin').automaticUpdates, true);
+  assert.equal(normalizeSettings({ automaticUpdates: false }, 'darwin').automaticUpdates, false);
+  assert.equal(normalizeSettings({ automaticUpdates: 'false' }, 'darwin').automaticUpdates, true);
+  const current = { ...defaultSettings('darwin'), automaticUpdates: false };
+  assert.equal(parseConfiguration(JSON.stringify(defaultSettings('win32')), current, 'darwin').settings.automaticUpdates, false);
+});

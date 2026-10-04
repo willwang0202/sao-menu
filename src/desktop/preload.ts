@@ -1,10 +1,20 @@
 import { contextBridge, ipcRenderer, webUtils } from 'electron';
-import type { DesktopAPI, HandCursor, Position } from '../shared/contracts';
+import type { DesktopAPI, HandCursor, Position, UpdateStatus } from '../shared/contracts';
 import type { SocialAPI } from '../shared/social';
 
 // Every operation has its own channel. The renderer never receives ipcRenderer,
 // filesystem access, process access, or an unrestricted shell command bridge.
 const api: DesktopAPI = {
+  getUpdateStatus: () => ipcRenderer.invoke('sao:update:status'),
+  checkForUpdates: () => ipcRenderer.invoke('sao:update:check'),
+  downloadUpdate: () => ipcRenderer.invoke('sao:update:download'),
+  installUpdate: () => ipcRenderer.invoke('sao:update:install'),
+  openUpdatePage: () => ipcRenderer.invoke('sao:update:page'),
+  onUpdateStatus: callback => {
+    const listener = (_event: Electron.IpcRendererEvent, state: UpdateStatus) => callback(state);
+    ipcRenderer.on('sao:update:status', listener);
+    return () => ipcRenderer.removeListener('sao:update:status', listener);
+  },
   getRuntime: () => ipcRenderer.invoke('sao:runtime'),
   getGestureStatus: () => ipcRenderer.invoke('sao:gesture:status'),
   requestGesturePermission: () => ipcRenderer.invoke('sao:gesture:request'),

@@ -1,6 +1,9 @@
-import { app, BrowserWindow, dialog, globalShortcut, ipcMain, Menu, protocol, screen, session, shell, Tray, type IpcMainInvokeEvent } from 'electron';
+import { app, BrowserWindow, dialog, globalShortcut, ipcMain, Menu, Notification, protocol, screen, session, shell, Tray, type IpcMainInvokeEvent } from 'electron';
 import { readFile, realpath, rename, stat, writeFile, mkdir } from 'node:fs/promises';
-import { mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import electronUpdater from 'electron-updater';
+import { UpdateController, updateCapability, RELEASE_PAGE } from './updates';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import type { ImportResult, LauncherItem, Position, Settings } from '../shared/contracts';
@@ -36,6 +39,8 @@ let applicationCatalogue: LauncherItem[] | null = null;
 let surfaces: SurfaceManager;
 let social: SocialClient;
 let hpDisplay: HpDisplay;
+let updates: UpdateController;
+let updateQuitting = false;
 let startup = true;
 let pointerTimer: ReturnType<typeof setInterval> | null = null;
 let pointerDelay = 0;
@@ -268,6 +273,7 @@ async function applySettings(input: unknown): Promise<Settings> {
     }
     if (newShortcutRegistered && previousShortcut) globalShortcut.unregister(previousShortcut);
     settings = next;
+    updates?.setAutomatic(next.automaticUpdates);
     activeShortcut = newShortcutRegistered ? next.shortcut : previousShortcut;
     shortcutRegistered = activeShortcut !== null;
     updateTrayMenu();
@@ -295,6 +301,8 @@ function updateTrayMenu(): void {
     { label: 'Gallery Widget…', click: () => { if (window) void surfaces.pickGallery(window).catch(showSurfaceError); } },
     { label: `Menu shortcut: ${settings.shortcut}`, enabled: false },
     { type: 'separator' },
+    { label: 'Check for updates…', click: () => void checkUpdatesFromMenu() },
+    ...(updates?.getState().status === 'downloaded' ? [{ label: 'Install update and restart', click: () => void updates.install().catch(showUpdateError) }] : []),
     { label: 'Hide overlay', click: () => window?.hide() },
     { label: 'Quit SAO Utils 2', click: () => { quitting = true; app.quit(); } },
   ]));
@@ -314,6 +322,7 @@ function installNativeMenu(): void {
       { role: 'quit' },
     ] },
     { label: 'Edit', submenu: [{ role: 'undo' }, { role: 'redo' }, { type: 'separator' }, { role: 'cut' }, { role: 'copy' }, { role: 'paste' }, { role: 'selectAll' }] },
+    { label: 'Help', submenu: [{ label: 'Check for updates…', click: () => void checkUpdatesFromMenu() }] },
     { label: 'Window', submenu: [{ role: 'minimize' }, { label: 'Show SAO Utils 2', click: reveal }] },
   );
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
@@ -373,7 +382,56 @@ async function importConfiguration(): Promise<ImportResult | null> {
   });
 }
 
+function showUpdateError(error: unknown): void {
+  dialog.showErrorBox('Update could not complete', error instanceof Error ? error.message : String(error));
+}
+async function checkUpdatesFromMenu(): Promise<void> {
+  const state = await updates.check();
+  const action = state.status === 'downloaded' ? 'Install and restart' : state.status === 'available' ? state.capability === 'automatic' ? 'Download update' : 'Open downloads' : null;
+  const result = await dialog.showMessageBox({ type: state.status === 'error' ? 'error' : 'info', title: 'SAO Menu updates', message: state.message,
+    detail: `Installed version: ${state.currentVersion}`, buttons: action ? [action, 'Later'] : ['OK'], defaultId: action ? 1 : 0, cancelId: action ? 1 : 0 });
+  if (!action || result.response !== 0) return;
+  try {
+    if (state.status === 'downloaded') await updates.install();
+    else if (state.capability === 'automatic') await updates.download();
+    else await shell.openExternal(RELEASE_PAGE);
+  } catch (error) { showUpdateError(error); }
+}
+function createUpdates(): void {
+  let signedMac = false;
+  if (app.isPackaged && platform === 'darwin') {
+    const signature = spawnSync('/usr/bin/codesign', ['-dv', '--verbose=2', path.resolve(path.dirname(process.execPath), '../..')], { encoding: 'utf8', timeout: 5000 });
+    signedMac = signature.status === 0 && signature.stderr.includes('Authority=Developer ID Application:');
+  }
+  const capability = updateCapability({ packaged: app.isPackaged, platform, signedMac,
+    installedWindows: existsSync(path.join(path.dirname(process.execPath), 'Uninstall SAO Utils 2.exe')), appImage: !!process.env.APPIMAGE });
+  const updater = capability === 'automatic' ? electronUpdater.autoUpdater : undefined;
+  if (updater) {
+    updater.setFeedURL({ provider: 'github', owner: 'willwang0202', repo: 'sao-menu', private: false });
+    updater.allowPrerelease = false; updater.allowDowngrade = false;
+    updater.disableDifferentialDownload = true;
+    const install = updater.quitAndInstall.bind(updater);
+    updater.quitAndInstall = () => {
+      updateQuitting = true; quitting = true; quitFlushed = true;
+      try { install(); } catch (error) { updateQuitting = false; quitting = false; quitFlushed = false; throw error; }
+    };
+  }
+  updates = new UpdateController({ currentVersion: app.getVersion(), capability, automatic: settings.automaticUpdates, updater,
+    beforeInstall: async () => { await writeQueue; await surfaces.flush(); },
+    onState: state => {
+      if (state.status === 'error' && updateQuitting) { updateQuitting = false; quitting = false; quitFlushed = false; }
+      if (window && !window.isDestroyed()) window.webContents.send('sao:update:status', state);
+      updateTrayMenu();
+      if (state.status === 'downloaded' && Notification.isSupported()) new Notification({ title: 'SAO Menu update ready', body: state.message }).show();
+    },
+  });
+}
 function installHandlers(): void {
+  handler('sao:update:status', () => updates.getState());
+  handler('sao:update:check', () => updates.check());
+  handler('sao:update:download', () => updates.download());
+  handler('sao:update:install', () => updates.install());
+  handler('sao:update:page', () => shell.openExternal(RELEASE_PAGE));
   handler('sao:social:state', () => social.getState());
   handler('sao:social:authenticate', input => social.authenticate(input));
   handler('sao:social:logout', () => social.logout());
@@ -506,12 +564,13 @@ else {
     event.preventDefault();
     void surfaces.flush().catch(error => console.warn('Preview layout could not be saved.', error)).finally(() => { quitFlushed = true; app.quit(); });
   });
-  app.on('will-quit', () => { gesture.stop(); handTracking.stop(); surfaces?.stop(); social?.stop(); hpDisplay?.stop(); if (pointerTimer) clearInterval(pointerTimer); globalShortcut.unregisterAll(); tray?.destroy(); });
+  app.on('will-quit', () => { updates?.dispose(); gesture.stop(); handTracking.stop(); surfaces?.stop(); social?.stop(); hpDisplay?.stop(); if (pointerTimer) clearInterval(pointerTimer); globalShortcut.unregisterAll(); tray?.destroy(); });
   app.on('window-all-closed', () => { if (quitting) app.quit(); });
   app.whenReady().then(async () => {
     await loadConfiguration();
     surfaces = new SurfaceManager(rendererURL, path.join(__dirname, 'surface-preload.cjs'), () => settings.reducedMotion, new SurfaceLayoutStore(path.join(app.getPath('userData'), 'surface-layout.json')));
     social = new SocialClient(path.join(app.getPath('userData'), 'social-account.json'), state => { hpDisplay?.update(); if (!startup && state.snapshot) hpDisplay?.show(); else hpDisplay?.hide(); if (window && !window.isDestroyed()) window.webContents.send('sao:social:state', state); }, accountServiceEndpoint(app.isPackaged, process.env.SAO_TEST_SERVICE_URL));
+    createUpdates();
     surfaces.install();
     // Everything is denied except the hand tracker's own video-only camera request.
     session.defaultSession.setPermissionRequestHandler((contents, permission, callback, details) => callback(handTracking.allowsPermission(contents, permission, details as { mediaTypes?: string[] })));
@@ -536,6 +595,7 @@ else {
     tray.setToolTip('SAO Utils 2');
     tray.on('click', reveal);
     updateTrayMenu();
+    updates.start();
     if (settings.launchAtLogin) {
       try { configureLogin(true); } catch (error) { console.warn('Start at login could not be applied.', error); }
     }

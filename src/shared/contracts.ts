@@ -12,6 +12,7 @@ export interface Settings {
   reducedMotion: boolean;
   alwaysOnTop: boolean;
   launchAtLogin: boolean;
+  automaticUpdates: boolean;
   /** Opt-in webcam hand gestures. */
   handTracking: boolean;
   /** Shows the tracker's camera view with landmarks, for tuning. */
@@ -27,7 +28,19 @@ export interface SystemStats {
 }
 export interface RuntimeInfo { platform: Platform; version: string; desktop: boolean; shortcutRegistered: boolean; startup: boolean }
 export interface ImportResult { imported: number; warnings: string[]; settings: Settings }
+export type UpdateCapability = 'automatic' | 'manual' | 'unavailable';
+export interface UpdateStatus {
+  capability: UpdateCapability;
+  status: 'disabled' | 'idle' | 'checking' | 'current' | 'available' | 'downloading' | 'downloaded' | 'installing' | 'error';
+  currentVersion: string; latestVersion?: string; percent?: number; checkedAt?: number; message: string;
+}
 export interface DesktopAPI {
+  getUpdateStatus(): Promise<UpdateStatus>;
+  checkForUpdates(): Promise<UpdateStatus>;
+  downloadUpdate(): Promise<UpdateStatus>;
+  installUpdate(): Promise<UpdateStatus>;
+  openUpdatePage(): Promise<void>;
+  onUpdateStatus(callback: (state: UpdateStatus) => void): () => void;
   getRuntime(): Promise<RuntimeInfo>;
   getGestureStatus(): Promise<GestureStatus>;
   requestGesturePermission(): Promise<GestureStatus>;

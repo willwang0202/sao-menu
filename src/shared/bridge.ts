@@ -11,6 +11,9 @@ function read(): Settings {
 const unavailable = async (): Promise<never> => { throw new Error('Open SAO Utils 2 to use this native desktop feature.'); };
 const previewStats: SystemStats = { platform: 'web', hostname: 'Browser preview', cpuPercent: null, memoryUsed: null, memoryTotal: null, uptime: null, batteryPercent: null };
 const browserAPI: DesktopAPI = {
+  getUpdateStatus: async () => ({ capability: 'unavailable', status: 'disabled', currentVersion: 'Browser preview', message: 'Updates are available in an installed release.' }),
+  checkForUpdates: unavailable, downloadUpdate: unavailable, installUpdate: unavailable, openUpdatePage: unavailable,
+  onUpdateStatus: () => () => {},
   getRuntime: async () => ({ platform: 'web', version: '0.1.2', desktop: false, shortcutRegistered: false, startup }),
   getGestureStatus: async () => ({ supported: false, permission: 'unknown', running: false, message: 'Global mouse gestures require the macOS desktop app.' }),
   requestGesturePermission: unavailable,
