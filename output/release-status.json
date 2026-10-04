@@ -1,0 +1,73 @@
+{
+  "version": "0.1.6",
+  "sourceCommit": "c1f805c09116a72a111c0b76bceb622a72f80c89",
+  "release": "https://github.com/willwang0202/sao-menu/releases/tag/v0.1.6",
+  "nativeRun": "https://github.com/willwang0202/sao-menu/actions/runs/37173222401",
+  "nativeJobs": [
+    {
+      "name": "package (windows-latest, windows, x64)",
+      "url": "https://github.com/willwang0202/sao-menu/actions/runs/37173222401/job/111350312690",
+      "conclusion": "success"
+    },
+    {
+      "name": "package (macos-15-intel, mac, x64)",
+      "url": "https://github.com/willwang0202/sao-menu/actions/runs/37173222401/job/111350313004",
+      "conclusion": "success"
+    },
+    {
+      "name": "package (macos-15, mac, arm64)",
+      "url": "https://github.com/willwang0202/sao-menu/actions/runs/37173222401/job/111350313027",
+      "conclusion": "success"
+    },
+    {
+      "name": "package (ubuntu-latest, linux, x64)",
+      "url": "https://github.com/willwang0202/sao-menu/actions/runs/37173222401/job/111350313041",
+      "conclusion": "success"
+    }
+  ],
+  "packagedLaunchesPassed": 4,
+  "installerDigestsVerifiedAgainstGitHub": true,
+  "website": "https://sao-menu.favioon.com",
+  "installers": [
+    {
+      "name": "sao-menu-0.1.6-linux-amd64.deb",
+      "bytes": 142330496,
+      "sha256": "22f630c419f13eb65313617fd4c706ae2d79bc335d427f8816bebbba9df786a6"
+    },
+    {
+      "name": "sao-menu-0.1.6-linux-x86_64.AppImage",
+      "bytes": 176373573,
+      "sha256": "038160027a1bf764d53fc12c14b23a313ccff24322b797b1a4cbf757c2d2426c"
+    },
+    {
+      "name": "sao-menu-0.1.6-mac-arm64.dmg",
+      "bytes": 177796175,
+      "sha256": "beeaaea721f9dad4eba3c08cb836e7607237d4df8d543ea3aae760ab8c0f40be"
+    },
+    {
+      "name": "sao-menu-0.1.6-mac-arm64.zip",
+      "bytes": 177499366,
+      "sha256": "95ec307113035417556ee75fdb301740e18cd42943bf33ea9e10caff59c56cb0"
+    },
+    {
+      "name": "sao-menu-0.1.6-mac-x64.dmg",
+      "bytes": 182375921,
+      "sha256": "45c5712837f7afeb53e02c18bc92cbaca70792da6dbf9424d0550138411f9a2d"
+    },
+    {
+      "name": "sao-menu-0.1.6-mac-x64.zip",
+      "bytes": 182582850,
+      "sha256": "210fec8cd46662ded6a27533167994d587f656e28a23c1f77d08403426f9e1b6"
+    },
+    {
+      "name": "sao-menu-0.1.6-windows-x64.exe",
+      "bytes": 153103468,
+      "sha256": "8800a05b667b7994160dc1801a7b498be26f6fa96b63cb3189df194056015c94"
+    },
+    {
+      "name": "sao-menu-0.1.6-windows-x64.zip",
+      "bytes": 202664958,
+      "sha256": "5479b770750081062593be81a94c5217a757a65cfe3df0bc801fc3f3a1412f86"
+    }
+  ]
+}

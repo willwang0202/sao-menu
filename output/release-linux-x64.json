@@ -1,0 +1,19 @@
+{
+  "version": "0.1.6",
+  "platform": "linux",
+  "arch": "x64",
+  "verifiedAt": "2026-10-04T03:12:13.655Z",
+  "packagedFilesMatched": 1111,
+  "artifacts": [
+    {
+      "name": "sao-menu-0.1.6-linux-x86_64.AppImage",
+      "bytes": 176373573,
+      "sha256": "038160027a1bf764d53fc12c14b23a313ccff24322b797b1a4cbf757c2d2426c"
+    },
+    {
+      "name": "sao-menu-0.1.6-linux-amd64.deb",
+      "bytes": 142330496,
+      "sha256": "22f630c419f13eb65313617fd4c706ae2d79bc335d427f8816bebbba9df786a6"
+    }
+  ]
+}

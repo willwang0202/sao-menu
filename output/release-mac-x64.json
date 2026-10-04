@@ -1,0 +1,19 @@
+{
+  "version": "0.1.6",
+  "platform": "darwin",
+  "arch": "x64",
+  "verifiedAt": "2026-10-04T03:12:58.772Z",
+  "packagedFilesMatched": 1111,
+  "artifacts": [
+    {
+      "name": "sao-menu-0.1.6-mac-x64.dmg",
+      "bytes": 182375921,
+      "sha256": "45c5712837f7afeb53e02c18bc92cbaca70792da6dbf9424d0550138411f9a2d"
+    },
+    {
+      "name": "sao-menu-0.1.6-mac-x64.zip",
+      "bytes": 182582850,
+      "sha256": "210fec8cd46662ded6a27533167994d587f656e28a23c1f77d08403426f9e1b6"
+    }
+  ]
+}

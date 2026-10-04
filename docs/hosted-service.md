@@ -92,7 +92,7 @@ DELETE FROM sao.users WHERE username ~ '^(kirito|asuna)_[a-z0-9]{6,10}$';
 
 ## Open items
 
-1. **Download (resolved).** The v0.1.3 release is public, with the verified DMG and ZIP. The site's link returns 200, and the downloaded DMG's SHA-256 (`4dfdc1ab…8309`) matches `output/current-package.json`. The user chose public distribution, accepting that the build redistributes 1,108 assets imported from SAO Utils 2 on Steam and the anime's Link Start audio.
+1. **Download (resolved).** The v0.1.6 release includes Mac Apple Silicon/Intel DMG and ZIP, Windows x64 installer and ZIP, and Linux x64 AppImage and DEB. Native CI packaged, verified and launched all four targets. The locally signed Apple Silicon installers replace the CI pair, with matching SHA-256 reports. The user chose public distribution, accepting that the build redistributes 1,108 assets imported from SAO Utils 2 on Steam and the anime's Link Start audio.
 2. **Fixed service URL (resolved in 0.1.6).** New installations use sao-menu.favioon.com without configuration.
 3. **No account deletion** in the protocol or on the site. It is needed before treating this as a public service; there is also no password reset.
 4. **The build is not notarized.** Gatekeeper reports "Unnotarized Developer ID". Notarization needs the owner's Apple credentials.

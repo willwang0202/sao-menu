@@ -1,12 +1,18 @@
 # Current test release verification
 
-## 0.1.6 release preparation
+## 0.1.6 release
 
 The renamed `sao-menu` source passed 102/102 unit/protocol tests, the desktop production build and the website TypeScript/Next.js production build. The local browser acceptance test passed registration, friendship, direct-message round trips, logout, mobile layouts, platform download links and the GitHub issue-form/issue-list links. It used a disposable PGlite database. Native hand-gesture acceptance passed with Chromium's synthetic camera, carrying forward the already merged hand-tracking work.
 
 Native signup/HUD acceptance passed real launch-screen registration, account-name override of old local preferences, battery percentage and solo gating. Two native accounts passed friendship-only/pending-invitation gating, party acceptance with correct companion names, persistence, leaving and resizing back to one bar. Login recovery passed portrait and ultrawide registration controls and rejected sessions. Both SQLite and Postgres tests enforce private battery presence, invite ownership, party persistence, leader succession and six-player capacity under simultaneous acceptance.
 
-Native release CI verifies the tagged resource SHA-256, packaged renderer/host/icon bytes and installer presence, then launches the packaged binary on Apple Silicon macOS, Intel macOS, Windows x64 and Linux x64. Completion and installer checksums are recorded after those jobs finish; a queued build is not a runtime-verification result.
+Native release CI verifies the tagged resource SHA-256, packaged renderer/host/icon bytes and installer presence, then launches the packaged binary on Apple Silicon macOS, Intel macOS, Windows x64 and Linux x64. All four jobs in [release run 37173222401](https://github.com/willwang0202/sao-menu/actions/runs/37173222401) completed successfully against tag v0.1.6 (source c1f805c). Each matched all 1,111 packaged files, produced its two installers and launched the packaged application, including login-screen Create account, fixed production service, original font and isolated disposable profile. Per-platform SHA-256 reports are in `output/release-*.json`; the combined installer list is attached to the GitHub release as SHA256SUMS.
+
+The local Apple Silicon 0.1.6 app was signed with the Developer ID Application certificate. Strict codesign validation, helper machine-code comparison, original icon match, ZIP and DMG integrity checks, and an isolated packaged launch passed. It remains unnotarized. The local signed DMG/ZIP replace the CI Apple Silicon pair; Intel Mac packages use CI ad-hoc signing. Startup and hover regression checks passed: all animation scenes had a median 8.3ms interval on the 120Hz display, p95 9.5–10.2ms; the two-second refresh probe missed no intervals. Hover stayed stable through twelve category handoffs, and pixels outside the menu remained transparent.
+
+Website production deployment dpl_JB4y1TobnUqf44JYWWzsB4ydcp5a is READY at sao-menu.favioon.com from c1f805c. Local web acceptance additionally passed party acceptance/leave and battery presence through the Postgres driver. Live HTTPS health, protected party routes, exact download filenames, private schema RLS/defaults and absence of public API-role grants were verified without reading account rows. Supabase advisory notices are informational "RLS Enabled No Policy" entries: the tables intentionally permit only the privileged server connection.
+
+Superseded local installers and unpublished draft releases 0.1.4/0.1.5 are removed; Git commits and tags preserve their source history. The project folder is `/Users/edu/Code/sao-menu`.
 
 ## Earlier 0.1.3 release
 

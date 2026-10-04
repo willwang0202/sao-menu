@@ -1,0 +1,19 @@
+{
+  "version": "0.1.6",
+  "platform": "win32",
+  "arch": "x64",
+  "verifiedAt": "2026-10-04T03:13:16.241Z",
+  "packagedFilesMatched": 1111,
+  "artifacts": [
+    {
+      "name": "sao-menu-0.1.6-windows-x64.exe",
+      "bytes": 153103468,
+      "sha256": "8800a05b667b7994160dc1801a7b498be26f6fa96b63cb3189df194056015c94"
+    },
+    {
+      "name": "sao-menu-0.1.6-windows-x64.zip",
+      "bytes": 202664958,
+      "sha256": "5479b770750081062593be81a94c5217a757a65cfe3df0bc801fc3f3a1412f86"
+    }
+  ]
+}
