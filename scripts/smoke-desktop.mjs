@@ -143,6 +143,7 @@ try {
     await page.getByRole('menuitem', { name: 'Kirito', exact: true }).waitFor();
   }
 
+  await page.waitForFunction(() => document.getAnimations().every(animation => animation.playState !== 'running'));
   await page.getByRole('menuitem', { name: 'Settings', exact: true }).click();
   // Help opens the support page in the default browser; unit tests cover its link, so it isn't clicked here.
   await page.getByRole('menuitem', { name: 'Help', exact: true }).waitFor();
@@ -224,6 +225,7 @@ try {
   assert.equal(await instance.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find(window => window.webContents.getURL().endsWith('/index.html')).isVisible()), true, 'Message button summons the launcher');
   // Navigation → Field Map opens the SAO map window; without device location it centres on the saved home.
   await page.evaluate(async () => { const current = await window.sao.getSettings(); await window.sao.saveSettings({ ...current, mapHome: { label: 'Taipei City Hall', latitude: 25.0375, longitude: 121.5637 } }); });
+  await page.waitForFunction(() => document.getAnimations().every(animation => animation.playState !== 'running'));
   await page.getByRole('menuitem', { name: 'Navigation', exact: true }).click();
   await page.getByRole('menuitem', { name: 'Field Map', exact: true }).click();
   await page.waitForSelector('.field-map .maplibregl-canvas');
