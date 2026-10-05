@@ -1,21 +1,21 @@
 {
-  "version": "0.1.10",
+  "version": "0.1.11",
   "platform": "darwin",
   "arch": "universal",
-  "verifiedAt": "2026-10-05T06:10:07.178Z",
+  "verifiedAt": "2026-10-05T07:46:24.097Z",
   "packagedFilesMatched": 1714,
   "artifacts": [
     {
-      "name": "sao-menu-0.1.10-mac-universal.dmg",
-      "bytes": 288705033,
-      "sha256": "6838308d6be505a8bf48609b259dd46322da6ebb481c890eb5c0256fb1a985e5",
-      "sha512": "Vblg8hhIGd0bue4HIHlyG98fiwOp1qrxM0g4Y8vmTf8ZBl11cDFYDgIpQeP7F2SnJolbbFyN5qQSph2N4oLB1A=="
+      "name": "sao-menu-0.1.11-mac-universal.dmg",
+      "bytes": 288715844,
+      "sha256": "a355e047540dd89103f788b6b641f1654cdd88601589f6d426a4da307b947991",
+      "sha512": "cMALpTPYCUwKud0KUS3sq0WPRWLKmU7bVjSff5aipF10bXWN5Gx4KUA9ljHxIJ2tYbvPKwhX4x48IvPn2I9shQ=="
     },
     {
-      "name": "sao-menu-0.1.10-mac-universal.zip",
-      "bytes": 288338049,
-      "sha256": "37f419fe1611e2816368710f9e2253dd23dcdb26397603a25eeb23ba7816d7ff",
-      "sha512": "Quyax593KGMkueLR5Est8/8zNCdyPFfH0plvuJoW3b23f0Ox/BI+v0Cw5KWxM92Ymh7Ao/2O4P9d0RBO6Z39Qg=="
+      "name": "sao-menu-0.1.11-mac-universal.zip",
+      "bytes": 288350926,
+      "sha256": "5155399018d9986e2f078f68adbeeb012788d5acca330fc127336437260eb296",
+      "sha512": "pGQ/45JAROwwQ7lbdEJZVXRkWPmW4OVYm2EWsImsx+6JVrbT6ZCoFHefqVzG66VQpnCr5iT19T88ACOjMji8FQ=="
     }
   ]
 }
