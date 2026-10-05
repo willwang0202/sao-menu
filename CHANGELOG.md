@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Party invitations and incoming friend requests now open the anime's SAO window on the desktop (darkblackswords' artwork, with the Invite title). Press ○ to join or accept, ✕ to decline. Answering in Social closes it too.
 - Play the SAO "Congratulations!!" banner (darkblackswords' artwork) on the first launch after the operating system updates, showing the new system version on its bar. The first launch only records the version.
 
 ## 0.1.10 — October 4, 2026

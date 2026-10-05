@@ -618,7 +618,8 @@ else {
     hpDisplay = new HpDisplay(rendererURL, () => settings, () => social.getState().snapshot);
     await hpDisplay.create();
     if (!startup && social.getState().snapshot) hpDisplay.show();
-    desktopWidgets = new DesktopWidgets(rendererURL, () => settings, () => social.getState().snapshot, () => summonAt(screen.getCursorScreenPoint(), 'message'));
+    desktopWidgets = new DesktopWidgets(rendererURL, () => settings, () => social.getState().snapshot, () => summonAt(screen.getCursorScreenPoint(), 'message'),
+      (invitation, answer) => invitation.kind === 'party' ? social.resolveParty(invitation.id, answer) : social.resolveRequest(invitation.id, answer));
     await desktopWidgets.create();
     if (!startup) desktopWidgets.show();
     // After an OS update, the next launch plays the Congratulations!! banner once Link Start is over.

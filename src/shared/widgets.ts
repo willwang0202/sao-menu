@@ -1,6 +1,7 @@
 import type { Position } from './contracts';
 import type { SocialSnapshot } from './social';
 import type { ThemeId } from './themes';
+import type { Invitation, InvitationAnswer } from './invitations';
 
 /** Original SAO theme clock preset (`Presets/widget-clock.xml`). */
 export const CLOCK_SIZE = { width: 304, height: 80 } as const;
@@ -34,8 +35,8 @@ export function widgetPositions(area: WorkArea): { messageButton: Position; cloc
 
 /** A Congratulations!! banner run; `id` restarts the animation for a new run. */
 export interface Celebration { id: number; label: string }
-export interface WidgetState { unread: number; reducedMotion: boolean; sound: boolean; theme: ThemeId; celebration: Celebration | null }
-export interface WidgetAPI { getState(): Promise<WidgetState>; onState(callback: (state: WidgetState) => void): () => void; openMessages(): Promise<void> }
+export interface WidgetState { unread: number; reducedMotion: boolean; sound: boolean; theme: ThemeId; celebration: Celebration | null; invitation: Invitation | null }
+export interface WidgetAPI { getState(): Promise<WidgetState>; onState(callback: (state: WidgetState) => void): () => void; openMessages(): Promise<void>; answerInvitation(id: string, answer: InvitationAnswer): Promise<void> }
 declare global { interface Window { saoWidget?: WidgetAPI } }
 
 /** Window level the launcher uses while open (outside Link Start). */

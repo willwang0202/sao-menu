@@ -10,5 +10,8 @@ The artist permits personal, noncommercial SAO fan works. These assets are used
 in this unofficial fan project. Sword Art Online belongs to its respective owners.
 
 Only the avatar silhouette, selected menu icons and the regular/bold SAO UI fonts
-are included. SVG XML declarations were removed and viewBox attributes added
+are included as files. The "Congratulations!!" banner (`SAO_Congratulations!!.svg`) and the
+SAO window (`SAO_UI-Window_v0.110`: frame, ○/✕ buttons and the Invite title) are
+embedded as unchanged path data in `src/ui/congratulations-art.ts` and
+`src/ui/sao-window-art.ts`. SVG XML declarations were removed and viewBox attributes added
 for responsive rendering; artwork is otherwise unchanged.

@@ -1,0 +1,18 @@
+/* 1305×932 artwork at 420×300 (scale 0.3218): title band 0–75px, grey panel 75–185px, buttons centred at 243px. */
+.sao-invitation{position:relative;width:420px;height:300px;font-family:'SAO UI','Source Han Sans',sans-serif;user-select:none;transform-origin:center;animation:invitation-open 250ms cubic-bezier(.165,.84,.44,1)}
+.sao-invitation.reduced{animation:invitation-fade 200ms ease-out}
+.invitation-art{position:absolute;inset:0;width:420px;height:300px}
+.invitation-panel{position:absolute;left:24px;right:24px;top:89px;height:83px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center}
+.invitation-panel p{margin:0;font-size:17px;font-weight:500;line-height:1.35;color:#4d4d4d;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.invitation-panel .invitation-error{font-size:12px;color:#a4472a}
+.invitation-answer{position:absolute;top:214px;width:58px;height:58px;padding:0;border:0;border-radius:50%;background:none;cursor:pointer;transition:transform 120ms ease-out,filter 120ms ease-out}
+.invitation-answer.accept{left:85px}
+.invitation-answer.decline{left:277px}
+.invitation-answer svg{display:block;width:58px;height:58px}
+.invitation-answer:hover:not(:disabled){filter:brightness(1.12)}
+.invitation-answer:active:not(:disabled){transform:scale(.94)}
+.invitation-answer:focus-visible{outline:2px solid #d98400;outline-offset:2px}
+.invitation-answer:disabled{opacity:.55;cursor:wait}
+.visually-hidden{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+@keyframes invitation-open{from{opacity:0;transform:scaleY(0)}to{opacity:1;transform:scaleY(1)}}
+@keyframes invitation-fade{from{opacity:0}to{opacity:1}}

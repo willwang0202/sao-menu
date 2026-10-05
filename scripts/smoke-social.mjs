@@ -51,9 +51,18 @@ try {
   await kirito.page.getByLabel('Player username').fill('asuna');
   await kirito.page.getByRole('button', { name: 'Send friend request' }).click();
   await waitState(asuna.page,state=>state.snapshot?.requests.length===1);
+  // Incoming invitations open the SAO alert window (darkblackswords' SAO_UI-Window) on the desktop.
+  const invitationWindow = player => player.instance.windows().find(page => page.url().includes('widget=invitation'));
+  const invitationShown = player => player.instance.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find(window => window.webContents.getURL().includes('widget=invitation'))?.isVisible() ?? false);
+  await invitationWindow(asuna).getByText('Kirito has sent you a friend request.', { exact: true }).waitFor();
+  assert.equal(await invitationShown(asuna), true, 'a friend request opens the invitation window');
+  assert.equal(await invitationShown(kirito), false, 'the sender gets no invitation window');
   await asuna.page.getByRole('button', { name: /Friend Requests/ }).click();
   await asuna.page.getByRole('button', { name: 'Accept Kirito' }).click();
   await waitState(kirito.page,state=>state.snapshot?.friends.some(friend=>friend.username==='asuna'));
+  await waitState(asuna.page, state => state.snapshot?.requests.length === 0);
+  await asuna.page.waitForTimeout(300);
+  assert.equal(await invitationShown(asuna), false, 'answering in Social closes the invitation window');
   await kirito.page.getByRole('button', { name: 'Asuna', exact: true }).click();
   const kiritoHud = kirito.instance.windows().find(page => page.url().includes('hp=1'));
   const asunaHud = asuna.instance.windows().find(page => page.url().includes('hp=1'));
@@ -61,8 +70,11 @@ try {
   await kirito.page.getByRole('button', { name: 'Invite to party', exact: true }).click();
   await waitState(asuna.page, state => state.snapshot?.partyInvites?.length === 1);
   assert.equal(await kiritoHud.locator('.hp-extra').count(), 0, 'a pending party invitation has no companion bar');
-  await asuna.page.getByRole('button', { name: /^Party \(/ }).click();
-  await asuna.page.getByRole('button', { name: "Join Kirito's party", exact: true }).click();
+  const partyDialog = invitationWindow(asuna);
+  await partyDialog.getByText('Kirito has invited you to a party.', { exact: true }).waitFor();
+  await partyDialog.waitForTimeout(400);
+  await partyDialog.screenshot({ path: path.resolve('output/playwright/invitation.png') });
+  await partyDialog.getByRole('button', { name: 'Join party', exact: true }).click();
   await waitState(kirito.page, state => state.snapshot?.party?.members.length === 2);
   await kiritoHud.locator('.hp-extra').waitFor(); await asunaHud.locator('.hp-extra').waitFor();
   assert.equal(await kiritoHud.locator('.hp-extra-name').textContent(), 'Asuna');

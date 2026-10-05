@@ -39,8 +39,8 @@ Merged into `main`; released in 0.1.8 (themes, widgets) and 0.1.10 (Field Map, r
 
 ## Later (new anime-only features from the darkblackswords vector pack)
 - [x] "Congratulations!!" banner, shown only on the first launch after an OS update (user decision 2026-10-04; not on level-ups)
-- [ ] Duel-style window for party invites
-- [ ] SAO window frames
+- [x] SAO window (SAO_UI-Window): party invites and incoming friend requests open it on the desktop with ○ accept / ✕ decline (user decision 2026-10-04: invites only; other dialogs keep the original look)
+- [ ] Duel VS banner: set aside (the anime uses it only for duels); ask before building a duel feature
 
 ## Not original features (platform work)
 - [ ] Two-finger touch invocation; Windows/Linux global two-button gesture
