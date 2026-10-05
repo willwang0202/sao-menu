@@ -101,3 +101,9 @@ test('shows the clock and message widgets by default and keeps a saved choice', 
   assert.equal(hidden.showClock, false); assert.equal(hidden.showMessageButton, false);
   assert.equal(normalizeSettings({ showClock: 'no' }, 'darwin').showClock, true);
 });
+
+test('plays the Link Start animation unless the player turns it off', () => {
+  assert.equal(normalizeSettings({}, 'darwin').showStartupAnimation, true);
+  assert.equal(normalizeSettings({ showStartupAnimation: false }, 'darwin').showStartupAnimation, false);
+  assert.equal(normalizeSettings({ showStartupAnimation: 'no' }, 'darwin').showStartupAnimation, true);
+});

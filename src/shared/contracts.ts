@@ -27,6 +27,8 @@ export interface Settings {
   startupLanguage: StartupLanguageSetting;
   /** Field Map fallback when device location is unavailable. */
   mapHome?: MapHome;
+  /** Plays the Link Start animation at launch; off goes straight to the login cards. */
+  showStartupAnimation: boolean;
   /** Original SAO clock widget on the desktop. */
   showClock: boolean;
   /** Original mail-style button that opens Message. */

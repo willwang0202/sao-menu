@@ -18,7 +18,8 @@ const MAX_PIXEL_RATIO = 2;
  * reconstruction, timed by a clock the original voice/SFX track follows.
  */
 export function LinkStart({ settings, onComplete }: { settings: Settings; onComplete: () => void }) {
-  const reduced = settings.reducedMotion || matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // Reduced motion, or the Link Start animation turned off in Options, goes straight to the login cards.
+  const reduced = settings.reducedMotion || !settings.showStartupAnimation || matchMedia('(prefers-reduced-motion: reduce)').matches;
   const strings = startupStrings(resolveStartupLanguage(settings.startupLanguage, navigator.languages[0] ?? navigator.language));
   const stringsRef = useRef(strings); stringsRef.current = strings;
   const [phase, setPhase] = useState<Phase>(reduced ? 'login' : 'playing');
