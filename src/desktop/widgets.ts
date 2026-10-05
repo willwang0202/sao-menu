@@ -2,26 +2,44 @@ import { BrowserWindow, ipcMain, screen } from 'electron';
 import path from 'node:path';
 import type { Settings } from '../shared/contracts';
 import type { SocialSnapshot } from '../shared/social';
-import { CLOCK_SIZE, MESSAGE_BUTTON_SIZE, unreadMessages, widgetPositions, widgetStacking, type WidgetState } from '../shared/widgets';
+import { CONGRATULATIONS_SHOW_MS, CONGRATULATIONS_SIZE, congratulationsPosition } from '../shared/system-update';
+import { CLOCK_SIZE, MESSAGE_BUTTON_SIZE, unreadMessages, widgetPositions, widgetStacking, type Celebration, type WidgetState } from '../shared/widgets';
 
-type WidgetKind = 'clock' | 'message';
-const SIZES: Record<WidgetKind, { width: number; height: number }> = { clock: CLOCK_SIZE, message: { width: MESSAGE_BUTTON_SIZE, height: MESSAGE_BUTTON_SIZE } };
+type WidgetKind = 'clock' | 'message' | 'congratulations';
+const KINDS: WidgetKind[] = ['clock', 'message', 'congratulations'];
+const SIZES: Record<WidgetKind, { width: number; height: number }> = { clock: CLOCK_SIZE, message: { width: MESSAGE_BUTTON_SIZE, height: MESSAGE_BUTTON_SIZE }, congratulations: CONGRATULATIONS_SIZE };
+const TITLES: Record<WidgetKind, string> = { clock: 'SAO Clock', message: 'SAO Message', congratulations: 'SAO Congratulations' };
 
 /** Original SAO theme desktop widgets: the clock preset and the mail-style Message button. */
 export class DesktopWidgets {
   private readonly windows = new Map<WidgetKind, BrowserWindow>();
   private readonly urls = new Map<WidgetKind, string>();
   private visible = false;
+  private celebration: Celebration | null = null;
+  private pendingCelebration: string | null = null;
+  private celebrationTimer: NodeJS.Timeout | null = null;
+  private celebrations = 0;
   constructor(private readonly renderer: string, private readonly settings: () => Settings, private readonly snapshot: () => SocialSnapshot | null, private readonly openMessages: () => void) {}
   async create(): Promise<void> {
     ipcMain.handle('sao:widget:state', event => { this.owner(event); return this.state(); });
     ipcMain.handle('sao:widget:messages', event => { if (this.owner(event) !== 'message') throw new Error('Only the Message button opens messages.'); this.openMessages(); });
-    await Promise.all((['clock', 'message'] as WidgetKind[]).map(kind => this.createWindow(kind)));
+    await Promise.all(KINDS.map(kind => this.createWindow(kind)));
     screen.on('display-metrics-changed', this.position); screen.on('display-added', this.position); screen.on('display-removed', this.position);
     this.position();
   }
   /** Widgets follow the HP display: shown after Link Start, hidden on hide. */
-  show(): void { this.visible = true; this.refresh(); }
+  show(): void {
+    this.visible = true; this.refresh();
+    if (this.pendingCelebration) { const label = this.pendingCelebration; this.pendingCelebration = null; this.celebrate(label); }
+  }
+  /** Plays the Congratulations!! banner once; waits for Link Start to finish if needed. */
+  celebrate(label: string): void {
+    if (!this.visible) { this.pendingCelebration = label; return; }
+    if (this.celebrationTimer) clearTimeout(this.celebrationTimer);
+    this.celebration = { id: ++this.celebrations, label };
+    this.update();
+    this.celebrationTimer = setTimeout(() => { this.celebrationTimer = null; this.celebration = null; this.update(); }, CONGRATULATIONS_SHOW_MS);
+  }
   raise(): void { this.windows.forEach(window => { if (!window.isDestroyed() && window.isVisible()) window.moveTop(); }); }
   hide(): void { this.visible = false; this.windows.forEach(window => { if (!window.isDestroyed()) window.hide(); }); }
   update(): void {
@@ -32,12 +50,16 @@ export class DesktopWidgets {
   stop(): void {
     screen.removeListener('display-metrics-changed', this.position); screen.removeListener('display-added', this.position); screen.removeListener('display-removed', this.position);
     ipcMain.removeHandler('sao:widget:state'); ipcMain.removeHandler('sao:widget:messages');
+    if (this.celebrationTimer) clearTimeout(this.celebrationTimer);
     this.windows.forEach(window => window.destroy()); this.windows.clear();
   }
   private shouldShow(kind: WidgetKind): boolean {
     const settings = this.settings();
     // The Message button appears only while there are unread messages.
-    return this.visible && (kind === 'clock' ? settings.showClock : settings.showMessageButton && unreadMessages(this.snapshot()) > 0);
+    if (!this.visible) return false;
+    if (kind === 'clock') return settings.showClock;
+    if (kind === 'congratulations') return this.celebration !== null;
+    return settings.showMessageButton && unreadMessages(this.snapshot()) > 0;
   }
   private refresh(): void {
     this.windows.forEach((window, kind) => {
@@ -46,7 +68,10 @@ export class DesktopWidgets {
       if (this.shouldShow(kind)) { if (!window.isVisible()) { window.showInactive(); window.moveTop(); } } else window.hide();
     });
   }
-  private state(): WidgetState { return { unread: unreadMessages(this.snapshot()), reducedMotion: this.settings().reducedMotion }; }
+  private state(): WidgetState {
+    const settings = this.settings();
+    return { unread: unreadMessages(this.snapshot()), reducedMotion: settings.reducedMotion, sound: settings.sound, theme: settings.theme, celebration: this.celebration };
+  }
   private owner(event: Electron.IpcMainInvokeEvent): WidgetKind {
     for (const [kind, window] of this.windows) {
       if (!window.isDestroyed() && event.sender === window.webContents && event.senderFrame === window.webContents.mainFrame && event.senderFrame.url === this.urls.get(kind)) return kind;
@@ -57,11 +82,11 @@ export class DesktopWidgets {
     const url = new URL(this.renderer); url.searchParams.set('widget', kind); this.urls.set(kind, url.href);
     const window = new BrowserWindow({
       ...SIZES[kind], show: false, frame: false, transparent: true, backgroundColor: '#00000000', hasShadow: false,
-      focusable: false, resizable: false, skipTaskbar: true, title: kind === 'clock' ? 'SAO Clock' : 'SAO Message',
+      focusable: false, resizable: false, skipTaskbar: true, title: TITLES[kind],
       webPreferences: { preload: path.join(__dirname, 'widget-preload.cjs'), nodeIntegration: false, contextIsolation: true, sandbox: true, webSecurity: true },
     });
-    // The clock is display-only; clicks pass to the desktop below it.
-    if (kind === 'clock') window.setIgnoreMouseEvents(true);
+    // The clock and banner are display-only; clicks pass to the desktop below them.
+    if (kind !== 'message') window.setIgnoreMouseEvents(true);
     if (process.platform === 'darwin') window.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
     window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
     window.on('page-title-updated', event => event.preventDefault());
@@ -72,7 +97,8 @@ export class DesktopWidgets {
   }
   private position = () => {
     const positions = widgetPositions(screen.getPrimaryDisplay().workArea);
-    const clock = this.windows.get('clock'), message = this.windows.get('message');
+    const clock = this.windows.get('clock'), message = this.windows.get('message'), banner = this.windows.get('congratulations');
+    if (banner && !banner.isDestroyed()) { const place = congratulationsPosition(screen.getPrimaryDisplay().workArea); banner.setPosition(place.x, place.y); }
     if (clock && !clock.isDestroyed()) clock.setPosition(positions.clock.x, positions.clock.y);
     if (message && !message.isDestroyed()) message.setPosition(positions.messageButton.x, positions.messageButton.y);
   };

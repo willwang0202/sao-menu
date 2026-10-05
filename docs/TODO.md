@@ -38,7 +38,7 @@ Merged into `main`; released in 0.1.8 (themes, widgets) and 0.1.10 (Field Map, r
 - [ ] Device check: Location Services prompt from the signed app
 
 ## Later (new anime-only features from the darkblackswords vector pack)
-- [ ] "Congratulations!!" banner when account level increases
+- [x] "Congratulations!!" banner, shown only on the first launch after an OS update (user decision 2026-10-04; not on level-ups)
 - [ ] Duel-style window for party invites
 - [ ] SAO window frames
 

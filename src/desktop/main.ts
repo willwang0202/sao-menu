@@ -19,6 +19,7 @@ import { SurfaceLayoutStore } from './surface-store';
 import { SocialClient } from './social';
 import { HpDisplay } from './hud';
 import { DesktopWidgets } from './widgets';
+import { checkSystemUpdate } from './system-update';
 import { MapLocation } from './location';
 import { LAUNCHER_LEVEL } from '../shared/widgets';
 import { pointerInterval } from '../shared/refresh';
@@ -620,6 +621,8 @@ else {
     desktopWidgets = new DesktopWidgets(rendererURL, () => settings, () => social.getState().snapshot, () => summonAt(screen.getCursorScreenPoint(), 'message'));
     await desktopWidgets.create();
     if (!startup) desktopWidgets.show();
+    // After an OS update, the next launch plays the Congratulations!! banner once Link Start is over.
+    void checkSystemUpdate(path.join(app.getPath('userData'), 'system-version.json'), platform, process.getSystemVersion()).then(label => { if (label) desktopWidgets.celebrate(label); });
     await surfaces.restore();
     await social.start();
     gesture.start();

@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { CLOCK_SAMPLE_MS, clockAngles, clockText, type WidgetState } from '../shared/widgets';
+import { CongratulationsBanner } from './congratulations';
 import './widgets.css';
 const IMAGE = './sao-original/Images/';
 const MAX_BADGE = 99;
 
 function useWidgetState(): WidgetState {
-  const [state, setState] = useState<WidgetState>({ unread: 0, reducedMotion: false });
+  const [state, setState] = useState<WidgetState>({ unread: 0, reducedMotion: false, sound: false, theme: 'sao', celebration: null });
   useEffect(() => { const api = window.saoWidget; if (!api) return; const detach = api.onState(setState); void api.getState().then(setState).catch(() => {}); return detach; }, []);
   return state;
 }
@@ -34,5 +35,6 @@ export function DesktopWidgetWindow({ kind }: { kind: string }) {
   const state = useWidgetState();
   useEffect(() => { document.documentElement.classList.add('widget-window'); }, []);
   if (kind === 'clock') return <ClockWidget />;
+  if (kind === 'congratulations') return <CongratulationsBanner celebration={state.celebration} reducedMotion={state.reducedMotion} sound={state.sound} theme={state.theme} />;
   return <MessageButton unread={state.unread} onOpen={() => { void window.saoWidget?.openMessages().catch(() => {}); }} />;
 }

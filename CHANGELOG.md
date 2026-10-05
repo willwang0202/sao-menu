@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Play the SAO "Congratulations!!" banner (darkblackswords' artwork) on the first launch after the operating system updates, showing the new system version on its bar. The first launch only records the version.
+
 ## 0.1.10 — October 4, 2026
 
 - Add Navigation → Field Map: a real-world map styled after the anime's map window (white portrait card, cyan ground, blue paths), with your position, the place name and coordinates. On macOS it asks for Location access; otherwise, or if access is denied, it centres on a home location you search for in Options → Interface → Field Map. Map data © OpenStreetMap contributors via OpenFreeMap, credited in Options → About.

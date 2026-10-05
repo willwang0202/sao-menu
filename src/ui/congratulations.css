@@ -1,0 +1,14 @@
+/* 1108×286 artwork drawn at 700px; the caption sits on the notched bar (art y 226–286). */
+.sao-congratulations{position:relative;width:700px;height:181px;margin:40px auto 0;pointer-events:none;user-select:none;filter:drop-shadow(0 0 10px rgba(255,255,255,.55)) drop-shadow(0 3px 8px rgba(0,0,0,.35));animation:congratulations-out 700ms ease-in 5300ms forwards}
+.congratulations-art{display:block;width:700px;height:181px;overflow:visible}
+.congratulations-wordmark,.congratulations-bar{fill:#fbfbfb;transform-box:fill-box;transform-origin:center}
+.congratulations-wordmark{animation:congratulations-wordmark 500ms cubic-bezier(.165,.84,.44,1) backwards}
+.congratulations-bar{animation:congratulations-bar 500ms cubic-bezier(.165,.84,.44,1) 300ms backwards}
+.congratulations-caption{position:absolute;left:0;right:0;top:143px;height:38px;display:grid;grid-template-columns:1fr 1fr;column-gap:60px;align-items:center;font:500 18px/1 'SAO UI','Source Han Sans',sans-serif;color:rgba(51,51,51,.8);letter-spacing:.06em;animation:congratulations-fade 300ms ease-out 700ms backwards}
+.congratulations-caption span:first-child{text-align:right;text-transform:uppercase}
+.congratulations-caption span:last-child{text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sao-congratulations.reduced .congratulations-wordmark,.sao-congratulations.reduced .congratulations-bar{animation:congratulations-fade 300ms ease-out backwards}
+@keyframes congratulations-wordmark{from{opacity:0;transform:scale(1.18)}to{opacity:1;transform:scale(1)}}
+@keyframes congratulations-bar{from{opacity:0;transform:scaleX(0)}to{opacity:1;transform:scaleX(1)}}
+@keyframes congratulations-fade{from{opacity:0}to{opacity:1}}
+@keyframes congratulations-out{to{opacity:0}}

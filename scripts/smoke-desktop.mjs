@@ -10,6 +10,8 @@ const userData = await mkdtemp(path.join(tmpdir(), 'sao-desktop-smoke-'));
 const output = path.resolve('output/playwright');
 await mkdir(output, { recursive: true });
 const env = Object.fromEntries(Object.entries(process.env).filter(([key, value]) => value !== undefined && !['ELECTRON_RUN_AS_NODE', 'SAO_DEV_URL'].includes(key)));
+// An older recorded OS version makes this launch count as the first after a system update.
+await writeFile(path.join(userData, 'system-version.json'), JSON.stringify({ version: '1.0' }));
 const instance = await electron.launch({ executablePath: electronPath, args: ['.'], cwd: process.cwd(), env: { ...env, SAO_USER_DATA: userData, SAO_TEST_NO_DEVICE_LOCATION: '1' }, timeout: 30000 });
 const errors = [];
 try {
@@ -41,6 +43,19 @@ try {
   });
   assert.deepEqual(secure, { sandbox: true, isolation: true, node: false });
   const storage = await instance.evaluate(({ app }) => ({ name: app.getName(), userData: app.getPath('userData') }));
+  const congratulations = () => instance.evaluate(async ({ BrowserWindow }) => {
+    const banner = BrowserWindow.getAllWindows().find(window => new URL(window.webContents.getURL()).searchParams.get('widget') === 'congratulations');
+    return { visible: banner?.isVisible() ?? false, label: banner ? await banner.webContents.executeJavaScript("document.querySelector('.sao-congratulations')?.getAttribute('aria-label') ?? ''") : '' };
+  });
+  const bannerDeadline = Date.now() + 10000;
+  let banner = await congratulations();
+  while (!(banner.visible && banner.label) && Date.now() < bannerDeadline) { await new Promise(resolve => setTimeout(resolve, 200)); banner = await congratulations(); }
+  assert.equal(banner.visible, true, 'the Congratulations!! banner plays after a system update');
+  assert.match(banner.label, /^Congratulations!! System update: (macOS|Windows|Linux) \d/);
+  await new Promise(resolve => setTimeout(resolve, 1200));
+  const bannerImage = await instance.evaluate(async ({ BrowserWindow }) => (await BrowserWindow.getAllWindows().find(window => new URL(window.webContents.getURL()).searchParams.get('widget') === 'congratulations').webContents.capturePage()).toPNG().toString('base64'));
+  await writeFile(path.join(output, 'congratulations.png'), Buffer.from(bannerImage, 'base64'));
+  assert.notEqual(JSON.parse(await readFile(path.join(userData, 'system-version.json'), 'utf8')).version, '1.0', 'the current OS version is recorded');
   const gesture = await page.evaluate(() => window.sao.getGestureStatus());
   assert.equal(gesture.supported, process.platform === 'darwin');
   await page.evaluate(() => document.fonts.ready);
@@ -234,5 +249,5 @@ try {
   assert.ok(!errors.some(error => /worker/i.test(error)), `Map worker failed: ${errors.join('; ')}`);
   await page.waitForTimeout(9000);
   await page.screenshot({ path: path.join(output, 'field-map.png') });
-  console.log(JSON.stringify({ platform: runtime.platform, applications: applications.length, memoryTotal: stats.memoryTotal, shortcutRegistered: runtime.shortcutRegistered, storage, gesture, geometry, fonts, categorySwitch: { selfAnchor, optionsAnchor, railUnchanged: true }, assertions: 'original assets and geometry, clock and message widgets, Message button opens Message, Field Map, anchored category switching, cascading menus, native launch, pointer passthrough, bridge isolation, IPC owner, settings, import/export, hotkey dismissal, hide/reopen, reload', screenshot: path.join(output, 'original-menu.png'), userData }, null, 2));
+  console.log(JSON.stringify({ platform: runtime.platform, applications: applications.length, memoryTotal: stats.memoryTotal, shortcutRegistered: runtime.shortcutRegistered, storage, gesture, geometry, fonts, categorySwitch: { selfAnchor, optionsAnchor, railUnchanged: true }, assertions: 'original assets and geometry, Congratulations!! after a system update, clock and message widgets, Message button opens Message, Field Map, anchored category switching, cascading menus, native launch, pointer passthrough, bridge isolation, IPC owner, settings, import/export, hotkey dismissal, hide/reopen, reload', screenshot: path.join(output, 'original-menu.png'), userData }, null, 2));
 } finally { await instance.close(); await rm(userData, { recursive: true, force: true }); }
