@@ -54,7 +54,7 @@ Scene timing, positions and colours were measured frame by frame from the refere
 
 ## Website and accounts
 
-[sao-menu.favioon.com](https://sao-menu.favioon.com) runs `web/`, a Next.js app on Vercel with Supabase Postgres. It serves a landing page, web sign-up and sign-in, an account page for friends and messages, and the `/v1` account API the desktop app uses. Released clients always connect to this service; the endpoint is neither displayed nor configurable. Launch-screen signup is available from version 0.1.7. Older builds can enter the address in **Account service** on the login card. The site's Download button serves the public [0.1.8 release](https://github.com/willwang0202/sao-menu/releases/tag/v0.1.8). Architecture, infrastructure, security model and runbook: [hosted service](docs/hosted-service.md).
+[sao-menu.favioon.com](https://sao-menu.favioon.com) runs `web/`, a Next.js app on Vercel with Supabase Postgres. It serves a landing page, web sign-up and sign-in, an account page for friends and messages, and the `/v1` account API the desktop app uses. Released clients always connect to this service; the endpoint is neither displayed nor configurable. Launch-screen signup is available from version 0.1.7. Older builds can enter the address in **Account service** on the login card. The site's Download button serves the public [0.1.10 release](https://github.com/willwang0202/sao-menu/releases/tag/v0.1.10). Architecture, infrastructure, security model and runbook: [hosted service](docs/hosted-service.md).
 
 ## Updates
 
@@ -80,7 +80,7 @@ The desktop test checks actual Electron menus, sprite geometry/fonts, native lau
 
 The local universal app is `release/mac-universal/SAO Menu.app`; installers use the `sao-menu-<version>-<platform>-<architecture>` prefix. The public release provides one universal macOS DMG for Apple Silicon and Intel, one universal Windows installer for x64 and Arm64, a Linux x86_64 AppImage, and source code. The universal Mac ZIP and three update manifests are also retained for automatic updates; nothing else is built or published. Quit the running app via Exit before opening this build. Builds are signed with the local Developer ID certificate when one is installed, but they are not notarized, so Gatekeeper may warn on other Macs. Release CI launches the packaged app on each operating system. Global both-mouse-button gestures are currently macOS-only; Windows/Linux use Alt+S, the tray and camera gestures. Physical camera accuracy and full desktop integration still need testing on each system.
 
-Git tracks source, plans, release notes and package checksums from version 0.1.1 onward. The `v0.1.8` tag identifies this release. Build outputs, dependencies, imported Steam assets and local account data are excluded. See [release notes](CHANGELOG.md).
+Git tracks source, plans, release notes and package checksums from version 0.1.1 onward. The `v0.1.10` tag identifies this release. Build outputs, dependencies, imported Steam assets and local account data are excluded. See [release notes](CHANGELOG.md).
 
 `npm run dev:web` opens the same renderer in a browser with separate local-storage settings. Native launching, directory browsing, metrics, global input, tray/login behavior and file import/export require the desktop host.
 

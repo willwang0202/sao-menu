@@ -1,5 +1,9 @@
 # Current test release verification
 
+## 0.1.10 release
+
+All 172 unit tests, the production build and the desktop, startup and hover smoke tests passed on the tagged source (8deadfb); the desktop smoke passed 10 of 10 runs after it began waiting for menu animations before clicking. [Release run 37270675495](https://github.com/willwang0202/sao-menu/actions/runs/37270675495) packaged, verified and launched the universal Mac app, the universal Windows installer and the Linux AppImage. The published Mac pair is the locally built universal app, Developer ID signed (not notarized): it passed `codesign --verify --deep --strict`, contains x86_64 and arm64 code including both native helpers, matched its packaged files and launched natively. The feeds were regenerated from the final reports, the publication gate confirmed the release holds only the three packages and three feeds with matching sizes and SHA-256, and all seven files and the source ZIP returned HTTP 200. Version 0.1.9 was not published: its tag preceded the resource-bundle manifest commit, so CI rejected the bundle. The Field Map Location Services prompt still needs a hands-on check in the signed app.
+
 ## 0.1.8 release
 
 All 164 unit tests passed on the tagged source (d14704e). This is the first release built in the consolidated form: [release run 37227612384](https://github.com/willwang0202/sao-menu/actions/runs/37227612384) packaged a universal Mac app, one universal Windows NSIS installer (x64 and Arm64) and a Linux x86_64 AppImage. Each job verified the packaged ASAR and launched the packaged app. The Linux job's first attempt started before the resource bundle was re-uploaded and passed on rerun. CI then generated the feeds and removed its reports and the resource bundle from the release.
