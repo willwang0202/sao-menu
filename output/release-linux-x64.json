@@ -1,15 +1,15 @@
 {
-  "version": "0.1.8",
+  "version": "0.1.10",
   "platform": "linux",
   "arch": "x64",
-  "verifiedAt": "2026-10-04T19:22:29.092Z",
-  "packagedFilesMatched": 1711,
+  "verifiedAt": "2026-10-05T06:06:31.569Z",
+  "packagedFilesMatched": 1714,
   "artifacts": [
     {
-      "name": "sao-menu-0.1.8-linux-x86_64.AppImage",
-      "bytes": 178937880,
-      "sha256": "57aed6b6e5eac42fde92c346b65bf5684808d704f0d747ebb5d167205194497d",
-      "sha512": "Di+B94ZlyLYUfdcj+NMuTxD34eL4u3+V9yyWX5BYYVleEqz2Hpwsjjp0smvN+61LjrPi8bZs4zgBteCW05Jv4w=="
+      "name": "sao-menu-0.1.10-linux-x86_64.AppImage",
+      "bytes": 185916390,
+      "sha256": "88f07f69ad9ac08fbb45602fb4540facf0613c7f9e20228db0d80b0859b94d40",
+      "sha512": "9LVnK9wc8aeNz/x3GtJDQLLdaA4EbheXgHOWA7UlHM+YiZzMS37t/Bc7QnHOanuPc/NOj8fZPAC0o964rxmtAg=="
     }
   ]
 }

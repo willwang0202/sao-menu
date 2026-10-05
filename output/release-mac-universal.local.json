@@ -1,0 +1,21 @@
+{
+  "version": "0.1.8",
+  "platform": "darwin",
+  "arch": "universal",
+  "verifiedAt": "2026-10-04T19:20:05.459Z",
+  "packagedFilesMatched": 1712,
+  "artifacts": [
+    {
+      "name": "sao-menu-0.1.8-mac-universal.dmg",
+      "bytes": 281874543,
+      "sha256": "87b031cae304737e918df8a2fa133679a19f29011ce38fca827729379055be3f",
+      "sha512": "/4O1LCcTNzdWyG3Fn+AUPwYJyzK9dMg/blqMH1JQIo0YxLRVtptwknTOnTEeiW/MXJerwWy2ufBtsYoutVsEqQ=="
+    },
+    {
+      "name": "sao-menu-0.1.8-mac-universal.zip",
+      "bytes": 281540261,
+      "sha256": "208e64f65e0eee904597295f4a6473941e624d9bfe777a7342042a44c6a16664",
+      "sha512": "8WRAi6HYPuJYOF/DsgKaLXFBu+2u0ardYhRNdGy9MuCUtOgtAIo2NXN90QN22jnKxqc2qqr9Q9EUGwBeXWzOcg=="
+    }
+  ]
+}

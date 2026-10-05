@@ -1,32 +1,32 @@
 {
-  "version": "0.1.8",
-  "sourceCommit": "d14704ea5677ccc4319e8abf951f4c4d39d33c90",
-  "release": "https://github.com/willwang0202/sao-menu/releases/tag/untagged-3169af7b3bd256eed4f2",
-  "nativeRun": "https://github.com/willwang0202/sao-menu/actions/runs/37227612384",
+  "version": "0.1.10",
+  "sourceCommit": "8deadfb97c222b9b2b6e2761f4a9ef8fd30a6a8a",
+  "release": "https://github.com/willwang0202/sao-menu/releases/tag/untagged-5b99c061fd985233d30c",
+  "nativeRun": "https://github.com/willwang0202/sao-menu/actions/runs/37270675495",
   "installers": [
     {
-      "name": "sao-menu-0.1.8-mac-universal.dmg",
-      "bytes": 281874543,
-      "sha256": "87b031cae304737e918df8a2fa133679a19f29011ce38fca827729379055be3f",
-      "sha512": "/4O1LCcTNzdWyG3Fn+AUPwYJyzK9dMg/blqMH1JQIo0YxLRVtptwknTOnTEeiW/MXJerwWy2ufBtsYoutVsEqQ=="
+      "name": "sao-menu-0.1.10-mac-universal.dmg",
+      "bytes": 288705033,
+      "sha256": "6838308d6be505a8bf48609b259dd46322da6ebb481c890eb5c0256fb1a985e5",
+      "sha512": "Vblg8hhIGd0bue4HIHlyG98fiwOp1qrxM0g4Y8vmTf8ZBl11cDFYDgIpQeP7F2SnJolbbFyN5qQSph2N4oLB1A=="
     },
     {
-      "name": "sao-menu-0.1.8-mac-universal.zip",
-      "bytes": 281540261,
-      "sha256": "208e64f65e0eee904597295f4a6473941e624d9bfe777a7342042a44c6a16664",
-      "sha512": "8WRAi6HYPuJYOF/DsgKaLXFBu+2u0ardYhRNdGy9MuCUtOgtAIo2NXN90QN22jnKxqc2qqr9Q9EUGwBeXWzOcg=="
+      "name": "sao-menu-0.1.10-mac-universal.zip",
+      "bytes": 288338049,
+      "sha256": "37f419fe1611e2816368710f9e2253dd23dcdb26397603a25eeb23ba7816d7ff",
+      "sha512": "Quyax593KGMkueLR5Est8/8zNCdyPFfH0plvuJoW3b23f0Ox/BI+v0Cw5KWxM92Ymh7Ao/2O4P9d0RBO6Z39Qg=="
     },
     {
-      "name": "sao-menu-0.1.8-windows-universal.exe",
-      "bytes": 304316182,
-      "sha256": "464e31ce1d7da944e3df430ca8e4bd0d96599088b65126bda8be11f1f4610e01",
-      "sha512": "bRx5/UxtSOx0QPKG0ZwV/6klSRDB9/fqrdet+LlgHrIZYmS9um9paj32ZPfbskm0wVMUyrAoLUSbXud/+2/qKg=="
+      "name": "sao-menu-0.1.10-windows-universal.exe",
+      "bytes": 314325848,
+      "sha256": "007a11d38497e621eb4968ae30fe8d88c1de1c5b802ac8905bcc9275d3949610",
+      "sha512": "5omxalsYsteMWPFg7eco69DGfNrfzq4j4/McaIm1KwAz8MEgDLQ+03d8nGQ2Yhg+ZlT/8Kd2l1p0X7fQtCmBRg=="
     },
     {
-      "name": "sao-menu-0.1.8-linux-x86_64.AppImage",
-      "bytes": 178937880,
-      "sha256": "57aed6b6e5eac42fde92c346b65bf5684808d704f0d747ebb5d167205194497d",
-      "sha512": "Di+B94ZlyLYUfdcj+NMuTxD34eL4u3+V9yyWX5BYYVleEqz2Hpwsjjp0smvN+61LjrPi8bZs4zgBteCW05Jv4w=="
+      "name": "sao-menu-0.1.10-linux-x86_64.AppImage",
+      "bytes": 185916390,
+      "sha256": "88f07f69ad9ac08fbb45602fb4540facf0613c7f9e20228db0d80b0859b94d40",
+      "sha512": "9LVnK9wc8aeNz/x3GtJDQLLdaA4EbheXgHOWA7UlHM+YiZzMS37t/Bc7QnHOanuPc/NOj8fZPAC0o964rxmtAg=="
     }
   ],
   "updateFeedsVerified": [
@@ -38,9 +38,9 @@
     "latest-linux.yml",
     "latest-mac.yml",
     "latest.yml",
-    "sao-menu-0.1.8-linux-x86_64.AppImage",
-    "sao-menu-0.1.8-mac-universal.dmg",
-    "sao-menu-0.1.8-mac-universal.zip",
-    "sao-menu-0.1.8-windows-universal.exe"
+    "sao-menu-0.1.10-linux-x86_64.AppImage",
+    "sao-menu-0.1.10-mac-universal.dmg",
+    "sao-menu-0.1.10-mac-universal.zip",
+    "sao-menu-0.1.10-windows-universal.exe"
   ]
 }

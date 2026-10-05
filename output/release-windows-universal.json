@@ -1,15 +1,15 @@
 {
-  "version": "0.1.8",
+  "version": "0.1.10",
   "platform": "win32",
   "arch": "universal",
-  "verifiedAt": "2026-10-04T19:19:44.074Z",
-  "packagedFilesMatched": 1711,
+  "verifiedAt": "2026-10-05T06:08:06.997Z",
+  "packagedFilesMatched": 1714,
   "artifacts": [
     {
-      "name": "sao-menu-0.1.8-windows-universal.exe",
-      "bytes": 304316182,
-      "sha256": "464e31ce1d7da944e3df430ca8e4bd0d96599088b65126bda8be11f1f4610e01",
-      "sha512": "bRx5/UxtSOx0QPKG0ZwV/6klSRDB9/fqrdet+LlgHrIZYmS9um9paj32ZPfbskm0wVMUyrAoLUSbXud/+2/qKg=="
+      "name": "sao-menu-0.1.10-windows-universal.exe",
+      "bytes": 314325848,
+      "sha256": "007a11d38497e621eb4968ae30fe8d88c1de1c5b802ac8905bcc9275d3949610",
+      "sha512": "5omxalsYsteMWPFg7eco69DGfNrfzq4j4/McaIm1KwAz8MEgDLQ+03d8nGQ2Yhg+ZlT/8Kd2l1p0X7fQtCmBRg=="
     }
   ]
 }
