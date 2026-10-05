@@ -26,7 +26,7 @@ const profile = await mkdtemp(path.join(tmpdir(), 'sao-update-smoke-'));
 const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !['ELECTRON_RUN_AS_NODE', 'SAO_DEV_URL'].includes(key)));
 let instance;
 try {
-  instance = await electron.launch({ executablePath: path.resolve('release/mac-arm64/SAO Utils 2.app/Contents/MacOS/SAO Utils 2'), args: [`--sao-profile=${profile}`], env, timeout: 60000 });
+  instance = await electron.launch({ executablePath: path.resolve('release/mac-universal/SAO Menu.app/Contents/MacOS/SAO Menu'), args: [`--sao-profile=${profile}`], env, timeout: 60000 });
   console.log('Packaged updater launched');
   const page = await instance.firstWindow(); page.setDefaultTimeout(15000); await page.waitForFunction(() => !!window.sao);
   assert.equal((await page.evaluate(() => window.sao.getUpdateStatus())).capability, 'automatic');

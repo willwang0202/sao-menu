@@ -16,6 +16,8 @@ const api: DesktopAPI = {
     return () => ipcRenderer.removeListener('sao:update:status', listener);
   },
   getRuntime: () => ipcRenderer.invoke('sao:runtime'),
+  getMapPosition: () => ipcRenderer.invoke('sao:map:position'),
+  searchMapPlace: query => ipcRenderer.invoke('sao:map:search', query),
   getGestureStatus: () => ipcRenderer.invoke('sao:gesture:status'),
   requestGesturePermission: () => ipcRenderer.invoke('sao:gesture:request'),
   getMenuAnchor: () => ipcRenderer.invoke('sao:menu:anchor'),

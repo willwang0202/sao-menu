@@ -5,7 +5,7 @@ import type { HandTrackingStatus, Position } from '../shared/contracts';
 const RESTART_DELAYS_MS = [1000, 3000, 9000] as const;
 const DROPPED_MESSAGE_LOG_INTERVAL = 100;
 const DEBUG_SIZE = { width: 640, height: 480 } as const;
-const DENIED_MESSAGE = 'Camera access is off for SAO Utils 2. Allow it in System Settings → Privacy & Security → Camera, then turn hand gestures on again.';
+const DENIED_MESSAGE = 'Camera access is off for SAO Menu. Allow it in System Settings → Privacy & Security → Camera, then turn hand gestures on again.';
 const UNDECIDED_MESSAGE = 'Camera access has not been granted yet. Turn hand gestures off and on again to allow it.';
 
 export interface HandTrackingHandlers {

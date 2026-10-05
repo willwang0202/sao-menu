@@ -10,7 +10,7 @@ const userData = await mkdtemp(path.join(tmpdir(), 'sao-desktop-smoke-'));
 const output = path.resolve('output/playwright');
 await mkdir(output, { recursive: true });
 const env = Object.fromEntries(Object.entries(process.env).filter(([key, value]) => value !== undefined && !['ELECTRON_RUN_AS_NODE', 'SAO_DEV_URL'].includes(key)));
-const instance = await electron.launch({ executablePath: electronPath, args: ['.'], cwd: process.cwd(), env: { ...env, SAO_USER_DATA: userData }, timeout: 30000 });
+const instance = await electron.launch({ executablePath: electronPath, args: ['.'], cwd: process.cwd(), env: { ...env, SAO_USER_DATA: userData, SAO_TEST_NO_DEVICE_LOCATION: '1' }, timeout: 30000 });
 const errors = [];
 try {
   const page = await instance.firstWindow();
@@ -143,6 +143,7 @@ try {
     await page.getByRole('menuitem', { name: 'Kirito', exact: true }).waitFor();
   }
 
+  await page.waitForFunction(() => document.getAnimations().every(animation => animation.playState !== 'running'));
   await page.getByRole('menuitem', { name: 'Settings', exact: true }).click();
   // Help opens the support page in the default browser; unit tests cover its link, so it isn't clicked here.
   await page.getByRole('menuitem', { name: 'Help', exact: true }).waitFor();
@@ -192,12 +193,13 @@ try {
     const clockTime = clock ? await clock.webContents.executeJavaScript("document.querySelector('.sao-clock')?.getAttribute('aria-label') ?? ''") : '';
     const messageButton = message ? await message.webContents.executeJavaScript("!!document.querySelector('.sao-message-button')") : false;
     const hp = BrowserWindow.getAllWindows().find(window => new URL(window.webContents.getURL()).searchParams.get('hp') === '1');
-    return { clockSize: clock?.getSize(), messageSize: message?.getSize(), clockTime, messageButton, clockFocusable: clock?.isFocusable(), stacking: [clock, message, hp].map(window => window?.isAlwaysOnTop()) };
+    return { clockSize: clock?.getSize(), messageSize: message?.getSize(), clockTime, messageButton, clockFocusable: clock?.isFocusable(), messageVisible: message?.isVisible(), stacking: [clock, message, hp].map(window => window?.isAlwaysOnTop()) };
   });
   assert.deepEqual(widgets.clockSize, [304, 80], 'original clock widget size');
   assert.deepEqual(widgets.messageSize, [56, 56], 'original mail button size');
   assert.match(widgets.clockTime, /^Time \d\d:\d\d$/, 'clock renders the original %H:%M time');
   assert.equal(widgets.messageButton, true, 'message button renders');
+  assert.equal(widgets.messageVisible, false, 'the Message button stays hidden without unread messages');
   const alwaysOnTop = (await page.evaluate(() => window.sao.getSettings())).alwaysOnTop;
   assert.deepEqual(widgets.stacking, [alwaysOnTop, alwaysOnTop, alwaysOnTop], 'HP and widgets follow the Always on top setting');
   await page.getByRole('button', { name: 'Close options', exact: true }).first().click();
@@ -221,5 +223,16 @@ try {
   await instance.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find(window => new URL(window.webContents.getURL()).searchParams.get('widget') === 'message').webContents.executeJavaScript('window.saoWidget.openMessages()'));
   await page.waitForFunction(() => document.querySelector('.root-button.selected')?.getAttribute('aria-label') === 'Message', null, { timeout: 5000 });
   assert.equal(await instance.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find(window => window.webContents.getURL().endsWith('/index.html')).isVisible()), true, 'Message button summons the launcher');
-  console.log(JSON.stringify({ platform: runtime.platform, applications: applications.length, memoryTotal: stats.memoryTotal, shortcutRegistered: runtime.shortcutRegistered, storage, gesture, geometry, fonts, categorySwitch: { selfAnchor, optionsAnchor, railUnchanged: true }, assertions: 'original assets and geometry, clock and message widgets, Message button opens Message, anchored category switching, cascading menus, native launch, pointer passthrough, bridge isolation, IPC owner, settings, import/export, hotkey dismissal, hide/reopen, reload', screenshot: path.join(output, 'original-menu.png'), userData }, null, 2));
+  // Navigation → Field Map opens the SAO map window; without device location it centres on the saved home.
+  await page.evaluate(async () => { const current = await window.sao.getSettings(); await window.sao.saveSettings({ ...current, mapHome: { label: 'Taipei City Hall', latitude: 25.0375, longitude: 121.5637 } }); });
+  await page.waitForFunction(() => document.getAnimations().every(animation => animation.playState !== 'running'));
+  await page.getByRole('menuitem', { name: 'Navigation', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Field Map', exact: true }).click();
+  await page.waitForSelector('.field-map .maplibregl-canvas');
+  await page.waitForFunction(() => document.querySelector('.field-map-caption strong')?.textContent === 'Taipei City Hall', null, { timeout: 15000 });
+  assert.match(await page.locator('.field-map-meta span').first().textContent(), /^N 25\.0375°\s+E 121\.5637°/);
+  assert.ok(!errors.some(error => /worker/i.test(error)), `Map worker failed: ${errors.join('; ')}`);
+  await page.waitForTimeout(9000);
+  await page.screenshot({ path: path.join(output, 'field-map.png') });
+  console.log(JSON.stringify({ platform: runtime.platform, applications: applications.length, memoryTotal: stats.memoryTotal, shortcutRegistered: runtime.shortcutRegistered, storage, gesture, geometry, fonts, categorySwitch: { selfAnchor, optionsAnchor, railUnchanged: true }, assertions: 'original assets and geometry, clock and message widgets, Message button opens Message, Field Map, anchored category switching, cascading menus, native launch, pointer passthrough, bridge isolation, IPC owner, settings, import/export, hotkey dismissal, hide/reopen, reload', screenshot: path.join(output, 'original-menu.png'), userData }, null, 2));
 } finally { await instance.close(); await rm(userData, { recursive: true, force: true }); }

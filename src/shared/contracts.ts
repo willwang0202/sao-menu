@@ -1,11 +1,12 @@
 import type { ThemeId } from './themes';
 import type { StartupLanguageSetting } from './startup-language';
+import type { MapHome, MapPosition } from './map';
 export type Platform = 'darwin' | 'win32' | 'linux' | 'web';
 export interface Position { x: number; y: number }
 export interface GestureStatus { supported: boolean; permission: 'granted' | 'denied' | 'unknown'; running: boolean; message: string }
 export interface HandTrackingStatus { supported: boolean; enabled: boolean; permission: 'granted' | 'denied' | 'unknown'; running: boolean; message: string }
 export interface HandCursor extends Position { visible: boolean }
-export interface MenuEntry { id: string; name: string; description?: string; icon?: string; image?: string; infoPanel?: boolean; kind: 'menu' | 'launcher' | 'settings' | 'quit' | 'unsupported'; children?: MenuEntry[]; launcher?: LauncherItem; reason?: string; nativeTarget?: string; directory?: string; social?: 'friends' | 'messages' }
+export interface MenuEntry { id: string; name: string; description?: string; icon?: string; image?: string; infoPanel?: boolean; kind: 'menu' | 'launcher' | 'settings' | 'quit' | 'unsupported'; children?: MenuEntry[]; launcher?: LauncherItem; reason?: string; nativeTarget?: string; directory?: string; social?: 'friends' | 'messages'; view?: 'map' }
 export interface LauncherItem { id: string; name: string; kind: 'application' | 'url' | 'folder' | 'file'; target: string }
 export interface Settings {
   version: 1;
@@ -24,6 +25,8 @@ export interface Settings {
   theme: ThemeId;
   /** Language of the Link Start blue cards; `system` follows the OS. */
   startupLanguage: StartupLanguageSetting;
+  /** Field Map fallback when device location is unavailable. */
+  mapHome?: MapHome;
   /** Original SAO clock widget on the desktop. */
   showClock: boolean;
   /** Original mail-style button that opens Message. */
@@ -54,6 +57,9 @@ export interface DesktopAPI {
   openUpdatePage(): Promise<void>;
   onUpdateStatus(callback: (state: UpdateStatus) => void): () => void;
   getRuntime(): Promise<RuntimeInfo>;
+  /** Field Map: device position (or the saved home), and an OpenStreetMap place search. */
+  getMapPosition(): Promise<MapPosition>;
+  searchMapPlace(query: string): Promise<MapHome | null>;
   getGestureStatus(): Promise<GestureStatus>;
   requestGesturePermission(): Promise<GestureStatus>;
   getMenuAnchor(): Promise<Position>;

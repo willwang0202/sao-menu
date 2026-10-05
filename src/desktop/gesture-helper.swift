@@ -89,7 +89,7 @@ private final class MouseObserver {
 
     func run() {
         guard CGPreflightListenEventAccess() else {
-            status(message: "Enable Input Monitoring for SAO Utils 2 to use the global mouse gesture.")
+            status(message: "Enable Input Monitoring for SAO Menu to use the global mouse gesture.")
             return
         }
         let types: [CGEventType] = [.leftMouseDown, .leftMouseUp, .rightMouseDown, .rightMouseUp, .mouseMoved, .leftMouseDragged, .rightMouseDragged]
@@ -106,7 +106,7 @@ private final class MouseObserver {
             userInfo: Unmanaged.passUnretained(self).toOpaque()
         )
         guard let tap, let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0) else {
-            status(message: "macOS could not start the global mouse listener. Check Input Monitoring and restart SAO Utils 2.")
+            status(message: "macOS could not start the global mouse listener. Check Input Monitoring and restart SAO Menu.")
             return
         }
         CFRunLoopAddSource(CFRunLoopGetCurrent(), source, .commonModes)

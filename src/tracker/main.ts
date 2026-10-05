@@ -21,7 +21,7 @@ let recognizer: RecognizerState = initialRecognizerState();
 
 function friendlyError(error: unknown): string {
   const name = error instanceof DOMException ? error.name : '';
-  if (name === 'NotAllowedError') return 'Camera access was denied. Allow SAO Utils 2 in System Settings → Privacy & Security → Camera.';
+  if (name === 'NotAllowedError') return 'Camera access was denied. Allow SAO Menu in System Settings → Privacy & Security → Camera.';
   if (name === 'NotFoundError' || name === 'OverconstrainedError') return 'No camera was found.';
   if (name === 'NotReadableError') return 'The camera is in use by another application.';
   const detail = error instanceof Error ? error.message : String(error);

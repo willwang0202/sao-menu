@@ -69,7 +69,7 @@ export class GestureController {
         this.process?.kill();
         this.process = null;
         this.status.running = false;
-        this.status.message = 'In System Settings → Privacy & Security → Input Monitoring, enable SAO Utils 2 (or its gesture helper). Restart the app if macOS requests it. The shortcut works without this permission.';
+        this.status.message = 'In System Settings → Privacy & Security → Input Monitoring, enable SAO Menu (or its gesture helper). Restart the app if macOS requests it. The shortcut works without this permission.';
       } else if (!this.process) {
         await this.listen();
       }
@@ -95,7 +95,7 @@ export class GestureController {
       };
       const timeout = setTimeout(() => {
         this.status.running = false;
-        this.status.message = 'The global mouse listener did not start. Check Input Monitoring and restart SAO Utils 2.';
+        this.status.message = 'The global mouse listener did not start. Check Input Monitoring and restart SAO Menu.';
         listener.kill();
         finish();
       }, 3000);
@@ -115,7 +115,7 @@ export class GestureController {
               this.status.running = event.running;
               this.status.message = event.running
                 ? 'Hold the left and right mouse buttons together, then slide down to summon the launcher anywhere.'
-                : 'The mouse listener could not start. Check Input Monitoring and restart SAO Utils 2.';
+                : 'The mouse listener could not start. Check Input Monitoring and restart SAO Menu.';
               finish();
             } else if (event.kind === 'dismiss' && !this.stopped) {
               this.dismiss();

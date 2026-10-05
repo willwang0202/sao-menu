@@ -21,3 +21,5 @@
 /* Complete vector rings use the source artwork at the existing 64px hit target. */
 @font-face{font-family:'SAO UI';src:url('../../public/sao-art/SAOUI-Bold.otf') format('opentype');font-weight:600 700;font-style:normal;font-display:swap}
 .root-button:has(.vector-ring){padding:0}.root-button:has(.vector-ring):before{background-image:none}.root-button:has(.vector-ring) .original-icon-stack{width:64px;height:64px;opacity:var(--background-opacity,1)}
+
+.map-home .dialog-actions-inline{align-items:center}.map-home-input{flex:1;min-width:0;padding:7px 9px;border:1px solid #aaa;border-radius:2px;background:rgba(255,255,255,.76);font-size:13px;color:#444}.map-home .small{font-size:10px;margin-top:8px}

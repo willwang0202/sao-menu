@@ -36,7 +36,8 @@ export class DesktopWidgets {
   }
   private shouldShow(kind: WidgetKind): boolean {
     const settings = this.settings();
-    return this.visible && (kind === 'clock' ? settings.showClock : settings.showMessageButton && !!this.snapshot());
+    // The Message button appears only while there are unread messages.
+    return this.visible && (kind === 'clock' ? settings.showClock : settings.showMessageButton && unreadMessages(this.snapshot()) > 0);
   }
   private refresh(): void {
     this.windows.forEach((window, kind) => {

@@ -12,5 +12,8 @@
     <!-- Opt-in webcam hand gestures. -->
     <key>com.apple.security.device.camera</key>
     <true/>
+    <!-- Field Map: centres on the user's position via Core Location. -->
+    <key>com.apple.security.personal-information.location</key>
+    <true/>
   </dict>
 </plist>

@@ -9,5 +9,7 @@ export default defineConfig({
       return context.server ? html.replace("script-src 'self'", "script-src 'self' 'unsafe-inline'") : html;
     },
   }],
+  // MapLibre's worker is an ES module with its own imports; bundle workers as ES modules.
+  worker: { format: 'es' },
   base: './', server: { port: 5173, strictPort: true }, build: { outDir: 'dist', rolldownOptions: { input: { main: 'index.html', tracker: 'tracker.html' } } },
 });

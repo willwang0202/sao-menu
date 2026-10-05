@@ -19,6 +19,7 @@ import { SurfaceLayoutStore } from './surface-store';
 import { SocialClient } from './social';
 import { HpDisplay } from './hud';
 import { DesktopWidgets } from './widgets';
+import { MapLocation } from './location';
 import { LAUNCHER_LEVEL } from '../shared/widgets';
 import { pointerInterval } from '../shared/refresh';
 import { HandTrackingController } from './hand-tracking';
@@ -26,7 +27,11 @@ import { accountServiceEndpoint } from '../shared/social';
 
 protocol.registerSchemesAsPrivileged([{ scheme: 'sao-media', privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true, corsEnabled: true } }]);
 
-app.setName('SAO Utils 2');
+const PRODUCT_NAME = 'SAO Menu';
+/** Versions up to 0.1.8 were named SAO Utils 2; their settings, layouts and approvals stay in this folder. */
+const DATA_FOLDER = 'SAO Utils 2';
+app.setName(PRODUCT_NAME);
+app.setPath('userData', path.join(app.getPath('appData'), DATA_FOLDER));
 
 let window: BrowserWindow | null = null;
 let tray: Tray | null = null;
@@ -62,6 +67,10 @@ function refreshPointerRate(): void {
   pointerTimer.unref();
 }
 let catalogueOperation: Promise<LauncherItem[]> | null = null;
+const mapLocation = new MapLocation(
+  app.isPackaged ? path.join(process.resourcesPath, 'location-helper') : path.join(__dirname, 'location-helper'),
+  () => settings.mapHome, app.getVersion(),
+);
 const gesture = new GestureController(
   app.isPackaged ? path.join(process.resourcesPath, 'gesture-helper') : path.join(__dirname, 'gesture-helper'),
   point => summonAt(point),
@@ -247,7 +256,7 @@ function registerShortcut(shortcut: string): boolean {
 
 function configureLogin(enabled: boolean): void {
   if (platform === 'linux') {
-    if (enabled) throw new Error('Start at login is managed by your Linux desktop. Add SAO Utils 2 to its Startup Applications settings.');
+    if (enabled) throw new Error('Start at login is managed by your Linux desktop. Add SAO Menu to its Startup Applications settings.');
     return;
   }
   if (!app.isPackaged && enabled) throw new Error('Start at login is available in the packaged desktop app.');
@@ -307,7 +316,7 @@ function showSurfaceError(error: unknown): void {
 
 function updateTrayMenu(): void {
   tray?.setContextMenu(Menu.buildFromTemplate([
-    { label: 'Open SAO Utils 2', click: reveal },
+    { label: 'Open SAO Menu', click: reveal },
     { label: 'Web Browser', click: () => void surfaces.openBrowser().catch(showSurfaceError) },
     { label: 'Preview images and videos…', click: () => { if (window) void surfaces.pickMedia(window).catch(showSurfaceError); } },
     { label: 'Gallery Widget…', click: () => { if (window) void surfaces.pickGallery(window).catch(showSurfaceError); } },
@@ -316,7 +325,7 @@ function updateTrayMenu(): void {
     { label: 'Check for updates…', click: () => void checkUpdatesFromMenu() },
     ...(updates?.getState().status === 'downloaded' ? [{ label: 'Install update and restart', click: () => void updates.install().catch(showUpdateError) }] : []),
     { label: 'Hide overlay', click: () => window?.hide() },
-    { label: 'Quit SAO Utils 2', click: () => { quitting = true; app.quit(); } },
+    { label: 'Quit SAO Menu', click: () => { quitting = true; app.quit(); } },
   ]));
 }
 
@@ -335,7 +344,7 @@ function installNativeMenu(): void {
     ] },
     { label: 'Edit', submenu: [{ role: 'undo' }, { role: 'redo' }, { type: 'separator' }, { role: 'cut' }, { role: 'copy' }, { role: 'paste' }, { role: 'selectAll' }] },
     { label: 'Help', submenu: [{ label: 'Check for updates…', click: () => void checkUpdatesFromMenu() }] },
-    { label: 'Window', submenu: [{ role: 'minimize' }, { label: 'Show SAO Utils 2', click: reveal }] },
+    { label: 'Window', submenu: [{ role: 'minimize' }, { label: 'Show SAO Menu', click: reveal }] },
   );
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 }
@@ -369,7 +378,7 @@ async function pickLauncher(kind: unknown): Promise<LauncherItem | null> {
 async function importConfiguration(): Promise<ImportResult | null> {
   if (!window) throw new Error('The desktop window is unavailable.');
   const result = await dialog.showOpenDialog(window, {
-    title: 'Import SAO Utils 2 configuration',
+    title: 'Import a configuration',
     buttonLabel: 'Import configuration', properties: ['openFile'],
     filters: [{ name: 'SAO configuration', extensions: ['json', 'xml'] }],
   });
@@ -416,7 +425,7 @@ function createUpdates(): void {
     signedMac = signature.status === 0 && signature.stderr.includes('Authority=Developer ID Application:');
   }
   const capability = updateCapability({ packaged: app.isPackaged, platform, signedMac,
-    installedWindows: existsSync(path.join(path.dirname(process.execPath), 'Uninstall SAO Utils 2.exe')), appImage: !!process.env.APPIMAGE });
+    installedWindows: ['Uninstall SAO Menu.exe', 'Uninstall SAO Utils 2.exe'].some(name => existsSync(path.join(path.dirname(process.execPath), name))), appImage: !!process.env.APPIMAGE });
   const updater = capability === 'automatic' ? electronUpdater.autoUpdater : undefined;
   if (updater) {
     updater.setFeedURL({ provider: 'github', owner: 'willwang0202', repo: 'sao-menu', private: false });
@@ -470,6 +479,8 @@ function installHandlers(): void {
   handler('sao:media:drop', paths => surfaces.dropFiles(paths));
   handler('sao:browser:open', () => surfaces.openBrowser());
   handler('sao:media:open', () => window ? surfaces.pickMedia(window) : undefined);
+  handler('sao:map:position', () => mapLocation.position());
+  handler('sao:map:search', query => mapLocation.search(query));
   handler('sao:runtime', () => ({ platform, version: app.getVersion(), desktop: true, shortcutRegistered, startup }));
   handler('sao:startup:complete', () => {
     const wasStarting = startup; startup = false;
@@ -532,9 +543,9 @@ function installHandlers(): void {
   handler('sao:configuration:export', async () => {
     if (!window) throw new Error('The desktop window is unavailable.');
     const result = await dialog.showSaveDialog(window, {
-      title: 'Export SAO Utils 2 configuration', buttonLabel: 'Export configuration',
+      title: 'Export SAO Menu configuration', buttonLabel: 'Export configuration',
       defaultPath: path.join(app.getPath('documents'), 'sao-utils-2.json'),
-      filters: [{ name: 'SAO Utils 2 configuration', extensions: ['json'] }],
+      filters: [{ name: 'SAO Menu configuration', extensions: ['json'] }],
     });
     if (result.canceled || !result.filePath) return false;
     const exportPath = result.filePath;
@@ -556,7 +567,7 @@ async function createWindow(): Promise<void> {
     x: workArea.x, y: workArea.y,
     show: false, frame: false, transparent: true, backgroundColor: '#00000000', hasShadow: false,
     resizable: false, maximizable: false, fullscreenable: false,
-    alwaysOnTop: settings.alwaysOnTop, title: 'SAO Utils 2',
+    alwaysOnTop: settings.alwaysOnTop, title: PRODUCT_NAME,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       nodeIntegration: false, contextIsolation: true, sandbox: true,
@@ -618,7 +629,7 @@ else {
     screen.on('display-metrics-changed', refreshPointerRate);
     screen.on('display-added', refreshPointerRate); screen.on('display-removed', refreshPointerRate);
     tray = new Tray(createTrayIcon());
-    tray.setToolTip('SAO Utils 2');
+    tray.setToolTip(PRODUCT_NAME);
     tray.on('click', reveal);
     updateTrayMenu();
     updates.start();
@@ -626,7 +637,7 @@ else {
       try { configureLogin(true); } catch (error) { console.warn('Start at login could not be applied.', error); }
     }
   }).catch(error => {
-    dialog.showErrorBox('SAO Utils 2 could not start', error instanceof Error ? error.message : String(error));
+    dialog.showErrorBox('SAO Menu could not start', error instanceof Error ? error.message : String(error));
     quitting = true; app.quit();
   });
 }

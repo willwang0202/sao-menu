@@ -9,7 +9,7 @@ const platform = process.platform;
 // Mac and Windows publish one universal package; Linux publishes x86_64.
 const arch = platform === 'linux' ? process.arch : 'universal';
 const pkg = JSON.parse(await readFile('package.json', 'utf8'));
-const folder = platform === 'darwin' ? 'release/mac-universal/SAO Utils 2.app/Contents/Resources' : `release/${platform === 'win32' ? 'win-unpacked' : 'linux-unpacked'}/resources`;
+const folder = platform === 'darwin' ? 'release/mac-universal/SAO Menu.app/Contents/Resources' : `release/${platform === 'win32' ? 'win-unpacked' : 'linux-unpacked'}/resources`;
 const archive = path.join(folder, 'app.asar');
 const updateConfig = await readFile(path.join(folder, 'app-update.yml'), 'utf8');
 assert.match(updateConfig, /owner: willwang0202/); assert.match(updateConfig, /repo: sao-menu/); assert.match(updateConfig, /provider: github/);
@@ -27,7 +27,7 @@ async function files(folder) {
   }
   return result;
 }
-const built = [...await files('dist'), ...await files('dist-desktop')].filter(file => path.basename(file) !== 'gesture-helper');
+const built = [...await files('dist'), ...await files('dist-desktop')].filter(file => !['gesture-helper', 'location-helper'].includes(path.basename(file)));
 // ASAR's directory reader splits on the host path separator, including on Windows.
 for (const file of [...built, 'resources/icon.png']) assert.deepEqual(asar.extractFile(archive, path.normalize(file)), await readFile(file), `Packaged bytes differ: ${file}`);
 const os = platform === 'darwin' ? 'mac' : platform === 'win32' ? 'windows' : 'linux';

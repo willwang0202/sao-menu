@@ -12,7 +12,7 @@ const output=path.resolve('output/playwright');await mkdir(output,{recursive:tru
 const env=Object.fromEntries(Object.entries(process.env).filter(([key,value])=>value!==undefined && !['ELECTRON_RUN_AS_NODE','SAO_DEV_URL'].includes(key)));
 const launch=profile=>electron.launch({executablePath:electronPath,args:['.'],cwd:process.cwd(),env:{...env,SAO_TEST_SERVICE_URL:serviceURL,SAO_USER_DATA:profile}});
 const mainWindow=async instance=>{const page=await instance.firstWindow();await page.waitForFunction(()=>!!window.sao);return page;};
-const quietInput=instance=>instance.evaluate(({BrowserWindow})=>{const main=BrowserWindow.getAllWindows().find(w=>w.getTitle()==='SAO Utils 2');const send=main.webContents.send.bind(main.webContents);main.webContents.send=(channel,...args)=>{if(!['sao:pointer:down','sao:menu:dismiss'].includes(channel))send(channel,...args);};});
+const quietInput=instance=>instance.evaluate(({BrowserWindow})=>{const main=BrowserWindow.getAllWindows().find(w=>w.getTitle()==='SAO Menu');const send=main.webContents.send.bind(main.webContents);main.webContents.send=(channel,...args)=>{if(!['sao:pointer:down','sao:menu:dismiss'].includes(channel))send(channel,...args);};});
 const mediaProbe=page=>page.addInitScript(()=>{window.testMedia=[];const play=HTMLMediaElement.prototype.play;HTMLMediaElement.prototype.play=function(){const entry={src:this.src,played:false};window.testMedia.push(entry);const result=play.call(this);void result.then(()=>{entry.played=true;});return result;};});
 // Frame intervals grouped by the scene on screen, for the whole sequence rather than one sample window.
 const sceneProbe=page=>page.addInitScript(()=>{window.testSceneTiming={};let prior=0;const tick=time=>{const scene=document.querySelector('.link-start')?.dataset.scene;if(scene&&prior)(window.testSceneTiming[scene]??=[]).push(time-prior);prior=time;requestAnimationFrame(tick);};requestAnimationFrame(tick);});
@@ -28,11 +28,11 @@ try {
   await mediaProbe(page);await sceneProbe(page);await page.reload({waitUntil:'domcontentloaded'});
   await page.locator('.startup-canvas').waitFor();
   for(let i=0;i<40 && !instance.windows().some(p=>p.url().includes('hp=1'));i++)await new Promise(resolve=>setTimeout(resolve,50));
-  const windows=await instance.evaluate(({BrowserWindow,screen})=>{const main=BrowserWindow.getAllWindows().find(w=>w.getTitle()==='SAO Utils 2');return {display:screen.getPrimaryDisplay(),launchDisplay:screen.getDisplayMatching(main.getBounds()),windows:BrowserWindow.getAllWindows().map(w=>({title:w.getTitle(),visible:w.isVisible(),bounds:w.getBounds(),shadow:w.hasShadow()}))};});
+  const windows=await instance.evaluate(({BrowserWindow,screen})=>{const main=BrowserWindow.getAllWindows().find(w=>w.getTitle()==='SAO Menu');return {display:screen.getPrimaryDisplay(),launchDisplay:screen.getDisplayMatching(main.getBounds()),windows:BrowserWindow.getAllWindows().map(w=>({title:w.getTitle(),visible:w.isVisible(),bounds:w.getBounds(),shadow:w.hasShadow()}))};});
   const hp=windows.windows.find(w=>w.title==='SAO HP Display');assert.ok(hp,JSON.stringify(windows.windows));assert.equal(hp.visible,false);assert.equal(hp.shadow,false);
   assert.equal(hp.bounds.x,windows.display.workArea.x+24);assert.equal(hp.bounds.y,windows.display.workArea.y+24);assert.equal(hp.bounds.width,358);assert.equal(hp.bounds.height,62);
-  assert.equal(windows.windows.find(w=>w.title==='SAO Utils 2').shadow,false);
-  assert.deepEqual(windows.windows.find(w=>w.title==='SAO Utils 2').bounds,windows.launchDisplay.bounds,'launch covers its whole display, including menu and dock areas');
+  assert.equal(windows.windows.find(w=>w.title==='SAO Menu').shadow,false);
+  assert.deepEqual(windows.windows.find(w=>w.title==='SAO Menu').bounds,windows.launchDisplay.bounds,'launch covers its whole display, including menu and dock areas');
   const surface=await page.locator('.startup-canvas').evaluate(c=>({width:c.width,height:c.height,cssWidth:c.clientWidth,cssHeight:c.clientHeight,ratio:Math.min(2,devicePixelRatio),viewport:[innerWidth,innerHeight]}));
   assert.deepEqual([surface.cssWidth,surface.cssHeight],surface.viewport,'canvas fills the display edge to edge');
   assert.equal(surface.width,Math.round(surface.viewport[0]*surface.ratio),'canvas renders at device resolution');

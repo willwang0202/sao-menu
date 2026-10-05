@@ -30,6 +30,12 @@ Branch: `feat/themes-and-widgets`.
 ## Link Start
 - [x] Link Start blue forms (language selection, login, character registration) follow the system language and can be changed in Options; official anime text ("Welcome to Sword Art Online!", "Congratulations!!") stays original
 
+## Naming
+- [ ] Rename the app from "SAO Utils 2" to "SAO Menu" (product name, window/tray/Options titles, About); keep existing settings, sign-in and updates working for current installs
+
+## Navigation
+- [x] Navigation → Field Map: SAO-style real-world map (MapLibre + OpenFreeMap, macOS Core Location helper, home-location fallback)
+
 ## Later (new anime-only features from the darkblackswords vector pack)
 - [ ] "Congratulations!!" banner when account level increases
 - [ ] Duel-style window for party invites
