@@ -2,7 +2,7 @@
 
 Working list for the SAO Utils 2 port. Scope decisions (keep/drop) were made with the user on 2026-10-04; anything from the original packages not listed here needs the user's decision before porting.
 
-Branch: `feat/themes-and-widgets`.
+Merged into `main`; released in 0.1.8 (themes, widgets) and 0.1.9 (Field Map, rename).
 
 ## Shared scaffold
 - [x] `Settings.theme` (`sao` | `alo` | `ggo`), validated in `normalizeSettings`, default `sao`
@@ -31,10 +31,11 @@ Branch: `feat/themes-and-widgets`.
 - [x] Link Start blue forms (language selection, login, character registration) follow the system language and can be changed in Options; official anime text ("Welcome to Sword Art Online!", "Congratulations!!") stays original
 
 ## Naming
-- [ ] Rename the app from "SAO Utils 2" to "SAO Menu" (product name, window/tray/Options titles, About); keep existing settings, sign-in and updates working for current installs
+- [x] Rename the app from "SAO Utils 2" to "SAO Menu" (product name, window/tray/Options titles, About); keep existing settings, sign-in and updates working for current installs
 
 ## Navigation
 - [x] Navigation → Field Map: SAO-style real-world map (MapLibre + OpenFreeMap, macOS Core Location helper, home-location fallback)
+- [ ] Device check: Location Services prompt from the signed app
 
 ## Later (new anime-only features from the darkblackswords vector pack)
 - [ ] "Congratulations!!" banner when account level increases
