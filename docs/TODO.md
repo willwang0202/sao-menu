@@ -2,7 +2,7 @@
 
 Working list for the SAO Utils 2 port. Scope decisions (keep/drop) were made with the user on 2026-10-04; anything from the original packages not listed here needs the user's decision before porting.
 
-Merged into `main`; released in 0.1.8 (themes, widgets) and 0.1.9 (Field Map, rename).
+Merged into `main`; released in 0.1.8 (themes, widgets) and 0.1.10 (Field Map, rename).
 
 ## Shared scaffold
 - [x] `Settings.theme` (`sao` | `alo` | `ggo`), validated in `normalizeSettings`, default `sao`

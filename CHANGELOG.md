@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-## 0.1.9 — October 4, 2026
+## 0.1.10 — October 4, 2026
 
 - Add Navigation → Field Map: a real-world map styled after the anime's map window (white portrait card, cyan ground, blue paths), with your position, the place name and coordinates. On macOS it asks for Location access; otherwise, or if access is denied, it centres on a home location you search for in Options → Interface → Field Map. Map data © OpenStreetMap contributors via OpenFreeMap, credited in Options → About.
 - The desktop Message button now appears only when there is an unread message, using the original notified artwork.
