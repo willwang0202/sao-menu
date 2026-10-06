@@ -6,6 +6,7 @@ import { Updates } from './updates';
 import { buildDefaultMenu, resolveNativeMenu } from '../shared/menu';
 import type { GestureStatus, LauncherItem, MenuEntry, Position, RuntimeInfo, Settings } from '../shared/contracts';
 import './styles.css';
+import './sky.css';
 import { SurfaceApp } from './surface';
 import { SocialPanel } from './social';
 import type { SocialProfile } from '../shared/social';
@@ -424,7 +425,7 @@ function ButtonIcon({ icon, active, root }: { icon: string; active: boolean; roo
   const [attempt, setAttempt] = useState(0);
   const [decoded, setDecoded] = useState('');
   const sources = themeIconSources(theme, icon, root);
-  const vector = attempt === 0 && usesSaoVectorArt(theme) ? menuArtwork(icon, root) : null;
+  const vector = attempt === 0 && usesSaoVectorArt(theme) ? menuArtwork(icon, root, theme) : null;
   const normal = vector?.normal ?? sources[Math.min(attempt, sources.length - 1)];
   const hovered = vector?.active ?? themeHoverSource(theme, normal);
   const useHover = active && decoded === hovered;

@@ -1,0 +1,52 @@
+/* Sky: a custom recolour of the SAO launcher. White surfaces stay as the SAO artwork draws them;
+   every orange accent becomes light blue. Raster/vector accents are shifted with a filter tuned so
+   the SAO orange (#F1AA03 / #EBA601) lands on ~#50BBEE, and greys/whites are left untouched
+   (hue-rotate keeps neutral pixels neutral). Every rule is scoped to [data-theme="sky"]. */
+[data-theme="sky"]{--sky-accent:#4fb8ee;--sky-accent-light:#8fd3f7;--sky-accent-strong:#1f8fd6;--sky-accent-soft:#d8f0fc;--sky-ink:#0b4f7a;--sky-border:#2a8cc8;--sky-shift:hue-rotate(165deg) saturate(.85)}
+[data-theme="sky"] ::selection{background:var(--sky-accent-soft)}
+[data-theme="sky"] button:focus-visible{outline-color:var(--sky-accent-strong)}
+
+/* Launcher buttons: the SAO hover/pressed/selected PNGs sit on :before, the icons on their own layer. */
+[data-theme="sky"] .root-button.hovered:before,[data-theme="sky"] .root-button:focus-visible:before,[data-theme="sky"] .root-button:active:before,[data-theme="sky"] .root-button.selected:before,
+[data-theme="sky"] .item-button.hovered:before,[data-theme="sky"] .item-button:focus-visible:before,[data-theme="sky"] .item-button:active:before,[data-theme="sky"] .item-button.selected:before{filter:var(--sky-shift)}
+/* Sky's own line icons are already blue; the remaining raster -hovered icons are orange and get shifted. */
+[data-theme="sky"] .original-icon-stack .original-icon:last-child:not([src*="sky-art/"]){filter:var(--sky-shift)}
+[data-theme="sky"] .original-confirm:hover img{filter:var(--sky-shift)}
+
+/* Dialog chrome */
+[data-theme="sky"] .sao-dialog{filter:drop-shadow(0 8px 18px rgba(31,143,214,.18))}
+[data-theme="sky"] .dialog-tabs button.active{color:var(--sky-ink);background:linear-gradient(var(--sky-accent-light),var(--sky-accent));border-color:var(--sky-border);box-shadow:inset 0 0 0 1px rgba(255,255,255,.55)}
+[data-theme="sky"] .dialog-button:hover:not(:disabled),[data-theme="sky"] .dialog-button.orange,
+[data-theme="sky"] .field-map-controls button:hover,[data-theme="sky"] .social-action:hover:not(:disabled),[data-theme="sky"] .social-action:focus-visible{background:linear-gradient(var(--sky-accent-light),var(--sky-accent));border-color:var(--sky-border);color:var(--sky-ink)}
+[data-theme="sky"] .editor-item-action:hover{background:var(--sky-accent-light);border-color:var(--sky-border);color:var(--sky-ink)}
+[data-theme="sky"] input:focus-visible,[data-theme="sky"] textarea:focus-visible{outline-color:var(--sky-accent-strong)}
+[data-theme="sky"] .dialog-close:hover{color:var(--sky-accent-strong)}
+[data-theme="sky"] .editor-tabs button.active,[data-theme="sky"] .social-panel nav .active{border-bottom-color:var(--sky-accent);color:var(--sky-ink)}
+[data-theme="sky"] .social-list{border-top-color:var(--sky-accent)}
+[data-theme="sky"] .player-arrow{border-bottom-color:var(--sky-accent-strong)}
+[data-theme="sky"] .preference-toggle.checked{border-color:var(--sky-border);background:var(--sky-accent)}
+[data-theme="sky"] .initializing button{border-color:var(--sky-border);background:var(--sky-accent-soft)}
+[data-theme="sky"] .update-automatic input,[data-theme="sky"] .update-options progress,[data-theme="sky"] .browser-fov input,[data-theme="sky"] .corner-fov input{accent-color:var(--sky-accent-strong)}
+
+/* Social list ribbons draw the orange item PNGs behind text and avatars, so the shifted PNG goes on a pseudo layer. */
+[data-theme="sky"] .friend-ribbon{position:relative;isolation:isolate}
+[data-theme="sky"] .friend-ribbon:hover,[data-theme="sky"] .friend-ribbon:focus-visible,[data-theme="sky"] .friend-ribbon.selected{background-image:url('../../public/sao-original/Images/background/item.png')}
+[data-theme="sky"] .friend-ribbon:before{content:'';position:absolute;inset:0;z-index:-1;background:center/182px 46px no-repeat;filter:var(--sky-shift);pointer-events:none}
+[data-theme="sky"] .friend-ribbon:hover:before,[data-theme="sky"] .friend-ribbon:focus-visible:before{background-image:url('../../public/sao-original/Images/background/item-hovered.png')}
+[data-theme="sky"] .friend-ribbon.selected:before{background-image:url('../../public/sao-original/Images/background/item-selected.png')}
+
+/* Floating browser/media surfaces */
+[data-theme="sky"] .browser-surface{border-color:var(--sky-accent);filter:drop-shadow(-1px 0 0 rgba(255,255,255,.6)) drop-shadow(1px 0 0 rgba(79,184,238,.6))}
+[data-theme="sky"] .media-content{border-color:rgba(79,184,238,.6)}
+[data-theme="sky"] .file-drag .floating-surface{outline-color:var(--sky-accent)}
+[data-theme="sky"] .surface-resize-handle:focus-visible{outline-color:var(--sky-accent)}
+
+/* Hand pointer reticle */
+[data-theme="sky"] .hand-reticle:after{background:var(--sky-accent)}
+[data-theme="sky"] .hand-reticle>span{border-color:var(--sky-accent)}
+
+/* Desktop widgets (the widget windows set data-theme on <html>). The shift also turns the
+   orange unread badge inside the mail button blue, so the badge keeps its SAO colour. */
+[data-theme="sky"] .sao-message-button{filter:var(--sky-shift)}
+[data-theme="sky"] .sao-message-button:focus-visible{outline-color:var(--sky-accent-strong)}
+[data-theme="sky"] .invitation-answer:focus-visible{outline-color:var(--sky-accent-strong)}
