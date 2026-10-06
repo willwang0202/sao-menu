@@ -3,6 +3,7 @@ import { CLOCK_SAMPLE_MS, clockAngles, clockText, type WidgetState } from '../sh
 import { CongratulationsBanner } from './congratulations';
 import { InvitationWindow } from './invitation';
 import './widgets.css';
+import './sky.css';
 const IMAGE = './sao-original/Images/';
 const MAX_BADGE = 99;
 
@@ -35,6 +36,7 @@ export function MessageButton({ unread, onOpen }: { unread: number; onOpen: () =
 export function DesktopWidgetWindow({ kind }: { kind: string }) {
   const state = useWidgetState();
   useEffect(() => { document.documentElement.classList.add('widget-window'); }, []);
+  useEffect(() => { document.documentElement.dataset.theme = state.theme; }, [state.theme]);
   if (kind === 'clock') return <ClockWidget />;
   if (kind === 'invitation') return <InvitationWindow invitation={state.invitation} reducedMotion={state.reducedMotion} sound={state.sound} theme={state.theme} />;
   if (kind === 'congratulations') return <CongratulationsBanner celebration={state.celebration} reducedMotion={state.reducedMotion} sound={state.sound} theme={state.theme} />;

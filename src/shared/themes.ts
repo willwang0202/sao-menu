@@ -1,7 +1,7 @@
-/** Launcher looks shipped by the original SAO Utils 2 theme packages. */
-export const THEME_IDS = ['sao', 'alo', 'ggo'] as const;
+/** Launcher looks shipped by the original SAO Utils 2 theme packages, plus the custom Sky recolour. */
+export const THEME_IDS = ['sao', 'alo', 'ggo', 'sky'] as const;
 export type ThemeId = typeof THEME_IDS[number];
-export const THEME_NAMES: Record<ThemeId, string> = { sao: 'Sword Art Online', alo: 'ALfheim Online', ggo: 'Gun Gale Online' };
+export const THEME_NAMES: Record<ThemeId, string> = { sao: 'Sword Art Online', alo: 'ALfheim Online', ggo: 'Gun Gale Online', sky: 'Sky (Custom)' };
 export const isThemeId = (value: unknown): value is ThemeId => typeof value === 'string' && (THEME_IDS as readonly string[]).includes(value);
 
 export type SoundEvent = 'click' | 'popupLauncher' | 'popupMenu' | 'popupPanel' | 'dismissLauncher' | 'ready' | 'congratulations' | 'invitation';
@@ -16,6 +16,7 @@ const THEME_SOUNDS: Record<ThemeId, Partial<Record<SoundEvent, string>>> = {
   // com.gpbeta.theme.sao/Presets/sfx-alo.json: panel and menu popups keep the SAO sounds.
   alo: { click: 'Feedback.ALO.Click.wav', popupLauncher: 'Popup.ALO.Launcher.wav', dismissLauncher: 'Dismiss.ALO.Launcher.wav', ready: 'Ready.ALO.Welcome.wav', invitation: 'Popup.ALO.Message.wav' },
   ggo: {},
+  sky: {},
 };
 export function themeSound(theme: ThemeId, event: SoundEvent): string {
   return THEME_SOUNDS[theme][event] ?? SAO_SOUNDS[event];

@@ -93,3 +93,8 @@ test('GGO nested column waits at the parent top until its selected row is known'
   const [first, second] = columnTops('ggo', 200, [1, 1], []);
   assert.equal(second, first + 30 - 62 / 2);
 });
+
+test('Sky theme uses the SAO launcher geometry', () => {
+  assert.deepEqual(launcherLayout('sky', 5, 2).menuLeft(1), launcherLayout('sao', 5, 2).menuLeft(1));
+  assert.deepEqual(submenuLayout('sky'), submenuLayout('sao'));
+});

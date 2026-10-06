@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { themeSound } from '../src/shared/themes';
+import { isThemeId, THEME_NAMES, themeSound } from '../src/shared/themes';
 
 test('SAO theme uses the original SAO launcher sounds', () => {
   assert.equal(themeSound('sao', 'click'), 'Feedback.SAO.Click.wav');
@@ -19,4 +19,14 @@ test('ALO theme follows the original sfx-alo preset and keeps SAO panel and menu
   assert.equal(themeSound('alo', 'ready'), 'Ready.ALO.Welcome.wav');
   assert.equal(themeSound('alo', 'popupMenu'), 'Popup.SAO.Menu.wav');
   assert.equal(themeSound('alo', 'popupPanel'), 'Popup.SAO.Panel.wav');
+});
+
+test('Sky custom theme is a selectable launcher theme', () => {
+  assert.ok(isThemeId('sky'));
+  assert.equal(THEME_NAMES.sky, 'Sky (Custom)');
+});
+
+test('Sky theme keeps the SAO launcher sounds', () => {
+  assert.equal(themeSound('sky', 'click'), 'Feedback.SAO.Click.wav');
+  assert.equal(themeSound('sky', 'popupLauncher'), 'Popup.SAO.Launcher.wav');
 });
